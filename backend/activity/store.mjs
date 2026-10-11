@@ -61,6 +61,7 @@ export class UsageStore {
     this.insert.run(...columns.map(key => row[key]));
   }
   sources() { return this.db.prepare("SELECT * FROM sources ORDER BY rowid").all().map(row => ({ ...row, enabled: !!row.enabled })); }
+  removeRequest(id) { this.db.prepare("DELETE FROM events WHERE id=? AND kind='request'").run(id); }
   configure(tool, filename, enabled) {
     if (!TOOLS.includes(tool) || typeof filename !== "string" || !path.isAbsolute(filename) || filename.includes("\0") || filename.length > 4096 || typeof enabled !== "boolean") throw new Error("请选择有效的工具与绝对日志路径");
     this.db.prepare("UPDATE sources SET path=?,enabled=?,state='idle',detail=NULL WHERE tool=?").run(path.normalize(filename), Number(enabled), tool);
