@@ -21,6 +21,8 @@ export interface ManagedSkill {
   id: string;
   name: string;
   description: string | null;
+  author?: string | null;
+  author_source?: string | null;
   source_type: string;
   source_ref: string | null;
   source_ref_resolved: string | null;
@@ -166,6 +168,8 @@ export interface ProjectSkill {
   dir_name: string;
   relative_path: string;
   description: string | null;
+  author?: string | null;
+  author_source?: string | null;
   path: string;
   files: string[];
   enabled: boolean;

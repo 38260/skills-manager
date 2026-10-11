@@ -1523,6 +1523,9 @@ export function MySkills() {
                     <p className="text-[13px] leading-[18px] text-muted truncate">
                       {skill.description || "—"}
                     </p>
+                    <p className="mt-1 truncate text-[12px] text-faint" title={skill.author_source ?? undefined}>
+                      {t("mySkills.author")}: {skill.author || t("mySkills.authorMissing")}
+                    </p>
                     {((badge && !showUpdatePill) || conflictIds.has(skill.id)) && (
                       <div className="mt-2 flex flex-wrap items-center gap-1.5">
                         {conflictIds.has(skill.id) && (
@@ -1725,6 +1728,9 @@ export function MySkills() {
                 <p className="min-w-0 flex-1 truncate text-[13px] text-muted">
                   {skill.description || "—"}
                 </p>
+                <span className="max-w-[140px] truncate text-[12px] text-faint" title={skill.author_source ?? undefined}>
+                  {skill.author || t("mySkills.authorMissing")}
+                </span>
 
                 <div className="flex shrink-0 items-center gap-1.5">
                   {skill.tags.map((tag) => (

@@ -234,6 +234,8 @@
     "hint": "You can connect or restore a backup at any time from the Backup page in the sidebar."
   },
   "mySkills": {
+    "author": "Author",
+    "authorMissing": "Author not provided",
     "title": "Library",
     "applyToDefault": "Apply Preset",
     "applied": "Applied",

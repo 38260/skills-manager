@@ -51,6 +51,7 @@ function WorkspaceSkillCard({
   viewMode,
   title,
   description,
+  author,
   tags = [],
   status,
   fileCount = 0,
@@ -64,6 +65,7 @@ function WorkspaceSkillCard({
   viewMode: "grid" | "list";
   title: string;
   description?: string | null;
+  author?: string;
   tags?: WorkspaceSkillCardTag[];
   status: WorkspaceSkillCardStatus;
   fileCount?: number;
@@ -110,6 +112,7 @@ function WorkspaceSkillCard({
         <p className="min-w-0 flex-1 truncate text-[13px] text-muted">
           {description || "-"}
         </p>
+        {author && <span className="max-w-[160px] truncate text-[12px] text-faint">{author}</span>}
         {tags.length > 0 && (
           <div className="flex shrink-0 items-center gap-1.5">
             {tags.map((tag) => (
@@ -179,6 +182,7 @@ function WorkspaceSkillCard({
         <p className="truncate text-[13px] leading-[18px] text-muted">
           {description || "-"}
         </p>
+        {author && <p className="mt-1 truncate text-[12px] text-faint">{author}</p>}
         {tags.length > 0 && (
           <div className="mt-2 flex flex-wrap items-center gap-1">
             {tags.map((tag) => (
@@ -1137,6 +1141,7 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
                 viewMode={viewMode}
                 title={skill.name}
                 description={skill.description || skill.relative_path}
+                author={`${t("mySkills.author")}: ${skill.author || t("mySkills.authorMissing")}`}
                 tags={skill.tags.map((tag) => ({ label: tag, className: getTagColor(tag, allLocalTags) }))}
                 status={statusMeta}
                 fileCount={skill.files.length}
@@ -1175,6 +1180,7 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
         meta={
           localDetailSkill ? (
             <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[13px] text-muted">{t("mySkills.author")}: {localDetailSkill.author || t("mySkills.authorMissing")}</span>
               <span className={cn("rounded-full px-2.5 py-1 text-[12px] font-medium", getLocalStatusMeta(t, localDetailSkill.sync_status).className)}>
                 {getLocalStatusMeta(t, localDetailSkill.sync_status).label}
               </span>

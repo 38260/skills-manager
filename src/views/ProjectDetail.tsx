@@ -1264,6 +1264,7 @@ export function ProjectDetail() {
                     <p className="text-[13px] leading-[18px] text-muted truncate">
                       {skill.description || "\u2014"}
                     </p>
+                    <p className="mt-1 truncate text-[12px] text-faint">{t("mySkills.author")}: {skill.primaryVariant.author || t("mySkills.authorMissing")}</p>
                     {skill.tags.length > 0 && (
                       <div className="mt-2 flex flex-wrap items-center gap-1">
                         {skill.tags.map((tag) => (
@@ -1407,6 +1408,7 @@ export function ProjectDetail() {
                 <p className="min-w-0 flex-1 truncate text-[13px] text-muted">
                   {skill.description || "\u2014"}
                 </p>
+                <span className="max-w-[140px] truncate text-[12px] text-faint">{skill.primaryVariant.author || t("mySkills.authorMissing")}</span>
 
                 {skill.tags.length > 0 && (
                   <div className="flex shrink-0 items-center gap-1.5">
@@ -1637,6 +1639,7 @@ function ProjectSkillDetailPanel({
   });
   const meta = (
     <>
+      <div className="mb-2 text-[13px] text-muted">{t("mySkills.author")}: {skill.primaryVariant.author || t("mySkills.authorMissing")}</div>
       <div className="flex flex-wrap items-center gap-2 text-[12.5px] text-muted">
         <ProjectAgentDots
           assignedAgents={getAssignedAgents(skill.variants)}

@@ -226,6 +226,9 @@ function SkillDetailPanelContent({
 
   const meta = (
     <>
+      <div className="mb-2 text-[13px] text-muted" title={skill.author_source ?? undefined}>
+        {t("mySkills.author")}: {skill.author || t("mySkills.authorMissing")}
+      </div>
       <div className="flex flex-wrap items-center gap-2 text-[12.5px] text-muted">
         {tools && <SyncDots skill={skill} tools={tools} size="sm" includeOrphan />}
         {skill.tags.length > 0 && (

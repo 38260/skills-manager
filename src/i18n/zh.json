@@ -234,6 +234,8 @@
     "hint": "之后随时可以在侧边栏的「备份」页连接或恢复备份。"
   },
   "mySkills": {
+    "author": "作者",
+    "authorMissing": "作者未提供",
     "title": "技能库",
     "applyToDefault": "应用 Preset",
     "applied": "已应用",
