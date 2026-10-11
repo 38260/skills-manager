@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { Store } from "./store.mjs";
 import { ActivityService } from "./activity/service.mjs";
 import { Library, registerCancel, releaseCancel } from "./library.mjs";
+import { presetCommands } from "./presets.mjs";
 import { redact } from "./files.mjs";
 
 function parseArgs(argv) {
@@ -175,6 +176,9 @@ const commands = {
   }, mutating: true },
   add_skill_to_preset: { call: args => store.addSkillToPreset(args.skillId, args.presetId), mutating: true },
   remove_skill_from_preset: { call: args => store.removeSkillFromPreset(args.skillId, args.presetId), mutating: true },
+
+  // ── Preset 管理 ──
+  ...presetCommands(store, library),
 };
 
 const activity = new ActivityService({

@@ -153,6 +153,7 @@ export class Store {
   activeScenarioId() { return this.get("SELECT scenario_id FROM active_scenario WHERE key='current'")?.scenario_id ?? null; }
   setActiveScenario(id) {
     this.transaction(() => {
+      this.run("INSERT OR IGNORE INTO active_scenario(key,scenario_id) VALUES('current',NULL)");
       this.run("UPDATE active_scenario SET scenario_id=NULL WHERE key='current'");
       if (id) {
         if (!this.get("SELECT id FROM scenarios WHERE id=?", id)) throw new Error("Preset 不存在");
@@ -205,6 +206,55 @@ export class Store {
 
   presets() {
     return this.all("SELECT s.*,COUNT(ss.skill_id) AS skill_count FROM scenarios s LEFT JOIN scenario_skills ss ON ss.scenario_id=s.id GROUP BY s.id ORDER BY s.sort_order,s.name");
+  }
+  preset(id) { const preset = this.presets().find(item => item.id === id); if (!preset) throw new Error("Preset 不存在"); return preset; }
+  createPreset(name, description, icon) {
+    name = String(name ?? "").trim();
+    if (!name) throw new Error("Preset 名称不能为空");
+    if (this.get("SELECT id FROM scenarios WHERE name=?", name)) throw new Error(`同名 Preset 已存在：${name}`);
+    const id = crypto.randomUUID(), now = Date.now();
+    const order = Math.max(0, ...this.all("SELECT sort_order FROM scenarios").map(row => row.sort_order)) + 1;
+    this.run("INSERT INTO scenarios(id,name,description,icon,sort_order,created_at,updated_at) VALUES(?,?,?,?,?,?,?)",
+      id, name, description ?? null, icon ?? null, order, now, now);
+    this.savePresets();
+    return this.preset(id);
+  }
+  updatePreset(id, name, description, icon) {
+    const existing = this.preset(id);
+    name = String(name ?? "").trim();
+    if (!name) throw new Error("Preset 名称不能为空");
+    const conflict = this.get("SELECT id FROM scenarios WHERE name=? AND id<>?", name, id);
+    if (conflict) throw new Error(`同名 Preset 已存在：${name}`);
+    this.run("UPDATE scenarios SET name=?,description=?,icon=?,updated_at=? WHERE id=?",
+      name, description ?? existing.description, icon ?? existing.icon, Date.now(), id);
+    this.savePresets();
+    return this.preset(id);
+  }
+  deletePreset(id) {
+    this.preset(id);
+    this.run("DELETE FROM scenarios WHERE id=?", id);
+    this.savePresets();
+  }
+  reorderPresets(ids) {
+    for (const id of ids) this.preset(id);
+    this.transaction(() => {
+      for (const [index, id] of ids.entries()) this.run("UPDATE scenarios SET sort_order=? WHERE id=?", index, id);
+    });
+    this.savePresets();
+  }
+  scenarioSkillIds(presetId) {
+    this.preset(presetId);
+    return this.all("SELECT skill_id FROM scenario_skills WHERE scenario_id=? ORDER BY sort_order,added_at,skill_id", presetId).map(row => row.skill_id);
+  }
+  reorderScenarioSkills(presetId, skillIds) {
+    this.preset(presetId);
+    const members = new Set(this.scenarioSkillIds(presetId));
+    const unknown = skillIds.filter(id => !members.has(id));
+    if (unknown.length) throw new Error("顺序列表包含不属于该 Preset 的技能");
+    this.transaction(() => {
+      for (const [index, id] of skillIds.entries()) this.run("UPDATE scenario_skills SET sort_order=? WHERE scenario_id=? AND skill_id=?", index, presetId, id);
+    });
+    this.savePresets();
   }
 
   saveMetadata(id) {
