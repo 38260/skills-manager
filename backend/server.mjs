@@ -8,6 +8,7 @@ import { Store } from "./store.mjs";
 import { ActivityService } from "./activity/service.mjs";
 import { Library, registerCancel, releaseCancel } from "./library.mjs";
 import { presetCommands } from "./presets.mjs";
+import { toolCommands } from "./tools-settings.mjs";
 import { redact } from "./files.mjs";
 
 function parseArgs(argv) {
@@ -179,6 +180,9 @@ const commands = {
 
   // ── Preset 管理 ──
   ...presetCommands(store, library),
+
+  // ── 工具设置 ──
+  ...toolCommands(store),
 };
 
 const activity = new ActivityService({
