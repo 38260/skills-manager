@@ -1,0 +1,36 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import os from "node:os";
+import { DatabaseSync } from "node:sqlite";
+import { readZcode } from "../../backend/activity/zcode.mjs";
+
+test("ZCode 从活跃 WAL 只读获取已提交状态，重新扫描更新同一调用", t => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "activity-zcode-")), filename = path.join(directory, "db.sqlite");
+  const writer = new DatabaseSync(filename);
+  t.after(() => { writer.close(); fs.rmSync(directory, { recursive: true, force: true }); });
+  writer.exec(`PRAGMA journal_mode=WAL; PRAGMA wal_autocheckpoint=0;
+    CREATE TABLE session(id TEXT PRIMARY KEY,directory TEXT);
+    CREATE TABLE message(id TEXT PRIMARY KEY,data TEXT);
+    CREATE TABLE part(id TEXT PRIMARY KEY,session_id TEXT,message_id TEXT,time_created INTEGER,data TEXT);
+    INSERT INTO session VALUES('s','/demo'); INSERT INTO message VALUES('u','{"role":"user"}');
+    INSERT INTO message VALUES('a','{"role":"assistant"}');`);
+  const insert = writer.prepare("INSERT INTO part VALUES(?,'s',?,?,?)");
+  insert.run("u", "u", 1000, JSON.stringify({ type: "text", text: "$design" }));
+  const call = { type: "tool", tool: "Skill", callID: "c", state: { status: "running", input: { skill: "design", args: "private" } } };
+  insert.run("a", "a", 2000, JSON.stringify(call));
+  const events = new Map(), sink = { put: row => events.set(row.id, { ...row }) };
+  const before = fs.readFileSync(filename), wal = fs.readFileSync(filename + "-wal");
+  assert.equal(readZcode(filename, sink).errors, 0);
+  assert.equal(events.size, 1); assert.equal([...events.values()][0].trigger, "manual");
+  assert.equal([...events.values()][0].status, "pending");
+  assert.deepEqual(fs.readFileSync(filename), before); assert.deepEqual(fs.readFileSync(filename + "-wal"), wal);
+  writer.prepare("UPDATE part SET data=? WHERE id='a'").run(JSON.stringify({ ...call, state: { ...call.state, status: "completed" } }));
+  readZcode(filename, sink);
+  assert.equal(events.size, 1); assert.equal([...events.values()][0].status, "returned");
+  writer.exec("BEGIN;"); writer.prepare("UPDATE part SET data=? WHERE id='a'").run(JSON.stringify({ ...call, state: { ...call.state, status: "error" } }));
+  readZcode(filename, sink); assert.equal([...events.values()][0].status, "returned", "未提交的状态不可见");
+  writer.exec("COMMIT;"); readZcode(filename, sink); assert.equal([...events.values()][0].status, "failed");
+  assert.ok(!JSON.stringify([...events.values()]).includes("private"));
+});
