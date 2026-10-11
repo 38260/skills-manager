@@ -8,6 +8,7 @@ import { FirstRunRestoreDialog } from "./components/FirstRunRestoreDialog";
 import { Layout } from "./components/Layout";
 import { Dashboard } from "./views/Dashboard";
 import { MySkills } from "./views/MySkills";
+import { SkillActivity } from "./views/SkillActivity";
 import { WorkspaceView } from "./views/WorkspaceView";
 import { CODING_WORKSPACE_CONFIG, LOBSTER_WORKSPACE_CONFIG } from "./views/workspaceConfigs";
 import { InstallSkills } from "./views/InstallSkills";
@@ -41,6 +42,7 @@ function App() {
             <Route element={<Layout />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/my-skills" element={<MySkills />} />
+              <Route path="/skill-activity" element={<SkillActivity />} />
               <Route path="/global-workspace" element={<WorkspaceView config={CODING_WORKSPACE_CONFIG} />} />
               <Route path="/global-workspace/:agentKey" element={<WorkspaceView config={CODING_WORKSPACE_CONFIG} />} />
               <Route path="/lobster-workspace" element={<WorkspaceView config={LOBSTER_WORKSPACE_CONFIG} />} />
