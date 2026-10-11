@@ -40,9 +40,9 @@ export async function git(directory, args, hooks = {}) {
   });
 }
 
-// 解析仓库 URL：支持 GitHub tree 链接派生分支与子目录。
+// 解析仓库 URL：支持 GitHub tree 链接派生分支与子目录；file:// 用于本地裸仓库（测试与离线场景）。
 export function parseGitUrl(url) {
-  if (!url || url.startsWith("-") || (!path.isAbsolute(url) && !/^(https:\/\/|ssh:\/\/|git@)/.test(url))) throw new Error("无效的 Git 来源");
+  if (!url || url.startsWith("-") || (!path.isAbsolute(url) && !/^(https:\/\/|ssh:\/\/|git@|file:\/\/)/.test(url))) throw new Error("无效的 Git 来源");
   let branch, subpath;
   if (/^https:\/\//.test(url)) {
     const parsed = new URL(url);
@@ -192,6 +192,15 @@ export class Library {
   async check(id) {
     const skill=this.store.skill(id);
     if(!skill.source_ref && !skill.source_ref_resolved) {this.store.run("UPDATE skills SET update_status='local_only',last_checked_at=? WHERE id=?",Date.now(),id);return this.store.skill(id);}
+    if(["local","import"].includes(skill.source_type)) {
+      // 本地／导入来源没有远程版本：确认来源仍可读即保持 local_only，不伪装成远程更新状态。
+      if(!skill.source_ref||!fs.existsSync(skill.source_ref)) {
+        this.store.run("UPDATE skills SET update_status='source_missing',last_checked_at=?,last_check_error=? WHERE id=?",Date.now(),"原始来源路径不存在",id);
+        throw new Error("原始来源路径不存在");
+      }
+      this.store.run("UPDATE skills SET update_status='local_only',last_checked_at=?,last_check_error=NULL WHERE id=?",Date.now(),id);
+      return this.store.skill(id);
+    }
     try {
       const source=await this.source(skill);
       try {this.store.run("UPDATE skills SET remote_revision=?,update_status=?,last_checked_at=?,last_check_error=NULL WHERE id=?",source.revision,hashDirectory(source.directory)===hashDirectory(skill.central_path)?"up_to_date":"update_available",Date.now(),id);}
