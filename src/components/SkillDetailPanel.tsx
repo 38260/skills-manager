@@ -474,7 +474,10 @@ function SkillDetailPanelContent({
               <button
                 key={tab}
                 type="button"
-                onClick={() => setContentTab(tab as ContentTab)}
+                onClick={() => {
+                  setContentTab(tab as ContentTab);
+                  mainScrollRef.current?.scrollTo({ top: 0 });
+                }}
                 aria-current={contentTab === tab ? "page" : undefined}
                 className={cn(
                   "rounded-t-lg border-b-2 px-3 py-1.5 text-[12.5px] font-medium transition-colors outline-none focus-visible:outline focus-visible:outline-accent",
