@@ -162,6 +162,24 @@ export class Store {
     });
   }
 
+  // ── 项目工作区 ──
+  projects() { return this.all("SELECT * FROM projects ORDER BY sort_order,created_at"); }
+  project(id) { const project = this.projects().find(item => item.id === id); if (!project) throw new Error("工作区不存在"); return project; }
+  insertProject({ name, projectPath, workspaceType = "project", linkedAgentKey = null, linkedAgentName = null, disabledPath = null }) {
+    if (this.get("SELECT id FROM projects WHERE path=?", projectPath)) throw new Error("该目录已在工作区列表中");
+    const id = crypto.randomUUID(), now = Date.now();
+    this.run("INSERT INTO projects(id,name,path,workspace_type,linked_agent_key,linked_agent_name,disabled_path,sort_order,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?)",
+      id, name, projectPath, workspaceType, linkedAgentKey, linkedAgentName, disabledPath, 0, now, now);
+    return this.project(id);
+  }
+  removeProject(id) { this.project(id); this.run("DELETE FROM projects WHERE id=?", id); }
+  reorderProjects(ids) {
+    for (const id of ids) this.project(id);
+    this.transaction(() => {
+      for (const [index, id] of ids.entries()) this.run("UPDATE projects SET sort_order=?,updated_at=? WHERE id=?", index, Date.now(), id);
+    });
+  }
+
   // Preset 内技能对各工具的启用开关：默认为已安装且全局启用的工具；不可用的工具始终呈现为关闭。
   scenarioSkillTools(presetId, skillId) {
     if (!this.skillInPreset(presetId, skillId)) throw new Error("该技能未在此 Preset 中启用");
@@ -189,8 +207,7 @@ export class Store {
   }
 
   tools() {
-    const disabled = new Set(this.settingJson("disabled_tools", []));
-    const paths = this.settingJson("custom_tool_paths", {});
+    const disabled = new Set(this.settingJson("disabled_tools", []));    const paths = this.settingJson("custom_tool_paths", {});
     const projectPaths = this.settingJson("custom_tool_project_paths", {});
     const custom = this.settingJson("custom_tools", []);
     const builtins = definitions.filter(tool => !custom.some(item => item.key === tool.key));

@@ -151,7 +151,7 @@ test("错误反馈结构化：参数错误、未接入命令与请求守卫", as
   assert.equal(invalid.body.ok, false);
   assert.ok(invalid.body.message.includes("分类名称不能为空"));
 
-  const notImplemented = await service.invoke("get_projects");
+  const notImplemented = await service.invoke("git_backup_init");
   assert.equal(notImplemented.body.ok, false);
   assert.equal(notImplemented.body.code, "NOT_IMPLEMENTED");
 

@@ -246,6 +246,7 @@ WorkBuddy 顶层事件解析已实现；样本测试覆盖 `callId` 关联、重
 | APP-03（工具设置部分） | 自定义工具增删、全局启停、排序、技能目录与项目相对目录覆盖接入本地服务 | `tests/backend/tools-settings.test.mjs` 通过：非法标识拒绝、覆盖生效与重置、启停、排序非法键拒绝、内置工具不可移除。全部后端测试 30 项通过，lint 通过 | 本项提交见 Git 历史 | 同上 |
 | APP-03（扫描导入部分） | 本地技能扫描（含递归工具）、指纹分组、认领导入、全部导入、slugify 与 skills.sh 排行榜／搜索接入本地服务 | `tests/backend/scan.test.mjs` 2 项通过：发现与隐藏目录跳过、同内容分组与已导入标记、单个与全部导入、非法路径报错、slugify 等长对齐。全部后端测试 32 项通过，lint 通过 | 本项提交见 Git 历史 | skills.sh 为线上站点抓取，站点改版时需重新核对；其余 APP-03 命令组（全局工作区、项目、中心库路径）待接入 |
 | APP-03（全局工作区部分） | 全局本地技能读取、文档预览、导入到中心、从中心更新（含本地修改保护）与删除接入本地服务；同步状态五值语义与中心指纹实时比对（含缓存） | `tests/backend/workspace.test.mjs` 通过：嵌套读取、导入后 in_sync、project_newer 拒绝覆盖、center_newer 同步生效、删除后目录消失。全部后端测试 33 项通过，lint 通过 | 本项提交见 Git 历史 | 中心指纹在每次读取时实时计算（已做单次调用缓存）；项目工作区命令组待接入 |
+| APP-03（项目工作区部分） | 项目增删改、目录扫描、Agent 目标、项目技能读取（含 -disabled 目录与 linked 工作区）、导出（NoClobber、copy/symlink）、停用启用移动、推送／拉取（project_newer 保护）与删除接入本地服务 | `tests/backend/projects.test.mjs` 2 项通过：完整生命周期（导出 in_sync、冲突拒绝、停用移动、推送拉取、导入入库、删除）；linked 工作区与重叠目录拒绝。全部后端测试 35 项通过，lint 通过 | 本项提交见 Git 历史 | junction（symlink 模式）导出的项目副本由 Agent 直接共享中心内容，push/pull 不适用；APP-03 剩余中心库路径设置命令组 |
 
 ## 13. 参考依据
 

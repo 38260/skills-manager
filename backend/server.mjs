@@ -11,6 +11,7 @@ import { presetCommands } from "./presets.mjs";
 import { toolCommands } from "./tools-settings.mjs";
 import { scanCommands } from "./scan.mjs";
 import { workspaceCommands } from "./workspace.mjs";
+import { projectCommands } from "./projects.mjs";
 import { redact } from "./files.mjs";
 
 function parseArgs(argv) {
@@ -191,6 +192,9 @@ const commands = {
 
   // ── 全局工作区 ──
   ...workspaceCommands(store, library),
+
+  // ── 项目工作区 ──
+  ...projectCommands(store, library),
 };
 
 const activity = new ActivityService({
