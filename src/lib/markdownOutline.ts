@@ -1,4 +1,4 @@
-import { stripMarkdownFrontmatter } from "./skillMarkdownText";
+import { stripMarkdownFrontmatter } from "./skillMarkdownText.ts";
 
 export interface MarkdownHeading { text: string; level: 1 | 2 | 3; line: number }
 
