@@ -32,7 +32,7 @@ import type { ScanResult, SkillsShSkill, BatchImportResult, GitPreviewResult } f
 import { open } from "@tauri-apps/plugin-dialog";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { listen } from "@tauri-apps/api/event";
+import { listen } from "../lib/transport";
 import { StatusBanner } from "../components/StatusBanner";
 import { getErrorMessage, getErrorKind } from "../lib/error";
 

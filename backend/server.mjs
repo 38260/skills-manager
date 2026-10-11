@@ -1,0 +1,177 @@
+// 本地服务：为前端提供统一调用（/api/invoke）、事件通知（/api/events SSE）与静态托管。
+// 仅监听本机回环地址；命令集随 APP 系列任务逐步补齐，未接入的命令返回结构化错误，不伪装成功。
+import http from "node:http";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { Store } from "./store.mjs";
+import { redact } from "./files.mjs";
+
+function parseArgs(argv) {
+  const args = {};
+  for (let index = 0; index < argv.length; index++) {
+    if (!argv[index].startsWith("--")) continue;
+    const key = argv[index].slice(2);
+    const value = argv[index + 1];
+    if (value === undefined || value.startsWith("--")) args[key] = true;
+    else { args[key] = value; index++; }
+  }
+  return args;
+}
+
+const options = parseArgs(process.argv.slice(2));
+const port = Number(options.port || process.env.SKILLS_MANAGER_PORT || 14200);
+const host = String(options.host || "127.0.0.1");
+
+let store;
+try {
+  store = new Store({ directory: typeof options.directory === "string" ? options.directory : undefined,
+    home: typeof options.home === "string" ? options.home : undefined });
+} catch (error) {
+  console.error(`[skills-manager] 本地存储初始化失败：${redact(error.message)}`);
+  process.exit(1);
+}
+
+// 命令参数使用前端传入的 camelCase 键名；mutating 命令成功后触发一次防抖的事件广播。
+const commands = {
+  get_tool_status: { call: () => store.tools() },
+  get_managed_skills: { call: () => store.skills() },
+  get_all_tags: { call: () => store.all("SELECT DISTINCT tag FROM skill_tags ORDER BY tag").map(row => row.tag) },
+  get_skill_categories: { call: () => store.categories() },
+  create_skill_category: { call: args => store.createCategory(args.name), mutating: true },
+  set_skill_tags: { call: args => store.setTags(args.skillId, Array.isArray(args.tags) ? args.tags : []), mutating: true },
+  rename_tag: { call: args => store.renameCategory(args.oldName, args.newName), mutating: true },
+  delete_tag: { call: args => store.deleteCategory(args.name), mutating: true },
+  get_presets: { call: () => store.presets() },
+  get_active_preset: { call: () => {
+    const row = store.get("SELECT scenario_id FROM active_scenario WHERE key='current'");
+    return row?.scenario_id ? store.presets().find(preset => preset.id === row.scenario_id) ?? null : null;
+  } },
+  get_settings: { call: args => store.getSetting(String(args.key ?? "")) },
+  set_settings: { call: args => store.setSetting(String(args.key ?? ""), String(args.value ?? "")) },
+  get_central_repo_path: { call: () => store.directory },
+  log_startup_event: { call: args => { console.log(`[startup] ${args.label} ${args.elapsedMs}ms`); return null; } },
+};
+
+// ── 事件通知：SSE 客户端登记 + 防抖广播 ──
+const clients = new Set();
+let changeTimer = null;
+function broadcast(event, payload) {
+  for (const response of clients) response.write(`event: ${event}\ndata: ${JSON.stringify(payload ?? null)}\n\n`);
+}
+function notifyChange() {
+  if (changeTimer) return;
+  changeTimer = setTimeout(() => { changeTimer = null; broadcast("app-files-changed"); }, 300);
+}
+
+function localOrigin(request) {
+  const origin = request.headers.origin;
+  if (!origin) return true;
+  try { return new URL(origin).host === request.headers.host; }
+  catch { return false; }
+}
+
+function sendJson(response, status, payload) {
+  const body = JSON.stringify(payload);
+  response.writeHead(status, { "content-type": "application/json; charset=utf-8", "content-length": Buffer.byteLength(body) });
+  response.end(body);
+}
+
+async function readBody(request, limit = 8 * 1024 * 1024) {
+  const chunks = [];
+  let total = 0;
+  for await (const chunk of request) {
+    total += chunk.length;
+    if (total > limit) throw new Error("请求体超过大小上限");
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+async function handleInvoke(request, response, commandName) {
+  if (request.headers["x-skills-manager-client"] !== "webview") {
+    sendJson(response, 403, { ok: false, code: "FORBIDDEN", message: "缺少本地客户端标识，已拒绝该请求" });
+    return;
+  }
+  let args = {};
+  if (request.method !== "GET") {
+    const raw = await readBody(request);
+    if (raw.trim()) {
+      try { args = JSON.parse(raw); }
+      catch { sendJson(response, 400, { ok: false, code: "BAD_REQUEST", message: "请求参数不是有效 JSON" }); return; }
+    }
+  }
+  if (typeof args !== "object" || args === null || Array.isArray(args)) {
+    sendJson(response, 400, { ok: false, code: "BAD_REQUEST", message: "请求参数必须是对象" });
+    return;
+  }
+  const entry = commands[commandName];
+  try {
+    if (!entry) throw Object.assign(new Error(`该功能尚未接入本地服务（命令：${commandName}）`), { code: "NOT_IMPLEMENTED" });
+    const data = await entry.call(args);
+    if (entry.mutating) notifyChange();
+    sendJson(response, 200, { ok: true, data: data ?? null });
+  } catch (error) {
+    sendJson(response, 200, { ok: false, code: error.code || "ERROR", message: redact(error.message || String(error)) });
+  }
+}
+
+function handleEvents(request, response) {
+  response.writeHead(200, { "content-type": "text/event-stream; charset=utf-8", "cache-control": "no-cache", connection: "keep-alive" });
+  response.write(": connected\n\n");
+  clients.add(response);
+  const heartbeat = setInterval(() => response.write(": ping\n\n"), 25000);
+  request.on("close", () => { clearInterval(heartbeat); clients.delete(response); });
+}
+
+// ── 静态托管：托管已构建的 dist，供浏览器直接访问（SPA 路由回退到 index.html） ──
+const distDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "dist");
+const mimeTypes = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8",
+  ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon",
+  ".woff": "font/woff", ".woff2": "font/woff2", ".map": "application/json", ".txt": "text/plain; charset=utf-8" };
+function serveStatic(urlPath, response) {
+  if (!fs.existsSync(path.join(distDirectory, "index.html"))) {
+    response.writeHead(503, { "content-type": "text/plain; charset=utf-8" });
+    response.end("前端尚未构建：请先运行 npm run build，或使用 npm run dev 的开发模式。");
+    return;
+  }
+  const relative = decodeURIComponent(urlPath.split("?")[0]).replace(/^\/+/, "");
+  let filename = path.resolve(distDirectory, relative || "index.html");
+  if (filename !== distDirectory && !filename.startsWith(distDirectory + path.sep)) { response.writeHead(403).end(); return; }
+  if (!fs.existsSync(filename) || fs.statSync(filename).isDirectory()) filename = path.join(distDirectory, "index.html");
+  response.writeHead(200, { "content-type": mimeTypes[path.extname(filename).toLowerCase()] || "application/octet-stream" });
+  fs.createReadStream(filename).pipe(response);
+}
+
+const server = http.createServer((request, response) => {
+  const urlPath = request.url || "/";
+  if (!localOrigin(request)) { sendJson(response, 403, { ok: false, code: "FORBIDDEN", message: "跨来源请求已拒绝" }); return; }
+  if (urlPath === "/api/health") { sendJson(response, 200, { ok: true, data: { status: "ok" } }); return; }
+  if (urlPath === "/api/events") { handleEvents(request, response); return; }
+  if (urlPath.startsWith("/api/invoke/")) {
+    handleInvoke(request, response, urlPath.slice("/api/invoke/".length).split("?")[0]).catch(error => {
+      sendJson(response, 500, { ok: false, code: "INTERNAL", message: redact(error.message || String(error)) });
+    });
+    return;
+  }
+  if (urlPath.startsWith("/api/")) { sendJson(response, 404, { ok: false, code: "NOT_FOUND", message: "未知接口" }); return; }
+  if (request.method !== "GET" && request.method !== "HEAD") { response.writeHead(405).end(); return; }
+  serveStatic(urlPath, response);
+});
+
+server.on("error", error => {
+  if (error.code === "EADDRINUSE") {
+    console.error(`[skills-manager] 端口 ${port} 已被占用。可用环境变量 SKILLS_MANAGER_PORT 或参数 --port 指定其他端口。`);
+    process.exit(1);
+  }
+  throw error;
+});
+
+server.listen(port, host, () => {
+  console.log(`[skills-manager] 本地服务已启动：http://${host}:${port}（技能库：${store.directory}）`);
+});
+
+for (const signal of ["SIGINT", "SIGTERM"]) process.on(signal, () => {
+  server.close(() => { store.close(); process.exit(0); });
+  setTimeout(() => { store.close(); process.exit(0); }, 2000).unref();
+});

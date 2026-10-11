@@ -137,7 +137,7 @@ export class Store {
     const result = [...builtins, ...custom.map(tool => ({ ...tool, is_custom: true }))].map(tool => {
       const skillsDirectory = tool.is_custom ? path.resolve(tool.skills_dir) : paths[tool.key] || path.join(this.home, tool.relative_skills_dir);
       return { ...tool, skills_dir: skillsDirectory, installed: tool.is_custom ? fs.existsSync(skillsDirectory) : fs.existsSync(paths[tool.key] || path.join(this.home, tool.relative_detect_dir)),
-        enabled: !disabled.has(tool.key), is_custom: !!tool.is_custom, has_path_override: !!paths[tool.key],
+        enabled: !disabled.has(tool.key), is_custom: !!tool.is_custom, has_path_override: !!paths[tool.key], has_project_path_override: !!projectPaths[tool.key],
         project_relative_skills_dir: projectPaths[tool.key] || tool.project_relative_skills_dir || tool.relative_skills_dir || null };
     });
     const order = this.settingJson("tool_order", []);
