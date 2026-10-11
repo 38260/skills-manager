@@ -26,20 +26,21 @@ export class ParseContext {
     const text = contentText(content);
     // 只接受明确选择；普通任务描述、系统技能清单和缺失的上文不会推断为自动。
     const explicit = /^\s*\$([\w.:-]+)(?=\s|$)/u.exec(text)
-      ?? /^\s*\/skill\s+([\w.:-]+)(?=\s|$)/u.exec(text)
-      ?? /^\s*<command-name>\/([\w.:-]+)<\/command-name>/u.exec(text);
+      ?? /^\s*\/skill\s+([\w.:-]+)(?=\s|$)/u.exec(text);
     if (explicit) selections = [...selections, { name: explicit[1] }];
+    const command = /<command-name>\/([\w.:-]+)<\/command-name>/u.exec(text);
+    if (command) selections = [...selections, { name: command[1], requestable: false }];
     this.autoChoice = /^(?:请)?(?:自行|自动)选择(?:合适的)?技能|^(?:please\s+)?(?:automatically choose|choose appropriate) skills\b/i.test(text.trim());
     for (const selection of selections) if (typeof selection.name === "string" && selection.name.trim()) {
       const name = selection.name.trim();
       const identity = row.id || row.uuid || `${this.sessionId}:${row.timestamp ?? row.time}:${row.line}`;
       const request = this.event({ id: `request:${identity}`, name, skillPath: selection.path, kind: "request", status: "pending", row });
       request.trigger = "manual"; request.evidence = "user_selection";
-      this.selections.set(nameKey(name), { request, used: false });
+      this.selections.set(nameKey(name), { request, used: false, requestable: selection.requestable !== false });
     }
   }
   flushRequests() {
-    for (const { request, used } of this.selections.values()) if (!used) this.sink.put(request);
+    for (const { request, used, requestable } of this.selections.values()) if (!used && requestable) this.sink.put(request);
     this.selections.clear();
   }
   event({ id, name, skillPath, kind = "invocation", status = "pending", row }) {
@@ -63,11 +64,14 @@ export class ParseContext {
     }
     const pending = { record, document: kind === "document" };
     if (pending.document && status !== "returned") record.kind = "request";
-    const list = this.calls.get(id) || [];
-    list.push(pending); this.calls.set(id, list);
+    if (id) {
+      const list = this.calls.get(id) || [];
+      list.push(pending); this.calls.set(id, list);
+    }
     this.sink.put(record);
   }
   result(id, status) {
+    if (!id) return;
     for (const { record, document } of this.calls.get(id) || []) {
       record.status = status;
       if (document && status === "returned") record.kind = "document";
