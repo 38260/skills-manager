@@ -117,16 +117,75 @@ export class Store {
     this.saveMetadata(id);
   }
 
+  skillFromRow(row) {
+    const meta = metadata(row.central_path);
+    return { ...row, enabled: !!row.enabled, description: meta.description || row.description,
+      author: meta.author, author_source: meta.author_source,
+      tags: this.tags(row.id), targets: this.all("SELECT * FROM skill_targets WHERE skill_id=?", row.id),
+      preset_ids: this.all("SELECT scenario_id FROM scenario_skills WHERE skill_id=?", row.id).map(item => item.scenario_id) };
+  }
   skills() {
-    return this.all("SELECT * FROM skills ORDER BY name").map(row => {
-      const meta = metadata(row.central_path);
-      return { ...row, enabled: !!row.enabled, description: meta.description || row.description,
-        author: meta.author, author_source: meta.author_source,
-        tags: this.tags(row.id), targets: this.all("SELECT * FROM skill_targets WHERE skill_id=?", row.id),
-        preset_ids: this.all("SELECT scenario_id FROM scenario_skills WHERE skill_id=?", row.id).map(item => item.scenario_id) };
-    });
+    return this.all("SELECT * FROM skills ORDER BY name").map(row => this.skillFromRow(row));
   }
   skill(id) { const skill = this.skills().find(skill => skill.id === id); if (!skill) throw new Error("技能不存在"); return skill; }
+  skillsForPreset(id) {
+    return this.all("SELECT s.* FROM skills s JOIN scenario_skills ss ON ss.skill_id=s.id WHERE ss.scenario_id=? ORDER BY s.name", id).map(row => this.skillFromRow(row));
+  }
+  skillInPreset(presetId, skillId) {
+    return !!this.get("SELECT 1 FROM scenario_skills WHERE scenario_id=? AND skill_id=?", presetId, skillId);
+  }
+  addSkillToPreset(skillId, presetId) {
+    if (!this.get("SELECT id FROM skills WHERE id=?", skillId)) throw new Error("技能不存在");
+    if (!this.get("SELECT id FROM scenarios WHERE id=?", presetId)) throw new Error("Preset 不存在");
+    this.transaction(() => {
+      this.run("INSERT OR IGNORE INTO scenario_skills(scenario_id,skill_id,added_at) VALUES(?,?,?)", presetId, skillId, Date.now());
+      this.savePresets();
+    });
+  }
+  removeSkillFromPreset(skillId, presetId) {
+    if (!this.get("SELECT id FROM skills WHERE id=?", skillId)) throw new Error("技能不存在");
+    if (!this.get("SELECT id FROM scenarios WHERE id=?", presetId)) throw new Error("Preset 不存在");
+    this.transaction(() => {
+      this.run("DELETE FROM scenario_skills WHERE scenario_id=? AND skill_id=?", presetId, skillId);
+      this.savePresets();
+    });
+  }
+  activeScenarioId() { return this.get("SELECT scenario_id FROM active_scenario WHERE key='current'")?.scenario_id ?? null; }
+  setActiveScenario(id) {
+    this.transaction(() => {
+      this.run("UPDATE active_scenario SET scenario_id=NULL WHERE key='current'");
+      if (id) {
+        if (!this.get("SELECT id FROM scenarios WHERE id=?", id)) throw new Error("Preset 不存在");
+        this.run("UPDATE active_scenario SET scenario_id=? WHERE key='current'", id);
+      }
+    });
+  }
+
+  // Preset 内技能对各工具的启用开关：默认为已安装且全局启用的工具；不可用的工具始终呈现为关闭。
+  scenarioSkillTools(presetId, skillId) {
+    if (!this.skillInPreset(presetId, skillId)) throw new Error("该技能未在此 Preset 中启用");
+    const disabled = new Set(this.settingJson("disabled_tools", []));
+    const tools = this.tools();
+    const defaults = tools.filter(tool => tool.installed && !disabled.has(tool.key)).map(tool => tool.key);
+    this.transaction(() => {
+      for (const key of defaults) this.run("INSERT OR IGNORE INTO scenario_skill_tools(scenario_id,skill_id,tool,enabled,updated_at) VALUES(?,?,?,?,?)", presetId, skillId, key, 1, Date.now());
+    });
+    const rows = new Map(this.all("SELECT tool,enabled FROM scenario_skill_tools WHERE scenario_id=? AND skill_id=?", presetId, skillId).map(row => [row.tool, !!row.enabled]));
+    return tools.map(tool => ({ tool: tool.key, display_name: tool.display_name, installed: tool.installed,
+      globally_enabled: !disabled.has(tool.key), enabled: tool.installed && !disabled.has(tool.key) ? rows.get(tool.key) ?? false : false }));
+  }
+  setScenarioSkillTool(presetId, skillId, tool, enabled) {
+    if (!this.skillInPreset(presetId, skillId)) throw new Error("该技能未在此 Preset 中启用");
+    const disabled = new Set(this.settingJson("disabled_tools", []));
+    const toolDef = this.tools().find(item => item.key === tool);
+    if (!toolDef) throw new Error("工具不存在");
+    if (enabled) {
+      if (!toolDef.installed) throw new Error(`${toolDef.display_name} 未安装`);
+      if (disabled.has(tool)) throw new Error(`${toolDef.display_name} 已停用`);
+    }
+    this.run("INSERT INTO scenario_skill_tools(scenario_id,skill_id,tool,enabled,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(scenario_id,skill_id,tool) DO UPDATE SET enabled=excluded.enabled,updated_at=excluded.updated_at",
+      presetId, skillId, tool, enabled, Date.now());
+  }
 
   tools() {
     const disabled = new Set(this.settingJson("disabled_tools", []));

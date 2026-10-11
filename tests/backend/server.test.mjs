@@ -217,3 +217,123 @@ test("已构建前端通过服务直接访问（SPA 回退与未知接口）", a
   const missing = await fetch(`http://127.0.0.1:${service.port}/api/nothing`);
   assert.equal(missing.status, 404);
 });
+
+function writeSkill(directory, name, { body = "v1", author = null } = {}) {
+  fs.mkdirSync(directory, { recursive: true });
+  const frontmatter = author
+    ? `---\nname: ${name}\nmetadata:\n  author: ${author}\n---\n`
+    : `---\nname: ${name}\n---\n`;
+  fs.writeFileSync(path.join(directory, "SKILL.md"), `${frontmatter}# ${name}\n${body}\n`);
+}
+
+test("本地安装、批量导入与文档读取通过服务生效，批量导入携带进度事件", async t => {
+  const service = await startServer(t, { seed: directory => { seedSkillStore(directory).close(); } });
+  const events = await openEvents(service.port);
+  t.after(() => events.close());
+  const work = fs.mkdtempSync(path.join(os.tmpdir(), "skills-manager-install-test-"));
+  t.after(() => fs.rmSync(work, { recursive: true, force: true }));
+  writeSkill(path.join(work, "alpha"), "alpha", { author: "Carol" });
+  writeSkill(path.join(work, "beta"), "beta");
+  fs.mkdirSync(path.join(work, "not-a-skill"), { recursive: true });
+  fs.writeFileSync(path.join(work, "not-a-skill", "README.md"), "不是技能");
+
+  const installed = await service.invoke("install_local", { sourcePath: path.join(work, "alpha") });
+  assert.equal(installed.body.ok, true);
+  let skills = (await service.invoke("get_managed_skills")).body.data;
+  const alpha = skills.find(skill => skill.name === "alpha");
+  assert.ok(alpha, "安装后技能应出现在列表中");
+  assert.equal(alpha.author, "Carol");
+  assert.equal(alpha.update_status, "local_only");
+
+  const imported = await service.invoke("batch_import_folder", { folderPath: work });
+  assert.equal(imported.body.ok, true);
+  assert.equal(imported.body.data.imported, 1, "beta 导入；alpha 已安装故跳过");
+  assert.equal(imported.body.data.skipped, 1);
+  const progress = await events.next();
+  assert.equal(progress.name, "batch-import-progress");
+  assert.equal(typeof progress.data.current, "number");
+
+  // 重复批量导入：同名技能按中央路径跳过
+  const again = await service.invoke("batch_import_folder", { folderPath: work });
+  assert.equal(again.body.data.imported, 0);
+  assert.equal(again.body.data.skipped, 2);
+
+  const document = await service.invoke("get_skill_document", { skillId: alpha.id });
+  assert.equal(document.body.ok, true);
+  assert.equal(document.body.data.filename, "SKILL.md");
+  assert.match(document.body.data.content, /# alpha/);
+
+  const invalid = await service.invoke("install_local", { sourcePath: path.join(work, "not-a-skill") });
+  assert.equal(invalid.body.ok, false);
+  assert.ok(invalid.body.message.includes("SKILL.md"));
+});
+
+test("删除技能移除纳管记录与未修改副本，保留用户编辑过的副本", async t => {
+  const service = await startServer(t, { seed: directory => {
+    const store = seedSkillStore(directory);
+    store.setSetting("sync_mode", "copy");
+    store.setSetting("custom_tool_paths", JSON.stringify({ codex: path.join(directory, "agents", "codex", "skills") }));
+    store.close();
+  } });
+  const work = fs.mkdtempSync(path.join(os.tmpdir(), "skills-manager-delete-test-"));
+  t.after(() => fs.rmSync(work, { recursive: true, force: true }));
+  writeSkill(path.join(work, "removable"), "removable");
+
+  await service.invoke("install_local", { sourcePath: path.join(work, "removable") });
+  let skills = (await service.invoke("get_managed_skills")).body.data;
+  const skill = skills.find(item => item.name === "removable");
+
+  const synced = await service.invoke("sync_skill_to_tool", { skillId: skill.id, tool: "codex" });
+  assert.equal(synced.body.ok, true);
+  skills = (await service.invoke("get_managed_skills")).body.data;
+  const target = skills.find(item => item.id === skill.id).targets.find(item => item.tool === "codex");
+  assert.ok(target, "同步后应有部署记录");
+  const targetPath = target.target_path;
+  assert.ok(fs.existsSync(path.join(targetPath, "SKILL.md")), "副本已部署");
+
+  // 用户编辑副本后删除：纳管记录移除，但编辑内容不被删除
+  fs.writeFileSync(path.join(targetPath, "SKILL.md"), "用户编辑内容");
+  const batch = await service.invoke("delete_managed_skills", { skillIds: [skill.id, "missing-id"] });
+  assert.equal(batch.body.data.deleted, 1);
+  assert.deepEqual(batch.body.data.failed, ["missing-id"]);
+  assert.equal(fs.existsSync(path.join(targetPath, "SKILL.md")), true, "编辑过的副本应保留");
+  assert.equal(fs.existsSync(skill.central_path), false, "中央库技能应删除");
+  skills = (await service.invoke("get_managed_skills")).body.data;
+  assert.equal(skills.find(item => item.id === skill.id), undefined);
+});
+
+test("Preset 工具开关读写，重导入与分离来源维护本地技能", async t => {
+  const service = await startServer(t, { seed: directory => { seedSkillStore(directory).close(); } });
+  const work = fs.mkdtempSync(path.join(os.tmpdir(), "skills-manager-reimport-test-"));
+  t.after(() => fs.rmSync(work, { recursive: true, force: true }));
+  writeSkill(path.join(work, "mutable"), "mutable", { author: "Dave" });
+  await service.invoke("install_local", { sourcePath: path.join(work, "mutable") });
+  let skills = (await service.invoke("get_managed_skills")).body.data;
+  const skill = skills.find(item => item.name === "mutable");
+  const preset = (await service.invoke("get_presets")).body.data[0];
+  const presetId = preset.id;
+
+  // 加入 Preset 后读取工具开关（默认全关：测试环境没有已安装工具）
+  await service.invoke("set_skill_tags", { skillId: skill.id, tags: [] });
+  const added = await service.invoke("add_skill_to_preset", { skillId: skill.id, presetId });
+  assert.equal(added.body.ok, true);
+  assert.equal((await service.invoke("get_skills_for_preset", { presetId })).body.data.length, 1);
+  const toggles = await service.invoke("get_skill_tool_toggles", { skillId: skill.id, presetId });
+  assert.equal(toggles.body.ok, true);
+  assert.ok(Array.isArray(toggles.body.data));
+  for (const toggle of toggles.body.data) assert.equal(toggle.enabled, false);
+
+  // 编辑源目录后重导入：内容与作者更新
+  writeSkill(path.join(work, "mutable"), "mutable", { body: "v2", author: "Emma" });
+  const reimported = await service.invoke("reimport_local_skill", { skillId: skill.id });
+  assert.equal(reimported.body.ok, true);
+  assert.equal(reimported.body.data.skill.author, "Emma");
+  assert.equal(reimported.body.data.skill.update_status, "local_only");
+
+  // 分离来源：source_ref 清空，技能保留
+  const detached = await service.invoke("detach_local_skill_source", { skillId: skill.id });
+  assert.equal(detached.body.ok, true);
+  assert.equal(detached.body.data.source_ref, null);
+  const reimportAfterDetach = await service.invoke("reimport_local_skill", { skillId: skill.id });
+  assert.equal(reimportAfterDetach.body.ok, false, "分离来源后不应可重导入");
+});

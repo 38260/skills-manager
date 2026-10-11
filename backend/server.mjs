@@ -6,6 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Store } from "./store.mjs";
 import { ActivityService } from "./activity/service.mjs";
+import { Library, registerCancel, releaseCancel } from "./library.mjs";
 import { redact } from "./files.mjs";
 
 function parseArgs(argv) {
@@ -33,10 +34,31 @@ try {
   process.exit(1);
 }
 
+// ── 事件通知：SSE 客户端登记 + 防抖广播 ──
+const clients = new Set();
+function broadcast(event, payload) {
+  for (const response of clients) response.write(`event: ${event}\ndata: ${JSON.stringify(payload ?? null)}\n\n`);
+}
+let changeTimer = null;
+function notifyChange() {
+  if (changeTimer) return;
+  changeTimer = setTimeout(() => { changeTimer = null; broadcast("app-files-changed"); }, 300);
+}
+
+const library = new Library(store, notifyChange);
+
+// git 操作取消与进度：key 与旧客户端约定一致（安装=来源标识，更新="update:<技能ID>"）。
+const gitHooks = key => ({
+  cancel: registerCancel(key),
+  onPhase: phase => broadcast("install-progress", { skill_id: key, phase }),
+  onProgress: detail => broadcast("install-progress", { skill_id: key, phase: "cloning", detail }),
+});
+
 // 命令参数使用前端传入的 camelCase 键名；mutating 命令成功后触发一次防抖的事件广播。
 const commands = {
   get_tool_status: { call: () => store.tools() },
   get_managed_skills: { call: () => store.skills() },
+  get_skills_for_preset: { call: args => store.skillsForPreset(args.presetId) },
   get_all_tags: { call: () => store.all("SELECT DISTINCT tag FROM skill_tags ORDER BY tag").map(row => row.tag) },
   get_skill_categories: { call: () => store.categories() },
   create_skill_category: { call: args => store.createCategory(args.name), mutating: true },
@@ -45,25 +67,115 @@ const commands = {
   delete_tag: { call: args => store.deleteCategory(args.name), mutating: true },
   get_presets: { call: () => store.presets() },
   get_active_preset: { call: () => {
-    const row = store.get("SELECT scenario_id FROM active_scenario WHERE key='current'");
-    return row?.scenario_id ? store.presets().find(preset => preset.id === row.scenario_id) ?? null : null;
+    const id = store.activeScenarioId();
+    return id ? store.presets().find(preset => preset.id === id) ?? null : null;
   } },
   get_settings: { call: args => store.getSetting(String(args.key ?? "")) },
   set_settings: { call: args => store.setSetting(String(args.key ?? ""), String(args.value ?? "")) },
   get_central_repo_path: { call: () => store.directory },
   log_startup_event: { call: args => { console.log(`[startup] ${args.label} ${args.elapsedMs}ms`); return null; } },
-};
 
-// ── 事件通知：SSE 客户端登记 + 防抖广播 ──
-const clients = new Set();
-let changeTimer = null;
-function broadcast(event, payload) {
-  for (const response of clients) response.write(`event: ${event}\ndata: ${JSON.stringify(payload ?? null)}\n\n`);
-}
-function notifyChange() {
-  if (changeTimer) return;
-  changeTimer = setTimeout(() => { changeTimer = null; broadcast("app-files-changed"); }, 300);
-}
+  // ── 技能安装 ──
+  install_local: { call: async args => { await library.installLocal(args.sourcePath, args.name); }, mutating: true },
+  install_git: { call: async args => {
+    const key = args.repoUrl, hooks = gitHooks(key);
+    try { await library.installGit(args.repoUrl, args.name, hooks); broadcast("install-progress", { skill_id: key, phase: "done" }); }
+    finally { releaseCancel(key); }
+  }, mutating: true },
+  install_from_skillssh: { call: async args => {
+    const key = `${args.source}/${args.skillId}`, hooks = gitHooks(key);
+    try { await library.installFromSkillssh(args.source, args.skillId, hooks); broadcast("install-progress", { skill_id: key, phase: "done" }); }
+    finally { releaseCancel(key); }
+  }, mutating: true },
+  preview_git_install: { call: async args => {
+    const key = args.repoUrl, hooks = gitHooks(key);
+    try { return await library.previewGitInstall(args.repoUrl, hooks); }
+    finally { releaseCancel(key); }
+  } },
+  confirm_git_install: { call: async args => { await library.confirmGitInstall(args.repoUrl, args.tempDir, Array.isArray(args.items) ? args.items : []); }, mutating: true },
+  cancel_git_preview: { call: args => { library.cancelGitPreview(args.tempDir); } },
+  cancel_install: { call: args => requestCancel(args.key) },
+  batch_import_folder: { call: args => library.batchImportFolder(args.folderPath, data => broadcast("batch-import-progress", data)), mutating: true },
+
+  // ── 技能更新与维护 ──
+  check_skill_update: { call: args => library.check(args.skillId) },
+  check_all_skill_updates: { call: async () => {
+    const failed = [];
+    for (const skill of store.skills()) {
+      try { await library.check(skill.id); }
+      catch (error) { failed.push(`${skill.id}: ${error.message}`); }
+    }
+    if (failed.length) throw new Error(`有 ${failed.length} 个技能检查更新失败：${failed.join("; ")}`);
+  }, mutating: true },
+  update_skill: { call: async args => {
+    const hooks = gitHooks(`update:${args.skillId}`);
+    try { return await library.update(args.skillId, args.approvedRemovals ?? null); }
+    finally { releaseCancel(`update:${args.skillId}`); }
+  }, mutating: true },
+  reimport_local_skill: { call: args => library.reimport(args.skillId, args.approvedRemovals ?? null), mutating: true },
+  relink_local_skill_source: { call: args => library.relink(args.skillId, args.sourcePath, args.approvedRemovals ?? null), mutating: true },
+  detach_local_skill_source: { call: args => library.detach(args.skillId), mutating: true },
+  batch_update_skills: { call: async args => {
+    let refreshed = 0, unchanged = 0;
+    const failed = [], held_back = [];
+    for (const id of Array.isArray(args.skillIds) ? args.skillIds : []) {
+      let skill;
+      try { skill = store.skill(id); }
+      catch { failed.push(`${id}: 技能不存在`); continue; }
+      const isGit = ["git", "skillssh"].includes(skill.source_type);
+      try {
+        const result = isGit ? await library.update(id) : await library.reimport(id);
+        if (result.pending_removals.length) held_back.push(skill.name);
+        else if (isGit) result.content_changed ? refreshed++ : unchanged++;
+        else refreshed++;
+      } catch (error) { failed.push(`${skill.name}: ${error.message}`); }
+    }
+    return { refreshed, unchanged, failed, held_back };
+  }, mutating: true },
+  delete_managed_skill: { call: args => library.remove(args.skillId), mutating: true },
+  delete_managed_skills: { call: args => {
+    let deleted = 0;
+    const failed = [];
+    for (const id of Array.isArray(args.skillIds) ? args.skillIds : []) {
+      try { library.remove(id); deleted++; }
+      catch { failed.push(id); }
+    }
+    return { deleted, failed };
+  }, mutating: true },
+
+  // ── 文档与来源比较 ──
+  get_skill_document: { call: args => library.skillDocument(args.skillId) },
+  get_source_skill_document: { call: args => library.sourceSkillDocument(args.skillId) },
+  get_skill_source_diff: { call: args => library.skillSourceDiff(args.skillId) },
+
+  // ── 同步部署与 Preset 工具开关 ──
+  sync_skill_to_tool: { call: async args => {
+    await library.deploy(args.skillId, args.tool);
+    const activeId = store.activeScenarioId();
+    if (activeId && store.skillInPreset(activeId, args.skillId)) {
+      store.scenarioSkillTools(activeId, args.skillId);
+      store.setScenarioSkillTool(activeId, args.skillId, args.tool, true);
+    }
+  }, mutating: true },
+  unsync_skill_from_tool: { call: args => {
+    library.unsyncFromTool(args.skillId, args.tool);
+    const activeId = store.activeScenarioId();
+    if (activeId && store.skillInPreset(activeId, args.skillId)) {
+      store.scenarioSkillTools(activeId, args.skillId);
+      store.setScenarioSkillTool(activeId, args.skillId, args.tool, false);
+    }
+  }, mutating: true },
+  get_skill_tool_toggles: { call: args => store.scenarioSkillTools(args.presetId, args.skillId) },
+  set_skill_tool_toggle: { call: args => {
+    store.setScenarioSkillTool(args.presetId, args.skillId, args.tool, args.enabled);
+    if (store.activeScenarioId() === args.presetId) {
+      if (args.enabled) return library.deploy(args.skillId, args.tool);
+      library.unsyncFromTool(args.skillId, args.tool);
+    }
+  }, mutating: true },
+  add_skill_to_preset: { call: args => store.addSkillToPreset(args.skillId, args.presetId), mutating: true },
+  remove_skill_from_preset: { call: args => store.removeSkillFromPreset(args.skillId, args.presetId), mutating: true },
+};
 
 const activity = new ActivityService({
   directory: path.join(store.home, ".skills-manager-activity"), home: store.home,
