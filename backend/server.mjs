@@ -13,6 +13,7 @@ import { scanCommands } from "./scan.mjs";
 import { workspaceCommands } from "./workspace.mjs";
 import { projectCommands } from "./projects.mjs";
 import { repoSettingsCommands } from "./repo-settings.mjs";
+import { backupCommands } from "./backup.mjs";
 import { redact } from "./files.mjs";
 
 function parseArgs(argv) {
@@ -199,7 +200,35 @@ const commands = {
 
   // ── 技能库路径与设备名 ──
   ...repoSettingsCommands(store),
+
+  // ── Git 备份与 GitHub 连接 ──
+  ...backupCommands(store, broadcast),
 };
+
+// ── 自动备份：默认开启（backup_auto_enabled 为 off/false/0/no 时关闭），每 5 分钟检查一次。
+// 仅在备份仓库已初始化时执行本地提交与推送；结果通过独立事件通知，失败记录到设置供页面重现。
+let autoBackupRunning = false;
+const autoBackupTimer = setInterval(() => {
+  if (autoBackupRunning) return;
+  let enabled = true;
+  try {
+    enabled = !["off", "false", "0", "no"].includes(String(store.getSetting("backup_auto_enabled") ?? "").trim().toLowerCase());
+  } catch { enabled = true; }
+  if (!enabled || !fs.existsSync(path.join(store.skillsDirectory, ".git"))) return;
+  autoBackupRunning = true;
+  void (async () => {
+    try {
+      const outcome = await commands.git_backup_sync.call({ message: "自动备份" });
+      store.setSetting("backup_last_auto_error", "");
+      const pending = store.get("SELECT COUNT(*) AS count FROM pending_conflicts").count > 0;
+      broadcast("backup-auto-completed", { ok: true, pending, error: null });
+    } catch (error) {
+      const message = redact(error.message || String(error));
+      store.setSetting("backup_last_auto_error", message);
+      broadcast("backup-auto-completed", { ok: false, pending: false, error: message });
+    } finally { autoBackupRunning = false; }
+  })();
+}, 5 * 60 * 1000).unref();
 
 const activity = new ActivityService({
   directory: path.join(store.home, ".skills-manager-activity"), home: store.home,

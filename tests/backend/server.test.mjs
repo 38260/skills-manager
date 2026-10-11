@@ -151,7 +151,8 @@ test("错误反馈结构化：参数错误、未接入命令与请求守卫", as
   assert.equal(invalid.body.ok, false);
   assert.ok(invalid.body.message.includes("分类名称不能为空"));
 
-  const notImplemented = await service.invoke("git_backup_init");
+  // 桌面外壳命令由 APP-05 提供，此处作为"已声明但尚未接入"的结构化错误样例。
+  const notImplemented = await service.invoke("get_diagnostic_info");
   assert.equal(notImplemented.body.ok, false);
   assert.equal(notImplemented.body.code, "NOT_IMPLEMENTED");
 
