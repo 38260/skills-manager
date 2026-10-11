@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Store } from "./store.mjs";
+import { ActivityService } from "./activity/service.mjs";
 import { redact } from "./files.mjs";
 
 function parseArgs(argv) {
@@ -63,6 +64,13 @@ function notifyChange() {
   if (changeTimer) return;
   changeTimer = setTimeout(() => { changeTimer = null; broadcast("app-files-changed"); }, 300);
 }
+
+const activity = new ActivityService({
+  directory: path.join(store.home, ".skills-manager-activity"), home: store.home,
+  env: options.home ? {} : process.env, emit: broadcast,
+  skills: () => store.skills(), tools: () => store.tools(),
+});
+Object.assign(commands, activity.commands);
 
 function localOrigin(request) {
   const origin = request.headers.origin;
@@ -172,6 +180,7 @@ server.listen(port, host, () => {
 });
 
 for (const signal of ["SIGINT", "SIGTERM"]) process.on(signal, () => {
+  void activity.close();
   server.close(() => { store.close(); process.exit(0); });
   setTimeout(() => { store.close(); process.exit(0); }, 2000).unref();
 });
