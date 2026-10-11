@@ -1,0 +1,439 @@
+[
+  {
+    "key": "cursor",
+    "display_name": "Cursor",
+    "relative_skills_dir": ".cursor/skills",
+    "relative_detect_dir": ".cursor",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "claude_code",
+    "display_name": "Claude Code",
+    "relative_skills_dir": ".claude/skills",
+    "relative_detect_dir": ".claude",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "omp_agent",
+    "display_name": "OMP Agent",
+    "relative_skills_dir": ".omp/agent/skills",
+    "relative_detect_dir": ".omp/agent",
+    "project_relative_skills_dir": ".omp/skills",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "codex",
+    "display_name": "Codex",
+    "relative_skills_dir": ".codex/skills",
+    "relative_detect_dir": ".codex",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "grok",
+    "display_name": "Grok",
+    "relative_skills_dir": ".grok/skills",
+    "relative_detect_dir": ".grok",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "opencode",
+    "display_name": "OpenCode",
+    "relative_skills_dir": ".config/opencode/skills",
+    "relative_detect_dir": ".config/opencode",
+    "project_relative_skills_dir": ".opencode/skills",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "antigravity",
+    "display_name": "Antigravity",
+    "relative_skills_dir": ".gemini/antigravity/skills",
+    "relative_detect_dir": ".gemini/antigravity",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "amp",
+    "display_name": "Amp",
+    "relative_skills_dir": ".config/agents/skills",
+    "relative_detect_dir": ".config/agents",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "kilo_code",
+    "display_name": "Kilo Code",
+    "relative_skills_dir": ".kilocode/skills",
+    "relative_detect_dir": ".kilocode",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "roo_code",
+    "display_name": "Roo Code",
+    "relative_skills_dir": ".roo/skills",
+    "relative_detect_dir": ".roo",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "goose",
+    "display_name": "Goose",
+    "relative_skills_dir": ".config/goose/skills",
+    "relative_detect_dir": ".config/goose",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "gemini_cli",
+    "display_name": "Gemini CLI",
+    "relative_skills_dir": ".gemini/skills",
+    "relative_detect_dir": ".gemini",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "github_copilot",
+    "display_name": "GitHub Copilot",
+    "relative_skills_dir": ".copilot/skills",
+    "relative_detect_dir": ".copilot",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "openclaw",
+    "display_name": "OpenClaw",
+    "relative_skills_dir": ".openclaw/skills",
+    "relative_detect_dir": ".openclaw",
+    "category": "lobster",
+    "recursive_scan": false
+  },
+  {
+    "key": "droid",
+    "display_name": "Droid",
+    "relative_skills_dir": ".factory/skills",
+    "relative_detect_dir": ".factory",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "windsurf",
+    "display_name": "Windsurf",
+    "relative_skills_dir": ".codeium/windsurf/skills",
+    "relative_detect_dir": ".codeium/windsurf",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "trae",
+    "display_name": "TRAE IDE",
+    "relative_skills_dir": ".trae/skills",
+    "relative_detect_dir": ".trae",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "cline",
+    "display_name": "Cline",
+    "relative_skills_dir": ".agents/skills",
+    "relative_detect_dir": ".cline",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "deepagents",
+    "display_name": "Deep Agents",
+    "relative_skills_dir": ".deepagents/agent/skills",
+    "relative_detect_dir": ".deepagents",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "firebender",
+    "display_name": "Firebender",
+    "relative_skills_dir": ".firebender/skills",
+    "relative_detect_dir": ".firebender",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "kimi",
+    "display_name": "Kimi Code CLI",
+    "relative_skills_dir": ".kimi-code/skills",
+    "relative_detect_dir": ".kimi-code",
+    "project_relative_skills_dir": ".kimi-code/skills",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "replit",
+    "display_name": "Replit",
+    "relative_skills_dir": ".config/agents/skills",
+    "relative_detect_dir": ".replit",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "warp",
+    "display_name": "Warp",
+    "relative_skills_dir": ".agents/skills",
+    "relative_detect_dir": ".warp",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "augment",
+    "display_name": "Augment",
+    "relative_skills_dir": ".augment/skills",
+    "relative_detect_dir": ".augment",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "bob",
+    "display_name": "IBM Bob",
+    "relative_skills_dir": ".bob/skills",
+    "relative_detect_dir": ".bob",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "codebuddy",
+    "display_name": "CodeBuddy",
+    "relative_skills_dir": ".codebuddy/skills",
+    "relative_detect_dir": ".codebuddy",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "command_code",
+    "display_name": "Command Code",
+    "relative_skills_dir": ".commandcode/skills",
+    "relative_detect_dir": ".commandcode",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "continue",
+    "display_name": "Continue",
+    "relative_skills_dir": ".continue/skills",
+    "relative_detect_dir": ".continue",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "cortex",
+    "display_name": "Cortex Code",
+    "relative_skills_dir": ".snowflake/cortex/skills",
+    "relative_detect_dir": ".snowflake/cortex",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "crush",
+    "display_name": "Crush",
+    "relative_skills_dir": ".config/crush/skills",
+    "relative_detect_dir": ".config/crush",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "iflow",
+    "display_name": "iFlow CLI",
+    "relative_skills_dir": ".iflow/skills",
+    "relative_detect_dir": ".iflow",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "junie",
+    "display_name": "Junie",
+    "relative_skills_dir": ".junie/skills",
+    "relative_detect_dir": ".junie",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "kiro",
+    "display_name": "Kiro CLI",
+    "relative_skills_dir": ".kiro/skills",
+    "relative_detect_dir": ".kiro",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "kode",
+    "display_name": "Kode",
+    "relative_skills_dir": ".kode/skills",
+    "relative_detect_dir": ".kode",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "mcpjam",
+    "display_name": "MCPJam",
+    "relative_skills_dir": ".mcpjam/skills",
+    "relative_detect_dir": ".mcpjam",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "mistral_vibe",
+    "display_name": "Mistral Vibe",
+    "relative_skills_dir": ".vibe/skills",
+    "relative_detect_dir": ".vibe",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "mux",
+    "display_name": "Mux",
+    "relative_skills_dir": ".mux/skills",
+    "relative_detect_dir": ".mux",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "neovate",
+    "display_name": "Neovate",
+    "relative_skills_dir": ".neovate/skills",
+    "relative_detect_dir": ".neovate",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "openhands",
+    "display_name": "OpenHands",
+    "relative_skills_dir": ".openhands/skills",
+    "relative_detect_dir": ".openhands",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "pi",
+    "display_name": "Pi",
+    "relative_skills_dir": ".pi/agent/skills",
+    "relative_detect_dir": ".pi/agent",
+    "project_relative_skills_dir": ".pi/skills",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "pochi",
+    "display_name": "Pochi",
+    "relative_skills_dir": ".pochi/skills",
+    "relative_detect_dir": ".pochi",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "qoder",
+    "display_name": "Qoder",
+    "relative_skills_dir": ".qoder/skills",
+    "relative_detect_dir": ".qoder",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "qwen_code",
+    "display_name": "Qwen Code",
+    "relative_skills_dir": ".qwen/skills",
+    "relative_detect_dir": ".qwen",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "trae_cn",
+    "display_name": "TRAE CN",
+    "relative_skills_dir": ".trae-cn/skills",
+    "relative_detect_dir": ".trae-cn",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "zencoder",
+    "display_name": "Zencoder",
+    "relative_skills_dir": ".zencoder/skills",
+    "relative_detect_dir": ".zencoder",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "zcode",
+    "display_name": "ZCode",
+    "relative_skills_dir": ".zcode/skills",
+    "relative_detect_dir": ".zcode",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "adal",
+    "display_name": "AdaL",
+    "relative_skills_dir": ".adal/skills",
+    "relative_detect_dir": ".adal",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "hermes",
+    "display_name": "Hermes Agent",
+    "relative_skills_dir": ".hermes/skills",
+    "relative_detect_dir": ".hermes",
+    "category": "lobster",
+    "recursive_scan": true
+  },
+  {
+    "key": "qclaw",
+    "display_name": "QClaw",
+    "relative_skills_dir": ".qclaw/skills",
+    "relative_detect_dir": ".qclaw",
+    "category": "lobster",
+    "recursive_scan": false
+  },
+  {
+    "key": "easyclaw",
+    "display_name": "EasyClaw",
+    "relative_skills_dir": ".easyclaw/skills",
+    "relative_detect_dir": ".easyclaw",
+    "category": "lobster",
+    "recursive_scan": false
+  },
+  {
+    "key": "autoclaw",
+    "display_name": "AutoClaw",
+    "relative_skills_dir": ".openclaw-autoclaw/skills",
+    "relative_detect_dir": ".openclaw-autoclaw",
+    "category": "lobster",
+    "recursive_scan": false
+  },
+  {
+    "key": "workbuddy",
+    "display_name": "WorkBuddy",
+    "relative_skills_dir": ".workbuddy/skills",
+    "relative_detect_dir": ".workbuddy",
+    "category": "lobster",
+    "recursive_scan": false
+  },
+  {
+    "key": "deepseek_harness",
+    "display_name": "DeepSeek Harness",
+    "relative_skills_dir": ".dsh/skills",
+    "relative_detect_dir": ".dsh",
+    "category": "coding",
+    "recursive_scan": false
+  },
+  {
+    "key": "gitlab_duo",
+    "display_name": "GitLab Duo",
+    "relative_skills_dir": ".gitlab/duo/skills",
+    "relative_detect_dir": ".gitlab/duo",
+    "project_relative_skills_dir": ".agents/skills",
+    "category": "coding",
+    "recursive_scan": false
+  }
+]
