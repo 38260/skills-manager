@@ -14,7 +14,29 @@ export class Store {
     this.home = path.resolve(home);
     this.defaultDirectory = directory ? path.resolve(directory) : path.join(this.home, ".skills-manager");
     const config = directory ? null : readJson(path.join(this.defaultDirectory, "repo-config.json"), {});
-    this.directory = path.resolve(config?.repo_path || this.defaultDirectory);
+    this.configFile = path.join(this.defaultDirectory, "repo-config.json");
+    this.startupWarnings = [];
+    this.repoPathOverride = null;
+    let repoPath = config?.repo_path ?? null;
+    // 重启时晋升待生效路径：创建失败则回退并记录警告，不阻断启动。
+    if (!directory && config?.pending_repo_path) {
+      const pending = path.resolve(String(config.pending_repo_path));
+      try {
+        if (pending === path.parse(pending).root) throw new Error("技能库必须使用专用目录");
+        fs.mkdirSync(path.join(pending, "skills"), { recursive: true });
+        repoPath = pending;
+      } catch (error) {
+        this.startupWarnings.push(`技能库路径 ${pending} 无法使用（${error.message}），已回退到原路径`);
+      }
+      this.writeRepoConfig({ repo_path: repoPath ?? undefined, pending_repo_path: null });
+    }
+    this.pendingRepoPath = null;
+    if (repoPath) {
+      try {
+        if (path.resolve(repoPath) !== path.parse(path.resolve(repoPath)).root) this.repoPathOverride = path.resolve(repoPath);
+      } catch { this.repoPathOverride = null; }
+    }
+    this.directory = path.resolve(repoPath || this.defaultDirectory);
     if (this.directory === path.parse(this.directory).root) throw new Error("技能库必须使用专用目录");
     fs.mkdirSync(this.directory, { recursive: true });
     this.skillsDirectory = path.join(this.directory, "skills");
@@ -56,6 +78,27 @@ export class Store {
     catch (error) { this.db.exec("ROLLBACK"); throw error; }
   }
   close() { this.db.close(); }
+
+  writeRepoConfig(patch) {
+    const current = readJson(this.configFile, {});
+    const next = { ...current, ...patch };
+    for (const key of Object.keys(next)) if (next[key] === undefined || next[key] === null) delete next[key];
+    writeJson(this.configFile, next);
+  }
+  // 保存新的技能库路径：写入待生效路径，重启时晋升；null 表示重置覆盖。
+  setCentralRepoPath(value) {
+    if (value === null || String(value).trim() === "") {
+      this.writeRepoConfig({ repo_path: null, pending_repo_path: null });
+      this.pendingRepoPath = null;
+      return null;
+    }
+    const target = path.resolve(String(value).trim());
+    if (target === path.parse(target).root) throw new Error("技能库必须使用专用目录");
+    if (canonical(target) === canonical(this.directory)) throw new Error("新路径与当前技能库路径相同");
+    this.writeRepoConfig({ pending_repo_path: target });
+    this.pendingRepoPath = target;
+    return this.repoPathOverride ?? target;
+  }
 
   getSetting(key) {
     const value = this.get("SELECT value FROM settings WHERE key=?", key)?.value ?? null;

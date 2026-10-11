@@ -12,6 +12,7 @@ import { toolCommands } from "./tools-settings.mjs";
 import { scanCommands } from "./scan.mjs";
 import { workspaceCommands } from "./workspace.mjs";
 import { projectCommands } from "./projects.mjs";
+import { repoSettingsCommands } from "./repo-settings.mjs";
 import { redact } from "./files.mjs";
 
 function parseArgs(argv) {
@@ -195,6 +196,9 @@ const commands = {
 
   // ── 项目工作区 ──
   ...projectCommands(store, library),
+
+  // ── 技能库路径与设备名 ──
+  ...repoSettingsCommands(store),
 };
 
 const activity = new ActivityService({
