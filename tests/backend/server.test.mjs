@@ -151,11 +151,7 @@ test("错误反馈结构化：参数错误、未接入命令与请求守卫", as
   assert.equal(invalid.body.ok, false);
   assert.ok(invalid.body.message.includes("分类名称不能为空"));
 
-  // 桌面外壳命令由 APP-05 提供，此处作为"已声明但尚未接入"的结构化错误样例。
-  const notImplemented = await service.invoke("get_diagnostic_info");
-  assert.equal(notImplemented.body.ok, false);
-  assert.equal(notImplemented.body.code, "NOT_IMPLEMENTED");
-
+  // 全部前端命令已接入本地服务；未知命令统一返回 NOT_IMPLEMENTED。
   const unknown = await service.invoke("definitely_not_a_command");
   assert.equal(unknown.body.ok, false);
   assert.equal(unknown.body.code, "NOT_IMPLEMENTED");

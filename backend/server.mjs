@@ -14,6 +14,7 @@ import { workspaceCommands } from "./workspace.mjs";
 import { projectCommands } from "./projects.mjs";
 import { repoSettingsCommands } from "./repo-settings.mjs";
 import { backupCommands } from "./backup.mjs";
+import { shellCommands, attachDiagnostics } from "./shell.mjs";
 import { redact } from "./files.mjs";
 
 function parseArgs(argv) {
@@ -42,8 +43,7 @@ try {
 }
 
 // ── 事件通知：SSE 客户端登记 + 防抖广播 ──
-const clients = new Set();
-function broadcast(event, payload) {
+const clients = new Set();function broadcast(event, payload) {
   for (const response of clients) response.write(`event: ${event}\ndata: ${JSON.stringify(payload ?? null)}\n\n`);
 }
 let changeTimer = null;
@@ -237,6 +237,20 @@ const activity = new ActivityService({
 });
 Object.assign(commands, activity.commands);
 
+// ── 桌面外壳与诊断：日志落盘、panic 记录、退出与重启 ──
+const diagnostics = attachDiagnostics(store);
+Object.assign(commands, shellCommands(store, {
+  exit: () => { server?.close(); store.close(); process.exit(0); },
+  restart: () => {
+    if (process.env.SKILLS_MANAGER_ROLE === "electron-backend") { process.exit(0); return; }
+    const child = spawn(process.execPath, process.argv.slice(1), { detached: true, stdio: "ignore", windowsHide: true });
+    child.unref();
+    server?.close();
+    store.close();
+    process.exit(0);
+  },
+}));
+
 function localOrigin(request) {
   const origin = request.headers.origin;
   if (!origin) return true;
@@ -345,7 +359,8 @@ server.listen(port, host, () => {
 });
 
 for (const signal of ["SIGINT", "SIGTERM"]) process.on(signal, () => {
+  clearInterval(autoBackupTimer);
   void activity.close();
-  server.close(() => { store.close(); process.exit(0); });
-  setTimeout(() => { store.close(); process.exit(0); }, 2000).unref();
+  server.close(() => { store.close(); diagnostics.close(); process.exit(0); });
+  setTimeout(() => { store.close(); diagnostics.close(); process.exit(0); }, 2000).unref();
 });

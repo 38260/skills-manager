@@ -47,11 +47,10 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { openUrl } from "@tauri-apps/plugin-opener";
 import { listen } from "../lib/transport";
 import { writeText as clipboardWriteText } from "@tauri-apps/plugin-clipboard-manager";
 import { check as checkUpdater } from "@tauri-apps/plugin-updater";
-import { open as dialogOpen, confirm as dialogConfirm } from "@tauri-apps/plugin-dialog";
+import { openDirectory as dialogOpen, confirmDialog as dialogConfirm, openExternal } from "../lib/desktop";
 import { useNavigate } from "react-router-dom";
 import { cn, compactHomePath } from "../utils";
 import { useApp } from "../context/AppContext";
@@ -516,7 +515,7 @@ export function Settings() {
   const handleOpenGithub = async () => {
     try {
       setOpeningGithub(true);
-      await openUrl(GITHUB_URL);
+      await openExternal(GITHUB_URL);
     } catch (error) {
       console.error("Failed to open GitHub repository", error);
       toast.error(t("common.error"));
@@ -616,7 +615,7 @@ export function Settings() {
         }
       }
       try {
-        await openUrl(`${GITHUB_URL}/issues/new?template=bug_report.md`);
+        await openExternal(`${GITHUB_URL}/issues/new?template=bug_report.md`);
       } catch (err) {
         console.error("Failed to open issue page", err);
       }
@@ -699,7 +698,7 @@ export function Settings() {
       console.error("In-app update failed:", err);
       toast.error(t("settings.updateError"));
       if (appUpdate?.release_url) {
-        await openUrl(appUpdate.release_url);
+        await openExternal(appUpdate.release_url);
       }
     } finally {
       setInstalling(false);
@@ -1791,7 +1790,7 @@ export function Settings() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => { openUrl(appUpdate.release_url).catch(() => {}); }}
+                      onClick={() => { openExternal(appUpdate.release_url).catch(() => {}); }}
                       className={`${actionButtonClass} bg-surface-hover hover:bg-surface-active text-tertiary border-border`}
                     >
                       <ExternalLink className="w-3 h-3" /> {t("settings.download")}
@@ -1800,7 +1799,7 @@ export function Settings() {
                 ) : (
                   <button
                     type="button"
-                    onClick={() => { openUrl(appUpdate.release_url).catch(() => {}); }}
+                    onClick={() => { openExternal(appUpdate.release_url).catch(() => {}); }}
                     className={`${actionButtonClass} bg-accent text-white border-accent hover:opacity-90`}
                   >
                     <Download className="w-3 h-3" /> {t("settings.download")}
@@ -1858,7 +1857,7 @@ export function Settings() {
               </button>
               <button
                 type="button"
-                onClick={() => { openUrl(WEBSITE_URL).catch(() => {}); }}
+                onClick={() => { openExternal(WEBSITE_URL).catch(() => {}); }}
                 className={`${actionButtonClass} bg-surface-hover hover:bg-surface-active text-tertiary border-border`}
               >
                 <Globe className="w-3 h-3" /> {t("settings.website")}

@@ -4,19 +4,16 @@
   "version": "1.40.3",
   "license": "MIT",
   "type": "module",
+  "main": "electron/main.mjs",
   "scripts": {
     "dev": "vite",
+    "start": "node backend/server.mjs",
+    "app": "electron .",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "test:ui": "node --experimental-strip-types --test tests/ui/*.test.mjs",
     "preview": "vite preview",
-    "release:prepare": "node scripts/prepare-release.mjs",
-    "tauri": "tauri",
-    "tauri:dev": "tauri dev --config src-tauri/tauri.dev.conf.json",
-    "tauri:build": "tauri build",
-    "cli": "node scripts/run-rust-cli.mjs cli",
-    "cli:build": "node scripts/run-rust-cli.mjs build",
-    "cli:install": "node scripts/run-rust-cli.mjs install"
+    "release:prepare": "node scripts/prepare-release.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

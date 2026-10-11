@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { listen } from "../lib/transport";
 import { writeText as clipboardWriteText } from "@tauri-apps/plugin-clipboard-manager";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { openExternal } from "../lib/desktop";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { cn } from "../utils";
@@ -641,7 +641,7 @@ export function Backup() {
     try {
       const info = await api.githubDeviceFlowStart();
       setDeviceInfo(info);
-      void openUrl(info.verification_uri);
+      void openExternal(info.verification_uri);
 
       const repoName = githubRepoName.trim() || DEFAULT_GITHUB_REPO;
       let intervalSec = Math.max(info.interval, 5);
@@ -747,15 +747,15 @@ export function Backup() {
     const oauthUrl = `https://github.com/settings/connections/applications/${GITHUB_OAUTH_CLIENT_ID}`;
     const patUrl = "https://github.com/settings/tokens";
     if (authMethod === "pat") {
-      openUrl(patUrl).catch(() => {});
+      openExternal(patUrl).catch(() => {});
     } else if (authMethod === "oauth") {
-      openUrl(oauthUrl).catch(() => {});
+      openExternal(oauthUrl).catch(() => {});
     } else {
       // Connected before the method was recorded (or wired manually): the
       // credential could be either kind — open both pages so nothing stays
       // silently authorized.
-      openUrl(oauthUrl).catch(() => {});
-      openUrl(patUrl).catch(() => {});
+      openExternal(oauthUrl).catch(() => {});
+      openExternal(patUrl).catch(() => {});
     }
     await handleDisconnect();
   };
@@ -766,7 +766,7 @@ export function Backup() {
   const handleOpenDeleteRemote = async () => {
     setDeleteRemoteConfirmOpen(false);
     if (githubRepoWebUrl) {
-      await openUrl(`${githubRepoWebUrl}/settings#danger-zone`).catch(() => {});
+      await openExternal(`${githubRepoWebUrl}/settings#danger-zone`).catch(() => {});
       toast.info(t("backup.disconnect.deleteRemoteOpened"), { duration: 12000 });
     }
   };
@@ -1089,7 +1089,7 @@ export function Backup() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => void openUrl(GITHUB_TOKEN_URL)}
+                        onClick={() => void openExternal(GITHUB_TOKEN_URL)}
                         className="inline-flex items-center gap-1 text-[12px] text-muted transition-colors hover:text-secondary"
                       >
                         <ExternalLink className="h-3 w-3" />
