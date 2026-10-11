@@ -1,9 +1,8 @@
 import { Fragment, useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { History, RefreshCw, Square, ChevronLeft, ChevronRight, ChevronDown, Search, Settings2 } from "lucide-react";
 import { useApp } from "../context/AppContext";
-import { SkillDetailPanel } from "../components/SkillDetailPanel";
 import { listen } from "../lib/transport";
 import { cn } from "../utils";
 import * as api from "../lib/activity";
@@ -48,11 +47,11 @@ function SourceEditor({ source, running, onSaved }: { source: api.ActivitySource
 
 export function SkillActivity() {
   const { t, i18n } = useTranslation();
-  const { managedSkills } = useApp();
+  const { openSkillDetailById } = useApp();
+  const navigate = useNavigate();
   // 详情页"调用记录"页签通过 /skill-activity?skill=名称 深链进入并预填筛选。
   const [searchParams] = useSearchParams();
   const deepLinkSkill = searchParams.get("skill") ?? "";
-  const [skillId, setSkillId] = useState<string | null>(null);
   const [filters, setFilters] = useState({ ...initialFilters, skillName: deepLinkSkill });
   const [query, setQuery] = useState<api.ActivityQuery>({ page: 1, pageSize: 50, skillName: deepLinkSkill });
   const [result, setResult] = useState<api.ActivityResult | null>(null);
@@ -106,7 +105,7 @@ export function SkillActivity() {
   const pages = result ? Math.max(1, Math.ceil(result.total / result.pageSize)) : 1;
   const problems = sources.filter(source => source.enabled && ["partial", "missing", "denied", "error"].includes(source.state));
 
-  return <><div className="app-page space-y-4">
+  return <div className="app-page space-y-4">
     <header className="flex flex-wrap items-start justify-between gap-3">
       <div><h1 className="app-page-title flex items-center gap-2"><History className="h-6 w-6 text-accent-light" />{t("activity.title")}</h1>
         <p className="mt-1 text-sm text-tertiary">{t("activity.subtitle")}</p></div>
@@ -166,7 +165,7 @@ export function SkillActivity() {
                 {[["evidence", t(`activity.evidenceCodes.${record.evidence}`, { defaultValue: record.evidence })], ["sourceFile", record.sourcePath], ["position", record.sourceLine], ["session", record.sessionId], ["call", record.callId], ["project", record.project], ["skillPath", record.skillPath]].map(([key, value]) => <Fragment key={key}><dt className="text-tertiary">{t(`activity.${key}`)}</dt><dd className="min-w-0 break-all text-secondary">{value || "—"}</dd></Fragment>)}
               </dl>
               <p className="mt-3 text-xs text-tertiary">{t("activity.statusNote")}</p>
-              {record.managedSkillId ? <button type="button" className={cn(button, "mt-3")} onClick={() => setSkillId(record.managedSkillId)}>{t("activity.openSkill")}</button> : <p className="mt-3 text-xs text-tertiary">{t("activity.unlinked")}</p>}
+              {record.managedSkillId ? <button type="button" className={cn(button, "mt-3")} onClick={() => { openSkillDetailById(record.managedSkillId!); navigate("/my-skills"); }}>{t("activity.openSkill")}</button> : <p className="mt-3 text-xs text-tertiary">{t("activity.unlinked")}</p>}
             </td></tr>}
           </Fragment>)}</tbody></table></div>}
       <footer className="flex items-center justify-between border-t border-border-subtle px-4 py-3 text-xs text-tertiary">
@@ -176,5 +175,5 @@ export function SkillActivity() {
         </div>
       </footer>
     </section>
-  </div><SkillDetailPanel skill={managedSkills.find(skill => skill.id === skillId) ?? null} onClose={() => setSkillId(null)} /></>;
+  </div>;
 }
