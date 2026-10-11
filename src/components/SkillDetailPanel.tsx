@@ -37,8 +37,6 @@ interface Props {
   onToggleTool?: (tool: string, enabled: boolean) => void;
   projects?: Project[];
   onProjectsChanged?: () => void;
-  /** 检查更新（状态未知时先检查）；由技能库页注入以复用移除确认等既有保护流程。 */
-  onCheckUpdate?: (skill: ManagedSkill) => Promise<void>;
   /** 更新（git/skillssh）或重新导入（local/import）。 */
   onUpdate?: (skill: ManagedSkill) => Promise<void>;
   busyAction?: string | null;
@@ -53,7 +51,6 @@ export function SkillDetailPanel({
   onToggleTool,
   projects,
   onProjectsChanged,
-  onCheckUpdate,
   onUpdate,
   busyAction,
 }: Props) {
@@ -79,7 +76,6 @@ export function SkillDetailPanel({
       onToggleTool={onToggleTool}
       projects={projects}
       onProjectsChanged={onProjectsChanged}
-      onCheckUpdate={onCheckUpdate}
       onUpdate={onUpdate}
       busyAction={busyAction}
     />
@@ -95,7 +91,6 @@ interface ContentProps {
   onToggleTool?: (tool: string, enabled: boolean) => void;
   projects?: Project[];
   onProjectsChanged?: () => void;
-  onCheckUpdate?: (skill: ManagedSkill) => Promise<void>;
   onUpdate?: (skill: ManagedSkill) => Promise<void>;
   busyAction?: string | null;
 }
@@ -109,7 +104,6 @@ function SkillDetailPanelContent({
   onToggleTool,
   projects,
   onProjectsChanged,
-  onCheckUpdate,
   onUpdate,
   busyAction,
 }: ContentProps) {
@@ -271,16 +265,6 @@ function SkillDetailPanelContent({
 
   function runUpdate() {
     if (!onUpdate) return;
-    if (
-      ["git", "skillssh"].includes(skill.source_type)
-      && skill.update_status !== "update_available"
-      && onCheckUpdate
-    ) {
-      void onCheckUpdate(skill).then(() => {
-        // 检查后仍无更新时由列表状态呈现，不重复点击。
-      });
-      return;
-    }
     void onUpdate(skill);
   }
 

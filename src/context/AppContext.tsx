@@ -64,6 +64,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [detailSkillId, setDetailSkillId] = useState<string | null>(null);
   const [appUpdate, setAppUpdate] = useState<AppUpdateInfo | null>(null);
   const autoCheckInFlightRef = useRef(false);
+  const skillUpdateCheckedRef = useRef(false);
   const appUpdateCheckedRef = useRef(false);
   const lastUpdateNotificationRef = useRef<string | null>(null);
   const lastActivePresetIdRef = useRef<string | null>(null);
@@ -348,10 +349,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const hasGitSkills = managedSkills.some(
       (s) => s.source_type === "git" || s.source_type === "skillssh"
     );
-    if (!hasGitSkills || autoCheckInFlightRef.current) return;
+    if (!hasGitSkills || autoCheckInFlightRef.current || skillUpdateCheckedRef.current) return;
 
     // Delay to avoid slowing down initial render
     const timer = setTimeout(() => {
+      skillUpdateCheckedRef.current = true;
       autoCheckInFlightRef.current = true;
       (async () => {
         try {

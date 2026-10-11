@@ -89,6 +89,7 @@ test("git-source update regression: install, upstream change, check, update, rel
 
   // 打分类标签并部署到 codex
   await invoke("set_skill_tags", { skillId: skill.id, tags: ["回归分类"] });
+  await invoke("set_settings", { key: "sync_mode", value: "copy" });
   const deployed = await invoke("sync_skill_to_tool", { skillId: skill.id, tool: "codex" });
   assert.equal(deployed.body.ok, true, `部署失败：${deployed.body.message}`);
 
@@ -114,10 +115,15 @@ test("git-source update regression: install, upstream change, check, update, rel
   assert.equal(after.author, "上游作者", "更新后应从新版本重新解析作者");
   assert.equal(after.targets.length, 1, "更新后部署记录应保留");
   assert.equal(after.targets[0].tool, "codex");
+  assert.equal(after.targets[0].mode, "copy", "验收必须实际覆盖复制部署模式");
 
   // 已部署副本同步验证：copy 模式副本内容应与中心一致（symlink 模式本身共享）
   const targetPath = after.targets[0].target_path;
   assert.ok(fs.existsSync(targetPath), "部署副本应存在");
+  assert.equal(fs.readFileSync(path.join(targetPath, "SKILL.md"), "utf8"),
+    fs.readFileSync(path.join(after.central_path, "SKILL.md"), "utf8"), "更新后副本文档必须与中心一致");
+  assert.deepEqual(fs.readFileSync(path.join(targetPath, "EXTRA.md")),
+    fs.readFileSync(path.join(after.central_path, "EXTRA.md")), "新增文件也应完整同步到副本");
   const copyUpdated = await invoke("update_skill", { skillId: skill.id });
   assert.equal(copyUpdated.body.ok, true);
 
