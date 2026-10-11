@@ -276,6 +276,7 @@
     "presetCount": "{{count}} 個 Preset",
     "syncCoverage": "同步覆蓋",
     "syncSummary": "已同步 {{synced}} / {{total}}",
+    "enabledSummary": "已啟用 {{enabled}} / {{total}}",
     "agentTogglesTitle": "全域工作區",
     "expandAgentToggles": "展開",
     "collapseAgentToggles": "收起",

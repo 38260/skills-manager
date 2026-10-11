@@ -276,6 +276,7 @@
     "presetCount": "{{count}} 个 Preset",
     "syncCoverage": "同步覆盖",
     "syncSummary": "已同步 {{synced}} / {{total}}",
+    "enabledSummary": "已启用 {{enabled}} / {{total}}",
     "moreAgents": "+{{count}} 个 Agent",
     "syncMissing": "补齐 {{count}}",
     "unsyncSelected": "取消 {{count}}",

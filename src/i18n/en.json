@@ -276,6 +276,7 @@
     "presetCount": "{{count}} presets",
     "syncCoverage": "Sync coverage",
     "syncSummary": "{{synced}} / {{total}} synced",
+    "enabledSummary": "{{enabled}} / {{total}} enabled",
     "moreAgents": "+{{count}} more",
     "syncMissing": "Sync {{count}}",
     "unsyncSelected": "Unsync {{count}}",

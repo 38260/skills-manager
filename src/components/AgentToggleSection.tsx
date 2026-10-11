@@ -40,8 +40,8 @@ export function AgentToggleSection({
           <div className="flex min-w-0 items-center gap-2">
             <span className="font-medium text-secondary">{t("mySkills.agentTogglesTitle")}</span>
             <span className="rounded-full border border-border-subtle bg-surface px-2 py-0.5 text-[12px] text-muted">
-              {t("mySkills.syncSummary", {
-                synced: enabledAvailableCount,
+              {t("mySkills.enabledSummary", {
+                enabled: enabledAvailableCount,
                 total: availableItems.length,
               })}
             </span>

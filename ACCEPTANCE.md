@@ -68,3 +68,9 @@
 - DSH 24 文件中 8 份使用版本 0，当前适配器拒绝未知版本；ZCode 一个真实数据库读取报 `unable to open database file`，未确认更深层根因；WorkBuddy 439 文件中有两条 Skill 调用缺少技能名。三者正确显示部分读取，不将读取问题冒充使用零次。诊断只输出聚合原因，不保存原始对话或工具输出。
 - 五款客户端新产生手动／自动记录的全过程没有执行；本轮证据是样本端到端和现存真实日志读取，两者不能替代新触发场景验收。
 - 聚合证据：`output/playwright/evidence/activity-summary.json`、`activity-diagnostics.json`；GUI 截图：`history-linked.jpg`、`source-missing.jpg`。
+
+## 启用数量文案
+
+- 验收中发现详情将五个 Preset 启用开关显示为「已同步 5/5」，但实际部署记录只有一份 Codex 副本。
+- 将该配置区域改为「已启用」，保留真实部署位置上的同步状态，简中／繁中／英文同步更新。只改展示口径，不修改开关和用户部署目录。
+- lint 和前端构建通过；此小改动未单独执行新的原生窗口视觉验收。`detail-fixed.jpg` 保留改文案前的更新验收画面，不能据该图宣称已经部署五份。
