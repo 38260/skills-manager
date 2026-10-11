@@ -1,6 +1,6 @@
 // Electron 桌面外壳（APP-05）：拉起本地 Node 服务，托管已构建的 dist；
 // 服务退出（含应用内 restart_app）时自动重启并刷新窗口。
-import { app, BrowserWindow, dialog, shell } from "electron";
+import { app, BrowserWindow, dialog, shell, ipcMain } from "electron";
 import { spawn } from "node:child_process";
 import http from "node:http";
 import path from "node:path";
@@ -15,6 +15,34 @@ const devUrl = process.env.SKILLS_MANAGER_DEV_URL;
 let mainWindow = null;
 let serverProcess = null;
 let quitting = false;
+
+function assertMainSender(event) {
+  if (event.sender !== mainWindow?.webContents || event.senderFrame !== mainWindow?.webContents.mainFrame) {
+    throw new Error("不允许的桌面调用来源");
+  }
+}
+
+ipcMain.handle("desktop:open-directory", async event => {
+  assertMainSender(event);
+  const result = await dialog.showOpenDialog(mainWindow, { properties: ["openDirectory"] });
+  return result.canceled ? null : result.filePaths[0] ?? null;
+});
+ipcMain.handle("desktop:open-skill-file", async event => {
+  assertMainSender(event);
+  const result = await dialog.showOpenDialog(mainWindow, { properties: ["openFile"], filters: [{ name: "Skills", extensions: ["zip", "skill"] }] });
+  return result.canceled ? null : result.filePaths[0] ?? null;
+});
+ipcMain.handle("desktop:open-external", async (event, url) => {
+  assertMainSender(event);
+  if (typeof url !== "string" || !/^https?:\/\//i.test(url)) throw new Error("无效的外部链接");
+  await shell.openExternal(url);
+});
+ipcMain.handle("desktop:confirm", async (event, message) => {
+  assertMainSender(event);
+  if (typeof message !== "string") throw new Error("无效的确认信息");
+  const result = await dialog.showMessageBox(mainWindow, { type: "question", buttons: ["确定", "取消"], defaultId: 0, cancelId: 1, message });
+  return result.response === 0;
+});
 
 function startServer() {
   if (devUrl) return; // 开发模式：Vite 已通过插件拉起本地服务
@@ -62,7 +90,7 @@ function createWindow() {
     return { action: "deny" };
   });
   if (devUrl) mainWindow.loadURL(devUrl);
-  else mainWindow.loadFile(path.join(projectRoot, "dist", "index.html"));
+  else mainWindow.loadURL(`http://127.0.0.1:${servicePort}`);
   mainWindow.on("closed", () => { mainWindow = null; });
 }
 

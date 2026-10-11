@@ -29,8 +29,7 @@ import { cn } from "../utils";
 import { useApp } from "../context/AppContext";
 import * as api from "../lib/tauri";
 import type { ScanResult, SkillsShSkill, BatchImportResult, GitPreviewResult } from "../lib/tauri";
-import { open } from "@tauri-apps/plugin-dialog";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { openDirectory as open, openSkillFile, openExternal as openUrl } from "../lib/desktop";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { listen } from "../lib/transport";
 import { StatusBanner } from "../components/StatusBanner";
@@ -338,10 +337,7 @@ export function InstallSkills() {
 
   const handleLocalFileInstall = async () => {
     try {
-      const selected = await open({
-        multiple: false,
-        filters: [{ name: "Skills", extensions: ["zip", "skill"] }],
-      });
+      const selected = await openSkillFile();
       if (!selected) return;
       installLocalSource(selected as string);
     } catch (error: unknown) {

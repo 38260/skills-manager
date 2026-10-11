@@ -3,7 +3,8 @@ import { isTauri } from "./transport";
 
 interface DesktopBridge {
   openDirectory: () => Promise<string | null>;
-  openExternal: (url: string) => void;
+  openSkillFile: () => Promise<string | null>;
+  openExternal: (url: string) => Promise<void>;
   confirm: (message: string) => Promise<boolean>;
 }
 
@@ -27,6 +28,17 @@ export async function openDirectory(options?: { directory?: boolean; multiple?: 
   throw new Error("当前环境不支持目录选择，请手动输入路径");
 }
 
+/** 选择已有安装入口支持的 .zip 或 .skill 文件；取消返回 null。 */
+export async function openSkillFile(): Promise<string | null> {
+  if (isTauri) {
+    const { open } = await import("@tauri-apps/plugin-dialog");
+    return (await open({ multiple: false, filters: [{ name: "Skills", extensions: ["zip", "skill"] }] })) as string | null;
+  }
+  const desktop = bridge();
+  if (desktop) return desktop.openSkillFile();
+  throw new Error("当前环境不支持文件选择，请使用桌面应用");
+}
+
 /** 用系统默认方式打开外部链接；浏览器环境回退为新标签页。 */
 export async function openExternal(url: string): Promise<void> {
   if (isTauri) {
@@ -35,7 +47,7 @@ export async function openExternal(url: string): Promise<void> {
     return;
   }
   const desktop = bridge();
-  if (desktop) { desktop.openExternal(url); return; }
+  if (desktop) { await desktop.openExternal(url); return; }
   window.open(url, "_blank", "noopener");
 }
 
