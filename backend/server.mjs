@@ -9,6 +9,7 @@ import { ActivityService } from "./activity/service.mjs";
 import { Library, registerCancel, releaseCancel } from "./library.mjs";
 import { presetCommands } from "./presets.mjs";
 import { toolCommands } from "./tools-settings.mjs";
+import { scanCommands } from "./scan.mjs";
 import { redact } from "./files.mjs";
 
 function parseArgs(argv) {
@@ -183,6 +184,9 @@ const commands = {
 
   // ── 工具设置 ──
   ...toolCommands(store),
+
+  // ── 扫描导入与市场 ──
+  ...scanCommands(store, library),
 };
 
 const activity = new ActivityService({
