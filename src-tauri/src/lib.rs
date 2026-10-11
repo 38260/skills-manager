@@ -1025,6 +1025,8 @@ pub fn run() {
             commands::skills::relink_local_skill_source,
             commands::skills::detach_local_skill_source,
             commands::skills::get_all_tags,
+            commands::skills::get_skill_categories,
+            commands::skills::create_skill_category,
             commands::skills::set_skill_tags,
             commands::skills::rename_tag,
             commands::skills::delete_tag,

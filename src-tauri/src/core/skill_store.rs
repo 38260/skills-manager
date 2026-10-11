@@ -1,5 +1,5 @@
 use anyhow::Result;
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, OptionalExtension};
 use serde::Serialize;
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -9,6 +9,26 @@ use super::crypto;
 
 /// Settings keys whose values are encrypted at rest with AES-256-GCM.
 const SENSITIVE_KEYS: &[&str] = &["proxy_url", "git_backup_remote_url"];
+
+fn category_catalog(conn: &Connection) -> Result<Vec<String>> {
+    let value: Option<String> = conn
+        .query_row("SELECT value FROM settings WHERE key = 'skill_categories'", [], |r| r.get(0))
+        .optional()?;
+    match value {
+        Some(value) => Ok(serde_json::from_str(&value)?),
+        None => Ok(vec!["UI".into(), "自定义".into()]),
+    }
+}
+
+fn save_category_catalog(conn: &Connection, mut categories: Vec<String>) -> Result<()> {
+    categories.sort();
+    categories.dedup();
+    conn.execute(
+        "INSERT INTO settings (key, value) VALUES ('skill_categories', ?1) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        params![serde_json::to_string(&categories)?],
+    )?;
+    Ok(())
+}
 
 pub struct SkillStore {
     conn: Mutex<Connection>,
@@ -1225,6 +1245,25 @@ impl SkillStore {
 
     // ── Skill Tags ──
 
+    pub fn get_skill_categories(&self) -> Result<Vec<String>> {
+        let conn = self.conn.lock().unwrap();
+        let mut categories = category_catalog(&conn)?;
+        let mut stmt = conn.prepare("SELECT DISTINCT tag FROM skill_tags ORDER BY tag")?;
+        categories.extend(stmt.query_map([], |r| r.get::<_, String>(0))?.collect::<rusqlite::Result<Vec<_>>>()?);
+        categories.sort();
+        categories.dedup();
+        Ok(categories)
+    }
+
+    pub fn create_skill_category(&self, name: &str) -> Result<()> {
+        let name = name.trim();
+        anyhow::ensure!(!name.is_empty(), "Category name cannot be empty");
+        let conn = self.conn.lock().unwrap();
+        let mut categories = category_catalog(&conn)?;
+        categories.push(name.to_string());
+        save_category_catalog(&conn, categories)
+    }
+
     pub fn get_all_tags(&self) -> Result<Vec<String>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare("SELECT DISTINCT tag FROM skill_tags ORDER BY tag")?;
@@ -1289,6 +1328,11 @@ impl SkillStore {
             params![new, old],
         )?;
         tx.execute("DELETE FROM skill_tags WHERE tag = ?1", params![old])?;
+        let mut categories = category_catalog(&tx)?;
+        for category in &mut categories {
+            if category == old { *category = new.to_string(); }
+        }
+        save_category_catalog(&tx, categories)?;
         tx.commit()?;
         Ok(affected)
     }
@@ -1303,7 +1347,11 @@ impl SkillStore {
             let rows = stmt.query_map(params![name], |row| row.get::<_, String>(0))?;
             rows.filter_map(|r| r.ok()).collect()
         };
-        conn.execute("DELETE FROM skill_tags WHERE tag = ?1", params![name])?;
+        let tx = conn.unchecked_transaction()?;
+        tx.execute("DELETE FROM skill_tags WHERE tag = ?1", params![name])?;
+        let categories = category_catalog(&tx)?.into_iter().filter(|category| category != name).collect();
+        save_category_catalog(&tx, categories)?;
+        tx.commit()?;
         Ok(affected)
     }
 
@@ -1535,6 +1583,36 @@ fn map_skill_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<SkillRecord> {
 mod tag_tests {
     use super::*;
     use tempfile::tempdir;
+
+    #[test]
+    fn categories_preserve_empty_groups_and_deleted_defaults_after_restart() {
+        let tmp = tempdir().unwrap();
+        let db = tmp.path().join("test.db");
+        let store = SkillStore::new(&db).unwrap();
+        assert_eq!(store.get_skill_categories().unwrap(), vec!["UI", "自定义"]);
+        store.create_skill_category(" Documents ").unwrap();
+        store.create_skill_category("Documents").unwrap();
+        store.rename_tag("UI", "Interface").unwrap();
+        store.delete_tag("自定义").unwrap();
+        assert!(store.create_skill_category(" ").is_err());
+        drop(store);
+        let restored = SkillStore::new(&db).unwrap();
+        assert_eq!(restored.get_skill_categories().unwrap(), vec!["Documents", "Interface"]);
+        assert!(restored.get_all_tags().unwrap().is_empty());
+    }
+
+    #[test]
+    fn category_deletion_only_removes_membership_not_the_skill() {
+        let tmp = tempdir().unwrap();
+        let store = SkillStore::new(&tmp.path().join("test.db")).unwrap();
+        store.insert_skill(&skill("a")).unwrap();
+        store.set_tags_for_skill("a", &["UI".into(), "legacy".into()]).unwrap();
+        assert!(store.get_skill_categories().unwrap().contains(&"legacy".to_string()));
+        store.delete_tag("UI").unwrap();
+        assert!(store.get_skill_by_id("a").unwrap().is_some());
+        assert_eq!(store.get_tags_map().unwrap()["a"], vec!["legacy"]);
+        assert!(!store.get_skill_categories().unwrap().contains(&"UI".to_string()));
+    }
 
     fn skill(id: &str) -> SkillRecord {
         SkillRecord {

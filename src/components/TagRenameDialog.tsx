@@ -7,9 +7,10 @@ interface Props {
   currentName: string;
   onClose: () => void;
   onRename: (newName: string) => Promise<void>;
+  title?: string;
 }
 
-export function TagRenameDialog({ open, currentName, onClose, onRename }: Props) {
+export function TagRenameDialog({ open, currentName, onClose, onRename, title }: Props) {
   const { t } = useTranslation();
   const [name, setName] = useState(currentName);
   const [loading, setLoading] = useState(false);
@@ -44,9 +45,10 @@ export function TagRenameDialog({ open, currentName, onClose, onRename }: Props)
       <div className="absolute inset-0 z-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
       <div className="relative z-10 bg-surface border border-border rounded-xl w-full max-w-[400px] p-5 shadow-2xl">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-[13px] font-semibold text-primary">{t("mySkills.tags.renameTag")}</h2>
+          <h2 className="text-[13px] font-semibold text-primary">{title ?? t("mySkills.tags.renameTag")}</h2>
           <button
             onClick={onClose}
+            aria-label={t("common.close")}
             className="text-muted hover:text-secondary p-1 rounded transition-colors outline-none"
           >
             <X className="w-4 h-4" />

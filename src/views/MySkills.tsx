@@ -159,6 +159,7 @@ export function MySkills() {
   const [tagMenu, setTagMenu] = useState<{ tag: string; x: number; y: number } | null>(null);
   const [tagToRename, setTagToRename] = useState<string | null>(null);
   const [tagToDelete, setTagToDelete] = useState<string | null>(null);
+  const [createCategoryOpen, setCreateCategoryOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const refreshAfterDeleteRef = useRef<number | null>(null);
@@ -205,7 +206,7 @@ export function MySkills() {
 
   const refreshAllTags = async () => {
     try {
-      const tags = await api.getAllTags();
+      const tags = await api.getSkillCategories();
       setAllTags(tags);
     } catch {
       // not critical
@@ -225,7 +226,7 @@ export function MySkills() {
   // `replaceTagInFilters` just moved onto the new name.
   useEffect(() => {
     if (skills.length === 0) return;
-    const hasUntagged = skills.some((skill) => skill.tags.length === 0);
+    const hasUntagged = true;
     const available = [...allTags, ...skills.flatMap((skill) => skill.tags)];
     setTagFilters((prev) => pruneStaleTagFilters(prev, available, hasUntagged));
   }, [allTags, skills]);
@@ -932,6 +933,7 @@ export function MySkills() {
     try {
       await api.renameTag(oldName, trimmed);
       replaceTagInFilters(oldName, trimmed);
+      await refreshAllTags();
       toast.success(t("mySkills.tags.tagRenamed"));
       await refreshManagedSkills();
     } catch (error: unknown) {
@@ -946,6 +948,7 @@ export function MySkills() {
     try {
       await api.deleteTag(tag);
       replaceTagInFilters(tag);
+      await refreshAllTags();
       toast.success(t("mySkills.tags.tagDeleted"));
       await refreshManagedSkills();
     } catch (error: unknown) {
@@ -1244,7 +1247,7 @@ export function MySkills() {
         {allTags.length > 0 && (
           <>
             <span className="mx-0.5 h-3 w-px bg-border-subtle" />
-            {skills.some((s) => s.tags.length === 0) && (() => {
+            {(() => {
               const isActive = tagFilters.has(UNTAGGED_FILTER);
               return (
                 <button
@@ -1283,11 +1286,15 @@ export function MySkills() {
                   )}
                 >
                   {tag}
+                  <span className="ml-1 text-[10px] opacity-70">{skills.filter((skill) => skill.tags.includes(tag)).length}</span>
                 </button>
               );
             })}
           </>
         )}
+        <button type="button" onClick={() => setCreateCategoryOpen(true)} className="inline-flex items-center gap-1 rounded-full border border-dashed border-border px-2.5 py-0.5 text-[12px] text-muted hover:text-secondary">
+          <Plus className="h-3 w-3" />{t("mySkills.tags.createCategory")}
+        </button>
       </div>
 
       {isMultiSelect && (
@@ -1927,6 +1934,22 @@ export function MySkills() {
         currentName={tagToRename || ""}
         onClose={() => setTagToRename(null)}
         onRename={handleRenameTag}
+      />
+      <TagRenameDialog
+        open={createCategoryOpen}
+        currentName=""
+        title={t("mySkills.tags.createCategory")}
+        onClose={() => setCreateCategoryOpen(false)}
+        onRename={async (name) => {
+          try {
+            await api.createSkillCategory(name);
+            await refreshAllTags();
+            toast.success(t("mySkills.tags.tagAdded"));
+          } catch (error: unknown) {
+            toast.error(getErrorMessage(error, t("common.error")));
+            throw error;
+          }
+        }}
       />
       {tagMenu && (
         <>

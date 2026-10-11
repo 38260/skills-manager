@@ -390,6 +390,10 @@ export const batchImportFolder = (folderPath: string) =>
 
 export const getAllTags = () => invoke<string[]>("get_all_tags");
 
+export const getSkillCategories = () => invoke<string[]>("get_skill_categories");
+
+export const createSkillCategory = (name: string) => invoke<void>("create_skill_category", { name });
+
 export const setSkillTags = (skillId: string, tags: string[]) =>
   invoke<void>("set_skill_tags", { skillId, tags });
 

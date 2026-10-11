@@ -3008,6 +3008,24 @@ pub fn resync_copy_targets(store: &SkillStore, skill_id: &str) -> Result<(), App
 }
 
 #[tauri::command]
+pub async fn get_skill_categories(store: State<'_, Arc<SkillStore>>) -> Result<Vec<String>, AppError> {
+    let store = store.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || store.get_skill_categories().map_err(AppError::db)).await?
+}
+
+#[tauri::command]
+pub async fn create_skill_category(name: String, store: State<'_, Arc<SkillStore>>) -> Result<(), AppError> {
+    if name.trim().is_empty() {
+        return Err(AppError::invalid_input("Category name cannot be empty"));
+    }
+    let store = store.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        sync_metadata::with_repo_lock("create skill category", || store.create_skill_category(&name))
+            .map_err(AppError::db)
+    }).await?
+}
+
+#[tauri::command]
 pub async fn get_all_tags(store: State<'_, Arc<SkillStore>>) -> Result<Vec<String>, AppError> {
     let store = store.inner().clone();
     tauri::async_runtime::spawn_blocking(move || store.get_all_tags().map_err(AppError::db)).await?
