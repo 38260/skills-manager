@@ -10,6 +10,7 @@ import { Library, registerCancel, releaseCancel } from "./library.mjs";
 import { presetCommands } from "./presets.mjs";
 import { toolCommands } from "./tools-settings.mjs";
 import { scanCommands } from "./scan.mjs";
+import { workspaceCommands } from "./workspace.mjs";
 import { redact } from "./files.mjs";
 
 function parseArgs(argv) {
@@ -187,6 +188,9 @@ const commands = {
 
   // ── 扫描导入与市场 ──
   ...scanCommands(store, library),
+
+  // ── 全局工作区 ──
+  ...workspaceCommands(store, library),
 };
 
 const activity = new ActivityService({

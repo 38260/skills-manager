@@ -305,6 +305,26 @@ export class Library {
     this.store.saveMetadata(id);this.changed();
     return this.store.skill(id);
   }
+  // 用指定目录内容整体替换中心技能（工作区／项目导入到中心共用）：保留 ID、分类、Preset 与部署关系，
+  // 失败回滚为原内容，并强制刷新 copy 模式的部署副本。
+  async replaceWithDirectory(id,sourceDir) {
+    const skill=this.store.skill(id);
+    const staged=inside(this.store.skillsDirectory,".replace-"+crypto.randomUUID());
+    copySkill(sourceDir,staged);
+    const previous=inside(this.store.skillsDirectory,".previous-"+crypto.randomUUID());
+    fs.renameSync(skill.central_path,previous);
+    try {fs.renameSync(staged,skill.central_path);}
+    catch(error){fs.renameSync(previous,skill.central_path);fs.rmSync(staged,{recursive:true,force:true});throw error;}
+    const info=metadata(skill.central_path);
+    try {
+      this.store.run("UPDATE skills SET description=?,content_hash=?,updated_at=? WHERE id=?",info.description,hashDirectory(skill.central_path),Date.now(),id);
+      this.saveManifest(id,skill.central_path);
+    } catch(error){fs.rmSync(skill.central_path,{recursive:true,force:true});fs.renameSync(previous,skill.central_path);throw error;}
+    fs.rmSync(previous,{recursive:true,force:true});
+    for(const target of skill.targets.filter(target=>target.mode==="copy")) await this.deploy(id,target.tool,{force:true});
+    this.store.saveMetadata(id);this.changed();
+    return this.store.skill(id);
+  }
 
   async deploy(id,key,{force=false,destination}={}) {
     const skill=this.store.skill(id),tool=this.tool(key),target=destination||this.target(skill,tool);
