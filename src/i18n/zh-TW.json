@@ -422,6 +422,31 @@
       "apply": "同步 {{count}} 項",
       "noAgents": "沒有已安裝並啟用的 Agent。",
       "allSynced": "選取的 Skill 都已同步到這個 Agent"
+    },
+    "detail": {
+      "back": "返回技能庫",
+      "viewSource": "檢視來源",
+      "viewDiff": "檢視差異",
+      "updateSkill": "更新 Skill",
+      "checkUpdate": "檢查並更新",
+      "reimport": "重新匯入",
+      "noSource": "本機技能，無更新來源",
+      "badgeUpdateAvailable": "有更新",
+      "checking": "檢查中…",
+      "updating": "更新中…",
+      "toc": "目錄",
+      "tocEmpty": "文件沒有可跳轉的標題",
+      "deployToTools": "部署到工具",
+      "projects": "專案關聯",
+      "sourceInfo": "來源資訊",
+      "tabDoc": "文件",
+      "tabSourceDiff": "來源與差異",
+      "tabActivity": "呼叫記錄",
+      "activityHint": "查看該技能的呼叫與文件載入記錄。",
+      "activityOpen": "開啟呼叫記錄頁",
+      "activityUnavailable": "呼叫記錄模組未載入",
+      "sidebar": "資訊欄",
+      "doc": "文件"
     }
   },
   "install": {

@@ -465,6 +465,31 @@
       "apply": "同步 {{count}} 项",
       "noAgents": "没有已安装并启用的 Agent。",
       "allSynced": "选中的 Skill 都已同步到这个 Agent"
+    },
+    "detail": {
+      "back": "返回技能库",
+      "viewSource": "查看来源",
+      "viewDiff": "查看差异",
+      "updateSkill": "更新 Skill",
+      "checkUpdate": "检查并更新",
+      "reimport": "重新导入",
+      "noSource": "本地技能，无更新来源",
+      "badgeUpdateAvailable": "有更新",
+      "checking": "检查中…",
+      "updating": "更新中…",
+      "toc": "目录",
+      "tocEmpty": "文档没有可跳转的标题",
+      "deployToTools": "部署到工具",
+      "projects": "项目关联",
+      "sourceInfo": "来源信息",
+      "tabDoc": "文档",
+      "tabSourceDiff": "来源与差异",
+      "tabActivity": "调用记录",
+      "activityHint": "查看该技能的调用与文档加载记录。",
+      "activityOpen": "打开调用记录页",
+      "activityUnavailable": "调用记录模块未加载",
+      "sidebar": "信息栏",
+      "doc": "文档"
     }
   },
   "install": {

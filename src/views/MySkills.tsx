@@ -1883,6 +1883,9 @@ export function MySkills() {
         onToggleTool={handleToggleSkillTool}
         projects={projects}
         onProjectsChanged={refreshProjects}
+        onCheckUpdate={handleCheckUpdate}
+        onUpdate={handleRefreshSkill}
+        busyAction={updatingSkillId ?? checkingSkillId}
       />
 
       <ConfirmDialog

@@ -1,49 +1,57 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "../utils";
+import { stripMarkdownFrontmatter } from "../lib/skillMarkdownText";
 
 interface SkillMarkdownProps {
   content: string;
   className?: string;
+  /** 标题锚点 id 前缀；配合目录跳转使用。 */
+  headingIdPrefix?: string;
+  /** 隐藏首个 h1（避免与页头技能名重复展示）。 */
+  hideFirstHeading?: boolean;
 }
 
-function stripMarkdownFrontmatter(content: string) {
-  if (!content.startsWith("---\n")) return content;
-
-  const end = content.indexOf("\n---\n", 4);
-  if (end === -1) return content;
-
-  return content.slice(end + 5).trimStart();
-}
-
-export function SkillMarkdown({ content, className }: SkillMarkdownProps) {
+export function SkillMarkdown({ content, className, headingIdPrefix, hideFirstHeading = false }: SkillMarkdownProps) {
   const markdown = stripMarkdownFrontmatter(content);
+  // 隐藏与页头技能名重复的首个 h1：记录其源行号，渲染时跳过（行号与其余锚点保持一致）。
+  const firstH1Line = (() => {
+    if (!hideFirstHeading) return null;
+    const lines = markdown.split(/\r?\n/);
+    for (let index = 0; index < lines.length; index++) {
+      if (/^```/.test(lines[index])) break;
+      if (/^#\s+/.test(lines[index])) return index;
+    }
+    return null;
+  })();
+  const headingId = (node: unknown) => {
+    if (!headingIdPrefix) return undefined;
+    const position = (node as { position?: { start?: { line?: number } } } | null | undefined)?.position;
+    if (!position?.start?.line) return undefined;
+    return `${headingIdPrefix}-heading-${position.start.line - 1}`;
+  };
+  const isHiddenFirstH1 = (node: unknown) => {
+    if (firstH1Line === null) return false;
+    const position = (node as { position?: { start?: { line?: number } } } | null | undefined)?.position;
+    return position?.start?.line === firstH1Line + 1;
+  };
 
   return (
-    <article className={cn("mx-auto w-full max-w-[1240px] text-[13px] leading-6 text-secondary", className)}>
+    <article className={cn("mx-auto w-full max-w-[860px] text-[14px] leading-[25px] text-secondary", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          h1: ({ className, ...props }) => (
-            <h1
-              className={cn("mb-4 text-[28px] font-semibold leading-tight text-primary", className)}
-              {...props}
-            />
+          h1: ({ node, ...props }) => (isHiddenFirstH1(node) ? null : (
+            <h1 id={headingId(node)} className={cn("mb-4 text-[26px] font-semibold leading-tight text-primary")} {...props} />
+          )),
+          h2: ({ node, ...props }) => (
+            <h2 id={headingId(node)} className={cn("mb-3 mt-8 text-[19px] font-semibold leading-tight text-primary")} {...props} />
           ),
-          h2: ({ className, ...props }) => (
-            <h2
-              className={cn("mb-3 mt-8 text-[20px] font-semibold leading-tight text-primary", className)}
-              {...props}
-            />
-          ),
-          h3: ({ className, ...props }) => (
-            <h3
-              className={cn("mb-2 mt-6 text-[16px] font-semibold leading-tight text-primary", className)}
-              {...props}
-            />
+          h3: ({ node, ...props }) => (
+            <h3 id={headingId(node)} className={cn("mb-2 mt-6 text-[15.5px] font-semibold leading-tight text-primary")} {...props} />
           ),
           p: ({ className, ...props }) => (
-            <p className={cn("mb-4 text-[13px] leading-6 text-secondary", className)} {...props} />
+            <p className={cn("mb-4 text-[14px] leading-[25px] text-secondary", className)} {...props} />
           ),
           a: ({ className, href, ...props }) => {
             const dangerous = /^(javascript|vbscript|data):/i;
@@ -123,6 +131,9 @@ export function SkillMarkdown({ content, className }: SkillMarkdownProps) {
           ),
           td: ({ className, ...props }) => (
             <td className={cn("border-b border-border-subtle px-3 py-2 text-secondary", className)} {...props} />
+          ),
+          img: ({ className, ...props }) => (
+            <img className={cn("max-w-full rounded-lg", className)} loading="lazy" {...props} />
           ),
         }}
       >

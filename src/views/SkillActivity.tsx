@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 import { History, RefreshCw, Square, ChevronLeft, ChevronRight, ChevronDown, Search, Settings2 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { SkillDetailPanel } from "../components/SkillDetailPanel";
@@ -48,9 +49,12 @@ function SourceEditor({ source, running, onSaved }: { source: api.ActivitySource
 export function SkillActivity() {
   const { t, i18n } = useTranslation();
   const { managedSkills } = useApp();
+  // 详情页"调用记录"页签通过 /skill-activity?skill=名称 深链进入并预填筛选。
+  const [searchParams] = useSearchParams();
+  const deepLinkSkill = searchParams.get("skill") ?? "";
   const [skillId, setSkillId] = useState<string | null>(null);
-  const [filters, setFilters] = useState(initialFilters);
-  const [query, setQuery] = useState<api.ActivityQuery>({ page: 1, pageSize: 50 });
+  const [filters, setFilters] = useState({ ...initialFilters, skillName: deepLinkSkill });
+  const [query, setQuery] = useState<api.ActivityQuery>({ page: 1, pageSize: 50, skillName: deepLinkSkill });
   const [result, setResult] = useState<api.ActivityResult | null>(null);
   const [sources, setSources] = useState<api.ActivitySource[]>([]);
   const [running, setRunning] = useState(false);

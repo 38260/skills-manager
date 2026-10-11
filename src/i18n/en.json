@@ -465,6 +465,31 @@
       "apply": "Sync {{count}}",
       "noAgents": "No installed and enabled agents.",
       "allSynced": "Every selected skill is already on this agent"
+    },
+    "detail": {
+      "back": "Back to Skills",
+      "viewSource": "View Source",
+      "viewDiff": "View Diff",
+      "updateSkill": "Update Skill",
+      "checkUpdate": "Check & Update",
+      "reimport": "Re-import",
+      "noSource": "Local skill, no update source",
+      "badgeUpdateAvailable": "Update available",
+      "checking": "Checking…",
+      "updating": "Updating…",
+      "toc": "On this page",
+      "tocEmpty": "No headings to jump to",
+      "deployToTools": "Deploy to Tools",
+      "projects": "Projects",
+      "sourceInfo": "Source Info",
+      "tabDoc": "Document",
+      "tabSourceDiff": "Source & Diff",
+      "tabActivity": "Activity",
+      "activityHint": "View invocation and document-load records for this skill.",
+      "activityOpen": "Open Skill Activity",
+      "activityUnavailable": "Activity module unavailable",
+      "sidebar": "Info panel",
+      "doc": "Document"
     }
   },
   "install": {
