@@ -1,10 +1,10 @@
 {
-  "at": "2026-10-12T13:40:26.958Z",
+  "at": "2026-10-12T14:02:10.997Z",
   "results": [
     {
       "label": "A 记录类型带底色徽章（indigo/teal/amber）",
       "ok": true,
-      "detail": "{\"total\":307,\"kindColored\":true,\"triggerColored\":true,\"auto\":51,\"manual\":0,\"unknown\":0,\"bodyHasRows\":true}"
+      "detail": "{\"total\":157,\"kindColored\":true,\"triggerColored\":true,\"auto\":21,\"manual\":0,\"unknown\":0,\"bodyHasRows\":true}"
     },
     {
       "label": "A 触发方式带底色徽章",
@@ -14,7 +14,7 @@
     {
       "label": "B 列表里出现「自动触发」徽章",
       "ok": true,
-      "detail": "自动触发 51 / 手动触发 0 / 来源未知 0"
+      "detail": "自动触发 21 / 手动触发 0 / 来源未知 0"
     },
     {
       "label": "C 市场卡片显示下载量图标",
