@@ -5,8 +5,8 @@ import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 
-const DIR = "C:/Users/luckyzyb/.skills-manager";
-const HOME = "D:/AIWorkSpace/Codex/SkillManager/skills-manager/output/list-align-verify/data";
+const DIR = process.env.SKILLS_MANAGER_DIR || path.join(os.homedir(), ".skills-manager");
+const HOME = path.resolve("output/list-align-verify/data");
 const OUT = "output/list-align-verify";
 fs.mkdirSync(OUT, { recursive: true });
 fs.mkdirSync(HOME, { recursive: true });
@@ -111,6 +111,20 @@ try {
   })()`);
   console.log("\n每行各列起始 x 坐标（前 6 行）:");
   for (const [i, row] of (cols ?? []).entries()) console.log(`  row${i}: ${JSON.stringify(row)}`);
+
+  record("布局宽度", await evaluate(`(() => {
+    const rows = [...document.querySelectorAll('.app-panel')].filter(el => el.className.includes('items-center') && el.querySelector('h3'));
+    const row = rows[0];
+    const page = document.querySelector('.app-page');
+    const main = document.querySelector('.app-page')?.parentElement;
+    const r = el => el ? { left: Math.round(el.getBoundingClientRect().left), right: Math.round(el.getBoundingClientRect().right), width: Math.round(el.getBoundingClientRect().width) } : null;
+    return {
+      viewport: window.innerWidth,
+      row: r(row),
+      page: r(page),
+      mainScroll: r(main),
+    };
+  })()`));
 
   fs.writeFileSync(path.join(OUT, "report.json"), JSON.stringify({ switched, cols }, null, 2));
 } catch (error) {

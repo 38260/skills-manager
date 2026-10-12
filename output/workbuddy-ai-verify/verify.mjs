@@ -1,14 +1,16 @@
 // 验证新增的 workbuddy_ai 来源：注册、扫描、解析出 Skill 调用。
 import fs from "node:fs";
 import net from "node:net";
+import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 
-const BASE = "D:/AIWorkSpace/Codex/SkillManager/skills-manager/output/workbuddy-ai-verify/data";
+const BASE = path.resolve("output/workbuddy-ai-verify/data");
 const HOME = BASE;
 const DIR = `${BASE}/.skills-manager`;
 // 含 Skill 调用的真实日志样本（来自 WorkBuddy AI 的当前项目会话）。
-const SAMPLE = "C:/Users/luckyzyb/.workbuddy-ai/projects/d-AIWorkSpace-Codex-SkillManager/ef077280-54e7-485d-9b66-bdb351fdea75.jsonl";
+// 需要一份含 Skill 调用的真实样本：用环境变量指定，或默认取本机 WorkBuddy AI 的项目目录。
+const SAMPLE = process.env.WORKBUDDY_AI_SAMPLE || path.join(os.homedir(), ".workbuddy-ai", "projects");
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const freePort = () => new Promise((res, rej) => {

@@ -113,10 +113,10 @@ fs.mkdirSync(path.dirname(logFile), { recursive: true });
 fs.writeFileSync(logFile, '{"type":"demo"}\n');
 const now = Date.now();
 const rows = [
-  { tool: "codex", trigger: "manual", kind: "invocation", status: "returned", evidence: "user_selection", project: "D:/AIWorkSpace/Codex/SkillManager", hours: 1 },
-  { tool: "codex", trigger: "automatic", kind: "invocation", status: "returned", evidence: "user_auto_choice", project: "D:/AIWorkSpace/Codex/SkillManager", hours: 3 },
-  { tool: "workbuddy", trigger: "unknown", kind: "document", status: "returned", evidence: "document_read", project: "D:/AIWorkSpace/Codex/SkillManager", hours: 6 },
-  { tool: "dsh", trigger: "manual", kind: "invocation", status: "failed", evidence: "user_selection", project: "D:/AIWorkSpace/test", hours: 26 },
+  { tool: "codex", trigger: "manual", kind: "invocation", status: "returned", evidence: "user_selection", project: "C:/dev/checkout-web", hours: 1 },
+  { tool: "codex", trigger: "automatic", kind: "invocation", status: "returned", evidence: "user_auto_choice", project: "C:/dev/checkout-web", hours: 3 },
+  { tool: "workbuddy", trigger: "unknown", kind: "document", status: "returned", evidence: "document_read", project: "C:/dev/checkout-web", hours: 6 },
+  { tool: "dsh", trigger: "manual", kind: "invocation", status: "failed", evidence: "user_selection", project: "C:/dev/data-pipeline", hours: 26 },
   { tool: "qoder", trigger: "automatic", kind: "invocation", status: "returned", evidence: "user_auto_choice", project: null, hours: 50 },
   { tool: "zcode", trigger: "unknown", kind: "invocation", status: "pending", evidence: "skill_call", project: "D:/Code/CCCode", hours: 74 },
 ];

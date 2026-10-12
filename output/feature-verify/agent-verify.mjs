@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 
-const BASE = "D:/AIWorkSpace/Codex/SkillManager/skills-manager/output/feature-verify/data";
+const BASE = path.resolve("output/feature-verify/data");
 const DIR = `${BASE}/.skills-manager`;
 const HOME = BASE;
 const OUT = "output/feature-verify";

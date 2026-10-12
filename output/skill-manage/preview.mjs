@@ -7,8 +7,8 @@ import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 
-const LIBRARY = "C:/Users/luckyzyb/.skills-manager";
-const ACTIVITY = "C:/Users/luckyzyb/.skills-manager-activity";
+const LIBRARY = process.env.SKILLS_MANAGER_DIR || path.join(os.homedir(), ".skills-manager");
+const ACTIVITY = process.env.SKILLS_MANAGER_ACTIVITY_DIR || path.join(os.homedir(), ".skills-manager-activity");
 const evidence = path.resolve("output/skill-manage/evidence");
 fs.mkdirSync(evidence, { recursive: true });
 

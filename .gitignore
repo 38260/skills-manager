@@ -41,6 +41,13 @@ AGENTS.md
 # 验收用隔离数据：由 output/*/seed.mjs 生成，不入库
 output/*/data
 
+# ⚠️ README 截图必须用 output/readme-shots/seed-demo.mjs 生成的**虚构演示数据**（隔离目录 D:/sm-demo）。
+# 不要拿真实技能库出图：README 是公开的，截图里会出现真实技能名、本机路径和调用记录。
+# 下列探针产物就是在真实数据上跑的，一律不入库。
+output/ui-contrast/evidence/real-*
+output/page-perf/evidence
+output/readme-shots/manifest.json
+
 # 改动用户技能库前的本地备份（含用户数据，不入库）
 output/skill-classify-backup
 output/skill-category-backup

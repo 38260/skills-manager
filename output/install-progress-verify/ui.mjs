@@ -8,7 +8,7 @@ import { spawn } from "node:child_process";
 const REPO = "file:///tmp/git-fixture";
 // 必须用绝对 Windows 路径：Git Bash 的 /tmp 是 %TEMP%，而 node 的 path.resolve('/tmp/..')
 // 会解析成当前盘符根目录（D:\tmp），两者不是同一个地方，会导致测试数据串台。
-const BASE = "D:/AIWorkSpace/Codex/SkillManager/skills-manager/output/install-progress-verify/data";
+const BASE = path.resolve("output/install-progress-verify/data");
 const DIR = `${BASE}/.skills-manager`;
 const HOME = BASE;
 const OUT = "output/install-progress-verify";

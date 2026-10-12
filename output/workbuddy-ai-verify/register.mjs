@@ -1,10 +1,12 @@
 // 启动一次真实服务，让 sources 表补上 workbuddy_ai（initialize 用 INSERT OR IGNORE）。
 // 查到结果后立即退出，不等后台扫描跑完。
 import net from "node:net";
+import os from "node:os";
+import path from "node:path";
 import { spawn } from "node:child_process";
 
-const DIR = "C:/Users/luckyzyb/.skills-manager";
-const HOME = "C:/Users/luckyzyb";
+const DIR = process.env.SKILLS_MANAGER_DIR || path.join(os.homedir(), ".skills-manager");
+const HOME = os.homedir();
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const freePort = () => new Promise((res, rej) => {
   const p = net.createServer();
