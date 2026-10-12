@@ -447,7 +447,11 @@
       "activityOpen": "開啟呼叫記錄頁",
       "activityUnavailable": "呼叫記錄模組未載入",
       "sidebar": "資訊欄",
-      "doc": "文件"
+      "doc": "文件",
+      "copyCode": "複製",
+      "copiedCode": "已複製",
+      "copyFailed": "複製失敗",
+      "plainText": "純文字"
     }
   },
   "install": {

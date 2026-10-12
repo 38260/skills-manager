@@ -270,8 +270,8 @@ function SkillDetailPanelContent({
 
   // 目录：跳过与技能名重复的首个标题（页头已展示）。
   const headings = useMemo(
-    () => (activeDoc ? extractHeadings(activeDoc.content, { skipFirst: true }) : []),
-    [activeDoc]
+    () => (activeDoc ? extractHeadings(activeDoc.content, { skipFirst: true, repeatedTitle: skill.name }) : []),
+    [activeDoc, skill.name]
   );
 
   // 滚动高亮当前小节：取视口顶部附近最后一个标题。
@@ -555,7 +555,7 @@ function SkillDetailPanelContent({
                     <p className="mb-3 text-[12.5px] text-muted">
                       {activeSourceDoc.source_label} · {activeSourceDoc.revision.slice(0, 7)}
                     </p>
-                    <SkillMarkdown content={activeSourceDoc.content} hideFirstHeading />
+                    <SkillMarkdown content={activeSourceDoc.content} hideFirstHeading repeatedTitle={skill.name} variant="detail" />
                     </> : <p className="text-sm text-muted">{t(sourceDocLoading ? "common.loading" : "mySkills.sourceDiffUnavailable")}</p>}
                 </section>
               </div>
@@ -576,6 +576,8 @@ function SkillDetailPanelContent({
                 content={activeDoc.content}
                 headingIdPrefix={tocPrefix}
                 hideFirstHeading
+                repeatedTitle={skill.name}
+                variant="detail"
               />
             ) : (
               <div className="mt-12 text-center text-[13px] text-muted">{t("common.documentMissing")}</div>

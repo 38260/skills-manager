@@ -490,7 +490,11 @@
       "activityOpen": "Open Skill Activity",
       "activityUnavailable": "Activity module unavailable",
       "sidebar": "Info panel",
-      "doc": "Document"
+      "doc": "Document",
+      "copyCode": "Copy",
+      "copiedCode": "Copied",
+      "copyFailed": "Copy failed",
+      "plainText": "Plain text"
     }
   },
   "install": {

@@ -490,7 +490,11 @@
       "activityOpen": "打开调用记录页",
       "activityUnavailable": "调用记录模块未加载",
       "sidebar": "信息栏",
-      "doc": "文档"
+      "doc": "文档",
+      "copyCode": "复制",
+      "copiedCode": "已复制",
+      "copyFailed": "复制失败",
+      "plainText": "纯文本"
     }
   },
   "install": {
