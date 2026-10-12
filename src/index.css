@@ -3,24 +3,28 @@
 @tailwind utilities;
 
 @layer base {
-  /* Light theme (default) */
+  /* Light theme (default)
+     层次重建（2026-10-12）：原配色下卡片与页面「分不开」，整屏偏灰。无头实测（output/ui-contrast）：
+       卡片 #FFF vs 页面 #FAFAFA 亮度差仅 0.044；卡片边框 #E4E4E7 对页面 1.22:1；卡片阴影 4% 透明 ≈ 不可见。
+       另外卡片次级文字 #8B8B94 只有 3.38:1（低于 WCAG AA 4.5）。
+     改法：页面底压深一档 + 边框提到可辨（≈1.3:1）+ 次级文字提亮到过 AA，全部只动 token，一处生效全局。 */
   :root {
     --app-scale: 1;
-    --color-bg: #FAFAFA;
-    --color-bg-secondary: #F4F4F5;
+    --color-bg: #F1F1F4;
+    --color-bg-secondary: #F7F7F9;
     --color-surface: #FFFFFF;
-    --color-surface-hover: #F4F4F5;
-    --color-surface-active: #E4E4E7;
-    --color-border: #D4D4D8;
-    --color-border-subtle: #E4E4E7;
-    --color-border-faint: #EEEEF0;
-    --shadow-card: 0 1px 2px rgba(24, 24, 27, 0.04);
-    --shadow-card-hover: 0 4px 12px rgba(24, 24, 27, 0.07);
+    --color-surface-hover: #EAEAEE;
+    --color-surface-active: #E0E0E5;
+    --color-border: #C7C7CE;
+    --color-border-subtle: #D5D5DB;
+    --color-border-faint: #E7E7EB;
+    --shadow-card: 0 1px 2px rgba(24, 24, 27, 0.05), 0 2px 6px rgba(24, 24, 27, 0.04);
+    --shadow-card-hover: 0 4px 14px rgba(24, 24, 27, 0.09);
     --color-text-primary: #18181B;
     --color-text-secondary: #27272A;
     --color-text-tertiary: #52525B;
-    --color-text-muted: #71717A;
-    --color-text-faint: #8B8B94;
+    --color-text-muted: #65656E;
+    --color-text-faint: #70707A;
     --color-accent: #059669;
     --color-accent-light: #10B981;
     --color-accent-dark: #047857;

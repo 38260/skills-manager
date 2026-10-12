@@ -13,6 +13,38 @@
 
 ## 已完成
 
+### ✅ 小功能：浅色主题重建卡片与页面层次（2026-10-12）
+
+**背景**：用户反馈技能库「灰蒙蒙」。无头 CDP 实测（`output/ui-contrast/probe.mjs`，逐层 alpha 合成后算 WCAG）
+定位两处硬伤：①卡片三层分隔全部失效——卡片 #FFF vs 页面 #FAFAFA 亮度差仅 **0.044**、边框对页面 **1.22:1**、
+阴影 4% 透明等于没有；②卡片 12px 次级文字 **#8B8B94 只有 3.38:1**（低于 AA 4.5）。
+
+- [x] `src/index.css` 浅色 token：页面底 `#FAFAFA→#F1F1F4`、侧栏 `#F4F4F5→#F7F7F9`、
+      hover `#F4F4F5→#EAEAEE`、active `#E4E4E7→#E0E0E5`、border `#D4D4D8→#C7C7CE`、
+      border-subtle `#E4E4E7→#D5D5DB`、border-faint `#EEEEF0→#E7E7EB`、
+      muted `#71717A→#65656E`、faint `#8B8B94→#70707A`、阴影加两层
+- [x] 验证（同基准 fixture before/after，`output/ui-contrast/evidence/`）：
+      卡页亮度差 0.044 → **0.119**；边框对页面 1.22 → **1.30**；作者行/用量行 3.38 ✗ → **4.90 ✓**；
+      描述 4.83 → 5.77；筛选条次级按钮 4.40 ✗ → **4.81 ✓**；全部断言转绿
+- [x] 回归：设置页 / 调用记录页 / 深色主题各截一张，无副作用
+      （设置页「中央仓库路径」标签在**超长路径**下被挤成竖排——已确认改前同样存在，属既有隐患，不在本次范围）
+- [x] 提交 Git
+
+### ✅ 小功能：侧边栏 Preset 段按需显示 + 新建入口移到技能库（2026-10-12）
+
+**背景**：用户问「侧边栏 Preset 还有用吗」。核查结论：**不是死代码**（181 处引用，`PresetBar` 在
+全局工作区/项目详情是主入口，`viewedPreset` 驱动技能库过滤/排序/拖拽），但用户只有 1 个 Preset
+（Default，内含 1 个技能），侧边栏那一段只切换视图过滤、是纯噪音。
+
+- [x] `Sidebar.tsx`：Preset 段改为 `orderedPresets.length > 1` 才渲染（不删功能，只按需显示）；
+      移除段内的「+ 新建 Preset」按钮与 `CreatePresetDialog`
+- [x] `MySkills.tsx`：筛选条新增「+ 新建 Preset」入口（复用 `app-toolbar-button-secondary`），
+      接入创建流程并 refresh
+- [x] i18n：`mySkills.newPreset`（中/英/繁）三处补齐
+- [x] 验证：侧栏 Preset 标题/Default 行/新建入口 在单 Preset 下均**消失**，筛选条出现新按钮；
+      端到端跑通「点按钮 → 填名 → 创建 → 侧栏重新出现 Preset 段（Default + Verification）」
+- [x] 提交 Git
+
 ### ✅ 小功能：英文展示字体切换为 Segoe UI / Cascadia Code（2026-10-12）
 
 **背景**：用户反馈应用内英文展示（技能名、英文技能文档、来源路径、代码）字体难看。
