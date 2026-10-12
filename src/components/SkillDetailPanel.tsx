@@ -24,6 +24,7 @@ import {
 import { SkillSourceDiffViewer } from "./SkillSourceDiffViewer";
 import { SkillMarkdown } from "./SkillMarkdown";
 import { extractHeadings } from "../lib/markdownOutline";
+import { skillRepoUrl, repoLabel } from "../lib/skillRepo";
 import { AgentIcon } from "./AgentIcon";
 import { ToggleSwitch } from "./ToggleSwitch";
 import { SkillProjectsSection } from "./SkillProjectsSection";
@@ -334,6 +335,11 @@ function SkillDetailPanelContent({
     : `${sourceTypeLabel(skill.source_type)} · ${sourceLocation.replace(/\\/g, "/").replace(/\/$/, "").split("/").pop() || skill.name}`;
   const sourceHref = webSource ? webSource.origin + webSource.pathname.replace(/\.git$/, "") : null;
 
+  // 本地导入的技能自身不带远程来源（sourceLabel 只会显示本机路径），这里补上它在 GitHub 上的
+  // 上游仓库 —— 只显示**逐个核对过内容**的那些（见 lib/skillRepo.ts），核不出来就整行不显示。
+  // 远程来源的技能已经由上方「打开来源网页」承担同一件事，不再重复一行。
+  const repoUrl = sourceHref ? null : skillRepoUrl(skill);
+
   // 来源位置：本地来源打开目录，远程来源打开网页；两者都直接交给系统处理。
   const localSourceLocation = ["local", "import"].includes(skill.source_type)
     ? skill.source_ref_resolved || skill.source_ref
@@ -345,6 +351,14 @@ function SkillDetailPanelContent({
       if (localSourceLocation) await openPath(localSourceLocation, false);
       else if (sourceHref) await openExternal(sourceHref);
     } catch (error) { setSourceOpenError(String(error instanceof Error ? error.message : error)); }
+  }
+
+  // 打开上游 GitHub 仓库（本地导入技能补的那一行）。
+  async function openRepo() {
+    if (!repoUrl) return;
+    setSourceOpenError("");
+    try { await openExternal(repoUrl); }
+    catch (error) { setSourceOpenError(String(error instanceof Error ? error.message : error)); }
   }
 
   // 直接打开当前展示的来源文档：本地来源交给系统默认程序，远程来源打开对应网页。
@@ -536,6 +550,17 @@ function SkillDetailPanelContent({
             ? <span className="min-w-0 flex-1 break-words" title={sourceLabel}>{sourceLabel}</span>
             : <span className="min-w-0 flex-1 text-faint">{t("mySkills.detail.sourceSummaryEmpty")}</span>}
         </div>
+        {repoUrl && (
+          <button
+            type="button"
+            onClick={() => void openRepo()}
+            title={t("mySkills.detail.openRepo", { repo: repoLabel(repoUrl) })}
+            className="inline-flex w-fit items-center gap-1.5 rounded-md text-[12.5px] text-accent-dark outline-none hover:underline focus-visible:ring-2 focus-visible:ring-accent dark:text-accent-light"
+          >
+            <Github className="h-3.5 w-3.5" />
+            {repoLabel(repoUrl)}
+          </button>
+        )}
         {canOpenSourceLocation && (
           <button
             type="button"

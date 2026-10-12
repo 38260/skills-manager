@@ -35,6 +35,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { listen } from "../lib/transport";
 import { StatusBanner } from "../components/StatusBanner";
 import { getErrorMessage, getErrorKind } from "../lib/error";
+import { marketRepoUrl } from "../lib/skillRepo";
 
 const MARKET_PAGE_SIZE = 24;
 const MARKET_SEARCH_STEP = 60;
@@ -941,6 +942,7 @@ export function InstallSkills() {
                       const avatarUrl = `https://github.com/${owner}.png?size=32`;
                       const sourceRef = `${skill.source}/${skill.skill_id}`;
                       const isInstalled = installedSourceRefs.has(sourceRef);
+                      const repoUrl = marketRepoUrl(skill.source);
 
                       return (
                       <div
@@ -973,6 +975,15 @@ export function InstallSkills() {
                             >
                               <ExternalLink className="h-3.5 w-3.5" />
                             </button>
+                            {repoUrl && (
+                              <button
+                                onClick={() => openUrl(repoUrl)}
+                                className="rounded-[5px] p-1 text-muted transition-colors hover:bg-surface-hover hover:text-secondary"
+                                title={t("install.viewRepo", { repo: skill.source })}
+                              >
+                                <Github className="h-3.5 w-3.5" />
+                              </button>
+                            )}
                             {isInstalled ? (
                               <span
                                 className="rounded-[5px] border border-emerald-500/20 bg-emerald-500/10 p-1 text-emerald-400"

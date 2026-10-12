@@ -16,7 +16,7 @@
 | A | 记录类型 / 触发方式加色彩底纹 | `lib/activityTone.ts` 抽出三类徽章配色（记录类型 / 触发方式 / 结果），列表与表格接入；补对比度自检 | [x] |
 | B | 修「来源未知」 | 起因：解析器只认 `$skill` / `/skill`，未点名即判 `unknown`。改为「有用户消息但未点名 → 自动（Agent 自选）」，并识别 WorkBuddy 的 `@skill:` 写法；`PARSER_VERSION` +1 强制重扫；补 `evidenceCodes.agent_choice` 三语文案 | [x] |
 | C | 市场页显示下载量 / 热度 | skills.sh 改版，榜单页已无 `__NEXT_DATA__`，兜底正则也抓不到 `installs`（全为 0）；且 UI 只在「全部」页签显示 | [x] |
-| D | 「查看来源」展示 GitHub 仓库 | 技能详情「来源信息」区块 + 安装页市场卡片展示对应 GitHub 仓库；逐个核实后加入映射，找不到留空 | [ ] |
+| D | 「查看来源」展示 GitHub 仓库 | 技能详情「来源信息」区块补一行上游仓库；安装页市场卡片加 GitHub 入口；逐个核对 53 个技能的内容后写入映射，核不出的留空 | [x] |
 
 **本轮不做**
 
@@ -32,6 +32,7 @@
 | 2026-10-12 | A | 徽章配色抽成 `activityTone.ts`（此前「记录类型」是无底色灰字、触发色很淡），列表/表格接入 | `src/lib/activityTone.ts`、`src/components/ActivityRecordList.tsx`、`src/components/ActivityTable.tsx` | 对比度自检全绿（详见下） |
 | 2026-10-12 | B | 触发判定改为「本轮是否出现过用户消息」，新增 `@skill:` 识别，补 `agent_choice` 文案 | `backend/activity/context.mjs`、`backend/activity/scanner.mjs`、`src/i18n/{zh,en,zh-TW}.json` | 全量重扫对照，unknown 177 → 0 |
 | 2026-10-12 | C | 榜单解析改走 RSC 载荷（`initialSkills`），卡片在三个页签都显示下载量，热门榜另显示较昨日增量 | `backend/skillssh.mjs`、`src/views/InstallSkills.tsx`、`src/lib/tauri.ts`、`src/i18n/{zh,en,zh-TW}.json` | 三个榜单实测，installs 由全 0 → 600/600 有值 |
+| 2026-10-12 | D | 新增 `lib/skillRepo.ts`：技能来源 → GitHub 仓库（技能自身来源优先，其次逐个核对过的映射）；技能详情「来源信息」与市场卡片接入 | `src/lib/skillRepo.ts`、`src/components/SkillDetailPanel.tsx`、`src/views/InstallSkills.tsx`、`src/i18n/{zh,en,zh-TW}.json` | 53 个技能逐内容核对，确证 14 个、排除 5 个同名不同物 |
 
 **批次 A 验证**（`output/activity-fix/check-chip-contrast.mjs`；色值不手抄 —— tailwind 内置色取自 `node_modules`，项目 token 取自 `src/index.css`）
 
@@ -73,6 +74,30 @@
 `"initialSkills"` 字段下；② 兜底正则把 `(?:"installs":(\d+))?` 写在 `[^{}]*?` 之后，**可选组被
 引擎直接跳过**，于是 installs 一个都取不到。UI 侧还额外限了「只在全部页签渲染下载量」，
 两个原因叠在一起，热门 / 趋势页连位置都没有。
+
+**批次 D 验证**（`output/skill-source/verify-repos.mjs`：对 14 个知名「技能集」仓库各取一次文件树，
+用本机 53 个技能名匹配 `<技能名>/SKILL.md`，命中后抓原文与本机 description **前 100 字逐字比对**）
+
+确证 **14 个**（写进 `src/lib/skillRepo.ts` 的 `SKILL_REPOS`）：
+
+| 仓库 | 技能 |
+| --- | --- |
+| `anthropics/skills` | frontend-design、skill-creator |
+| `emilkowalski/skills` | animation-vocabulary、apple-design、emil-design-eng、find-animation-opportunities、improve-animations、review-animations |
+| `openai/skills` | figma、pdf、playwright |
+| `mattpocock/skills` | grill-me |
+| `tt-a1i/archify` | archify |
+| `chuspeeism/dashi-ppt-skill` | dashi-ppt |
+
+**「同名但不同物」，明确排除 5 条**（描述完全对不上，直接按名字关联就会指错仓库）：
+`pdf` ≠ anthropics/skills、`skill-creator` ≠ openai/skills、`find-skills` ≠ vercel-labs/skills、
+`aihot` ≠ kkkkhazix/khazix-skills、`figma` ≠ heygen-com/hyperframes。
+
+其余 **39 个**本地技能（多为自建，如 zyb-ui-design / nature-figure-qa-gate / windows-disk-usage-audit）
+查不到可确证的上游仓库，按用户要求**留空**。
+
+市场页的来源串另有站点型（`smithery.ai/apple-design`、`skills.volces.com/find-skills`、
+`open.feishu.cn/lark-doc`），`marketRepoUrl()` 按「两段都不得含点」过滤掉，不给打不开的地址。
 
 ---
 

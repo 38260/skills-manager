@@ -543,6 +543,7 @@
       "structureUnavailable": "Failed to read the project structure",
       "revealInFolder": "Show in folder",
       "deployNone": "No deployable tools right now",
+      "openRepo": "Open {{repo}} on GitHub",
       "openSourceFolder": "Open source folder",
       "openSourceLink": "Open source page",
       "openSourceFile": "Open file",
@@ -584,6 +585,7 @@
     },
     "oneClickInstall": "Install",
     "viewOnWeb": "View on skills.sh",
+    "viewRepo": "Open {{repo}} on GitHub",
     "installs": "{{value}} installs",
     "change": "{{value}} more than yesterday",
     "pagination": {

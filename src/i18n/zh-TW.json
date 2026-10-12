@@ -500,6 +500,7 @@
       "structureUnavailable": "讀取專案結構失敗",
       "revealInFolder": "在資料夾中顯示",
       "deployNone": "目前沒有可部署的工具",
+      "openRepo": "在 GitHub 開啟 {{repo}}",
       "openSourceFolder": "開啟來源目錄",
       "openSourceLink": "開啟來源網頁",
       "openSourceFile": "開啟檔案",
@@ -541,6 +542,7 @@
     },
     "oneClickInstall": "一鍵安裝",
     "viewOnWeb": "在 skills.sh 檢視",
+    "viewRepo": "在 GitHub 開啟 {{repo}}",
     "installs": "下載量 {{value}}",
     "change": "較昨日新增 {{value}}",
     "pagination": {

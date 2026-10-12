@@ -543,6 +543,7 @@
       "structureUnavailable": "读取项目结构失败",
       "revealInFolder": "在文件夹中显示",
       "deployNone": "当前没有可部署的工具",
+      "openRepo": "在 GitHub 打开 {{repo}}",
       "openSourceFolder": "打开来源目录",
       "openSourceLink": "打开来源网页",
       "openSourceFile": "打开文件",
@@ -584,6 +585,7 @@
     },
     "oneClickInstall": "一键安装",
     "viewOnWeb": "在 skills.sh 查看",
+    "viewRepo": "在 GitHub 打开 {{repo}}",
     "installs": "下载量 {{value}}",
     "change": "较昨日新增 {{value}}",
     "pagination": {
