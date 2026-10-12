@@ -8,7 +8,7 @@ import { readRecords } from "../../backend/activity/readers.mjs";
 import { ParseContext } from "../../backend/activity/context.mjs";
 import { parseDsh } from "../../backend/activity/dsh.mjs";
 
-test("DSH 逐帧读取、三类触发、结果关联和截断前缀保留", async t => {
+test("DSH 逐帧读取、触发方式、结果关联和截断前缀保留", async t => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "activity-dsh-"));
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
   const rows = [
@@ -33,7 +33,8 @@ test("DSH 逐帧读取、三类触发、结果关联和截断前缀保留", asyn
   });
   ctx.finish();
   assert.equal(events.size, 3);
-  assert.deepEqual([...events.values()].map(e => [e.trigger, e.status]), [["manual", "returned"], ["automatic", "failed"], ["unknown", "pending"]]);
+  // 第三条：这一轮有用户消息但没点名该技能 → 自动触发（Agent 自选），不再是来源未知。
+  assert.deepEqual([...events.values()].map(e => [e.trigger, e.status]), [["manual", "returned"], ["automatic", "failed"], ["automatic", "pending"]]);
   fs.writeFileSync(filename, Buffer.concat(frames));
   for await (const item of readRecords(filename, { compressed: true })) parseDsh(item.row, ctx);
   assert.equal(events.size, 3);

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { ParseContext } from "../../backend/activity/context.mjs";
 import { parseWorkbuddy } from "../../backend/activity/workbuddy.mjs";
 
-test("WorkBuddy 只统计顶层调用，关联重复文件与结果，三类触发分开", () => {
+test("WorkBuddy 只统计顶层调用，关联重复文件与结果，触发方式分开", () => {
   const events = new Map(), sink = { put: row => events.set(row.id, { ...row }) };
   const rows = [
     { type: "message", role: "user", id: "u1", content: "/skill design" },
@@ -20,7 +20,7 @@ test("WorkBuddy 只统计顶层调用，关联重复文件与结果，三类触�
     rows.forEach((r, i) => parseWorkbuddy({ sessionId: "s", timestamp: 1000, line: i + 1, ...r }, ctx)); ctx.finish();
   }
   assert.equal(events.size, 3);
-  assert.deepEqual([...events.values()].map(e => [e.trigger, e.status]), [["manual", "returned"], ["automatic", "failed"], ["unknown", "pending"]]);
+  assert.deepEqual([...events.values()].map(e => [e.trigger, e.status]), [["manual", "returned"], ["automatic", "failed"], ["automatic", "pending"]]);
   assert.ok(!JSON.stringify([...events.values()]).includes("private"));
 });
 
