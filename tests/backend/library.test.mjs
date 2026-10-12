@@ -59,3 +59,25 @@ test("skill files list returns the project structure with directories and sizes"
   assert.deepEqual(listed.entries.map(entry=>[entry.relative,entry.is_dir]),[["SKILL.md",false],["references",true],["references/guide.md",false]]);
   assert.ok(listed.entries.find(entry=>entry.relative==="references/guide.md").size>0);
 });
+
+test("自定义别名、说明与作者覆盖优先展示，清空后回退技能文件",async t=>{
+  const {source,store,library}=fixture(t),skill=await library.installLocal(source);
+  const saved=store.setProfile(skill.id,{alias:"示例别名",customDescription:"自定义说明",authorOverride:"张同学"});
+  assert.equal(saved.alias,"示例别名");
+  assert.equal(saved.display_name,"示例别名");
+  assert.equal(saved.display_description,"自定义说明");
+  assert.equal(saved.display_author,"张同学");
+  assert.equal(saved.display_author_source,"custom");
+  // 技能文件里的作者仍然可读，覆盖只影响展示。
+  assert.equal(saved.author,"Alice");
+  // 清空后回退到技能文件里的值。
+  const cleared=store.setProfile(skill.id,{alias:"",customDescription:"",authorOverride:""});
+  assert.equal(cleared.alias,null);
+  assert.equal(cleared.display_name,"example");
+  assert.equal(cleared.display_author,"Alice");
+  assert.equal(cleared.display_author_source,"metadata.author");
+  // 自定义信息写入 sidecar 元数据，重建索引时可恢复。
+  const sidecar=JSON.parse(fs.readFileSync(path.join(store.skillsDirectory,".skills-manager","skills",`${skill.id}.json`),"utf8"));
+  assert.equal(sidecar.alias,null);
+  assert.equal(sidecar.custom_description,null);
+});

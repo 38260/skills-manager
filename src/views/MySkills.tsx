@@ -42,7 +42,10 @@ import { BatchSyncAgentDialog } from "../components/BatchSyncAgentDialog";
 import { SyncDots } from "../components/SyncDots";
 import { ToggleSwitch } from "../components/ToggleSwitch";
 import { CardActionMenu } from "../components/CardActionMenu";
+import { SkillProfileDialog } from "../components/SkillProfileDialog";
 import * as api from "../lib/tauri";
+import { getSkillUsage, type SkillUsage } from "../lib/activity";
+import { listen } from "../lib/transport";
 import { getTagActiveColor, getTagColor, pruneStaleTagFilters, UNTAGGED_FILTER } from "../lib/skillTags";
 import type {
   ManagedSkill,
@@ -133,8 +136,19 @@ function centralDirName(skill: ManagedSkill) {
   return skill.central_path.split(/[\\/]/).filter(Boolean).pop() || skill.name;
 }
 
+// 调用统计的时间：当天只显示时分，更早显示日期，避免卡片上一长串时间戳。
+function formatUsageTime(value: number | null) {
+  if (!value) return "—";
+  const date = new Date(value);
+  const pad = (input: number) => String(input).padStart(2, "0");
+  const sameDay = date.toDateString() === new Date().toDateString();
+  return sameDay
+    ? `${pad(date.getHours())}:${pad(date.getMinutes())}`
+    : `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
 export function MySkills() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const {
     viewedPreset,
@@ -153,6 +167,8 @@ export function MySkills() {
   const [filterMode, setFilterMode] = useState<"all" | "enabled" | "available">("all");
   const [sourceFilters, setSourceFilters] = useState<Set<string>>(new Set());
   const [tagFilters, setTagFilters] = useState<Set<string>>(new Set());
+  const [profileSkillId, setProfileSkillId] = useState<string | null>(null);
+  const [usage, setUsage] = useState<Record<string, SkillUsage>>({});
   const [allTags, setAllTags] = useState<string[]>([]);
   // Tag management from the filter bar (#233): right-click a tag pill to
   // rename (dialog) or delete (confirm). Left-click stays "filter only".
@@ -217,6 +233,24 @@ export function MySkills() {
     refreshAllTags();
   }, [skills]);
 
+  // 每个技能的调用统计：技能库变化或调用记录更新时刷新；没有记录的技能按"从未使用"展示。
+  const [usageRevision, setUsageRevision] = useState(0);
+  useEffect(() => {
+    let current = true;
+    getSkillUsage()
+      .then((stats) => { if (current) setUsage(stats); })
+      .catch(() => { if (current) setUsage({}); });
+    return () => { current = false; };
+  }, [skills, usageRevision]);
+  useEffect(() => {
+    let disposed = false;
+    let unlisten: (() => void) | undefined;
+    void listen("skill-activity-changed", () => setUsageRevision(value => value + 1)).then(stop => {
+      if (disposed) stop(); else unlisten = stop;
+    }).catch(() => { /* 统计不是关键路径，事件连接失败时保持上一次结果。 */ });
+    return () => { disposed = true; unlisten?.(); };
+  }, []);
+
   // Prune tag filters whose pill disappeared (e.g. its last skill was deleted),
   // otherwise a stale filter silently hides everything. An empty skill list
   // says nothing about which tags are valid, so wait for one before pruning.
@@ -241,11 +275,14 @@ export function MySkills() {
     return () => window.removeEventListener("keydown", onKey);
   }, [tagMenu]);
 
-  const toggleFilter = (set: Set<string>, value: string): Set<string> => {
-    const next = new Set(set);
-    if (next.has(value)) next.delete(value);
-    else next.add(value);
-    return next;
+  // 筛选改为单选：同一时刻只生效一个条件（来源与分类互斥），再点一次取消。
+  const applySourceFilter = (value: string) => {
+    setTagFilters(new Set());
+    setSourceFilters(current => (current.has(value) ? new Set() : new Set([value])));
+  };
+  const applyTagFilter = (value: string) => {
+    setSourceFilters(new Set());
+    setTagFilters(current => (current.has(value) ? new Set() : new Set([value])));
   };
 
   // A filter can outlive the control that set it (the tag row hides itself once
@@ -273,11 +310,14 @@ export function MySkills() {
     const displayNames = new Map<string, string>();
     for (const skill of skills) {
       const dirName = centralDirName(skill);
+      // 用户设置的别名优先；同名技能用目录名区分；否则用技能名。
       displayNames.set(
         skill.id,
-        (nameCounts.get(skill.name) || 0) > 1 && dirName !== skill.name
-          ? dirName
-          : skill.name
+        skill.display_name && skill.display_name !== skill.name
+          ? skill.display_name
+          : (nameCounts.get(skill.name) || 0) > 1 && dirName !== skill.name
+            ? dirName
+            : skill.name
       );
     }
     return displayNames;
@@ -289,7 +329,7 @@ export function MySkills() {
       const matchesSearch =
         skill.name.toLowerCase().includes(search.toLowerCase()) ||
         displayName.toLowerCase().includes(search.toLowerCase()) ||
-        (skill.description || "").toLowerCase().includes(search.toLowerCase());
+        (skill.display_description || skill.description || "").toLowerCase().includes(search.toLowerCase());
       if (!matchesSearch) return false;
 
       if (sourceFilters.size > 0 && !sourceFilters.has(skill.source_type)) return false;
@@ -1233,7 +1273,7 @@ export function MySkills() {
         {(["local", "import", "git", "skillssh"] as const).map((src) => (
           <button
             key={src}
-            onClick={() => setSourceFilters(toggleFilter(sourceFilters, src))}
+            onClick={() => applySourceFilter(src)}
             className={cn(
               "rounded-full px-2.5 py-0.5 text-[12px] font-medium transition-colors",
               sourceFilters.has(src)
@@ -1251,7 +1291,7 @@ export function MySkills() {
               const isActive = tagFilters.has(UNTAGGED_FILTER);
               return (
                 <button
-                  onClick={() => setTagFilters(toggleFilter(tagFilters, UNTAGGED_FILTER))}
+                  onClick={() => applyTagFilter(UNTAGGED_FILTER)}
                   className={cn(
                     "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[12px] font-medium transition-colors",
                     isActive
@@ -1270,7 +1310,7 @@ export function MySkills() {
               return (
                 <button
                   key={tag}
-                  onClick={() => setTagFilters(toggleFilter(tagFilters, tag))}
+                  onClick={() => applyTagFilter(tag)}
                   onContextMenu={(e) => {
                     e.preventDefault();
                     setTagMenu({
@@ -1501,6 +1541,12 @@ export function MySkills() {
                                 }]
                               : []),
                             {
+                              key: "profile",
+                              label: t("mySkills.profile.action"),
+                              icon: <Pencil className="h-3.5 w-3.5" />,
+                              onSelect: () => setProfileSkillId(skill.id),
+                            },
+                            {
                               key: "delete",
                               label: t("common.delete"),
                               icon: <Trash2 className="h-3.5 w-3.5" />,
@@ -1520,11 +1566,34 @@ export function MySkills() {
                   </div>
 
                   <div className="px-3.5 pb-3">
-                    <p className="text-[13px] leading-[18px] text-muted truncate">
-                      {skill.description || "—"}
+                    {skill.alias && (
+                      <p className="mb-0.5 truncate text-[11.5px] text-faint" title={`${t("mySkills.detail.aliasLabel")}: ${skill.name}`}>
+                        {t("mySkills.detail.aliasLabel")}: {skill.name}
+                      </p>
+                    )}
+                    <p className="text-[13px] leading-[18px] text-muted line-clamp-2" title={skill.display_description ?? undefined}>
+                      {skill.display_description || "—"}
                     </p>
-                    <p className="mt-1 truncate text-[12px] text-faint" title={skill.author_source ?? undefined}>
-                      {t("mySkills.author")}: {skill.author || t("mySkills.authorMissing")}
+                    <p className="mt-1 truncate text-[12px] text-faint" title={skill.display_author_source ?? undefined}>
+                      {t("mySkills.author")}: {skill.display_author || t("mySkills.authorMissing")}
+                      {skill.author_override ? ` · ${t("mySkills.profile.custom")}` : ""}
+                    </p>
+                    <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-[12px] text-faint">
+                      {usage[skill.id] ? (
+                        <>
+                          <span className="text-tertiary">{t("mySkills.usage.count", { count: usage[skill.id].count })}</span>
+                          {usage[skill.id].lastUsedAt !== null && (
+                            <>
+                              <span aria-hidden="true">·</span>
+                              <span title={new Date(usage[skill.id].lastUsedAt!).toLocaleString(i18n.language)}>
+                                {t("mySkills.usage.lastUsed", { time: formatUsageTime(usage[skill.id].lastUsedAt) })}
+                              </span>
+                            </>
+                          )}
+                        </>
+                      ) : (
+                        <span title={t("mySkills.usage.neverHint")}>{t("mySkills.usage.never")}</span>
+                      )}
                     </p>
                     {((badge && !showUpdatePill) || conflictIds.has(skill.id)) && (
                       <div className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -1720,16 +1789,24 @@ export function MySkills() {
 
                 <h3
                   className="w-[180px] shrink-0 truncate text-[14px] font-semibold text-secondary group-hover:text-primary"
-                  title={displayName}
+                  title={skill.alias ? `${displayName} (${skill.name})` : displayName}
                 >
                   {displayName}
                 </h3>
 
-                <p className="min-w-0 flex-1 truncate text-[13px] text-muted">
-                  {skill.description || "—"}
+                <p className="min-w-0 flex-1 truncate text-[13px] text-muted" title={skill.display_description ?? undefined}>
+                  {skill.display_description || "—"}
                 </p>
-                <span className="max-w-[140px] truncate text-[12px] text-faint" title={skill.author_source ?? undefined}>
-                  {skill.author || t("mySkills.authorMissing")}
+                <span className="max-w-[140px] truncate text-[12px] text-faint" title={skill.display_author_source ?? undefined}>
+                  {skill.display_author || t("mySkills.authorMissing")}
+                </span>
+                <span className="w-[150px] shrink-0 truncate text-[12px] text-faint"
+                  title={usage[skill.id]?.lastUsedAt ? new Date(usage[skill.id].lastUsedAt!).toLocaleString(i18n.language) : t("mySkills.usage.neverHint")}>
+                  {usage[skill.id]
+                    ? usage[skill.id].lastUsedAt !== null
+                      ? `${t("mySkills.usage.count", { count: usage[skill.id].count })} · ${formatUsageTime(usage[skill.id].lastUsedAt)}`
+                      : t("mySkills.usage.count", { count: usage[skill.id].count })
+                    : t("mySkills.usage.never")}
                 </span>
 
                 <div className="flex shrink-0 items-center gap-1.5">
@@ -1847,6 +1924,12 @@ export function MySkills() {
                             }]
                           : []),
                         {
+                          key: "profile",
+                          label: t("mySkills.profile.action"),
+                          icon: <Pencil className="h-3.5 w-3.5" />,
+                          onSelect: () => setProfileSkillId(skill.id),
+                        },
+                        {
                           key: "delete",
                           label: t("common.delete"),
                           icon: <Trash2 className="h-3.5 w-3.5" />,
@@ -1873,6 +1956,15 @@ export function MySkills() {
         </DndContext>
       )}
 
+      <SkillProfileDialog
+        skill={skills.find((item) => item.id === profileSkillId) ?? null}
+        onClose={() => setProfileSkillId(null)}
+        onSaved={() => {
+          void refreshManagedSkills();
+          toast.success(t("mySkills.profile.saved"));
+        }}
+      />
+
       <SkillDetailPanel
         key={selectedSkill?.id ?? "skill-detail-empty"}
         skill={selectedSkill}
@@ -1883,6 +1975,7 @@ export function MySkills() {
         onToggleTool={handleToggleSkillTool}
         projects={projects}
         onProjectsChanged={refreshProjects}
+        onEditProfile={(skill) => setProfileSkillId(skill.id)}
         onUpdate={handleRefreshSkill}
         busyAction={updatingSkillId ?? checkingSkillId}
       />

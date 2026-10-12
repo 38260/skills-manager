@@ -21,6 +21,24 @@ export function matchManagedSkill(event, skills, tools = []) {
   return candidates.length === 1 ? candidates[0].id : null;
 }
 
+/**
+ * 调用统计用的技能归属：先按严格规则（技能路径／部署位置）匹配；
+ * 没有可验证路径时退回按技能名匹配，但同名技能不猜测归属。
+ * 与 matchManagedSkill 的区别是「统计口径」与「记录溯源」不同：
+ * 记录列表里的关联要能逐条追溯，所以只认可验证路径；统计需要一个尽量完整的总数，
+ * 因此在名称唯一时接受名称匹配，避免大量记录因为日志里没有技能路径而全部算成"从未使用"。
+ */
+export function matchUsageSkill(event, skills, tools = []) {
+  const strict = matchManagedSkill(event, skills, tools);
+  if (strict) return strict;
+  const name = String(event.skillName ?? "").trim();
+  if (!name) return null;
+  const candidates = skills.filter(skill => skill.name === name
+    || skill.display_name === name
+    || path.basename(skill.central_path) === name);
+  return candidates.length === 1 ? candidates[0].id : null;
+}
+
 export class ActivityService {
   constructor({ directory, home, env, emit = () => {}, skills = () => [], tools = () => [], interval = 60000 }) {
     this.directory = directory; this.emit = emit; this.skills = skills; this.tools = tools;
@@ -35,6 +53,20 @@ export class ActivityService {
         return { ...result, items: result.items.map(event => ({ ...event, managedSkillId: matchManagedSkill(event, skills, tools) })) };
       } },
       get_skill_activity_sources: { call: () => ({ sources: this.store.sources(), running: !!this.worker }) },
+      // 每个已纳管技能的调用统计：总次数与最后使用时间；仅请求（未确认使用）不计入。
+      get_skill_usage: { call: () => {
+        const skills = this.skills(), tools = this.tools();
+        const rows = this.store.db.prepare("SELECT tool,skillName,skillPath,project,timestamp FROM events WHERE kind<>'request'").all();
+        const usage = {};
+        for (const row of rows) {
+          const id = matchUsageSkill(row, skills, tools);
+          if (!id) continue;
+          const entry = usage[id] ?? (usage[id] = { count: 0, lastUsedAt: null });
+          entry.count += 1;
+          if (Number.isSafeInteger(row.timestamp) && (entry.lastUsedAt === null || row.timestamp > entry.lastUsedAt)) entry.lastUsedAt = row.timestamp;
+        }
+        return usage;
+      } },
       configure_skill_activity_source: { call: args => {
         if (this.worker) throw new Error("请先停止扫描，再修改来源");
         this.store.configure(args.tool, args.path, args.enabled); this.emit("skill-activity-changed");

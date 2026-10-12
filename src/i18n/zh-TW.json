@@ -239,6 +239,26 @@
   "mySkills": {
     "author": "作者",
     "authorMissing": "作者未提供",
+    "profile": {
+      "title": "編輯技能資訊",
+      "action": "編輯資訊",
+      "hint": "這裡修改的是技能庫中的顯示資訊，不會改動 SKILL.md 與已部署的副本；清空某一項即還原技能檔案中的值。",
+      "alias": "別名",
+      "aliasHint": "留空則使用技能名稱",
+      "description": "自訂說明",
+      "descriptionHint": "留空則使用 SKILL.md 中的描述",
+      "author": "作者",
+      "authorHint": "留空則使用 SKILL.md 中的作者",
+      "saving": "儲存中…",
+      "saved": "技能資訊已更新",
+      "custom": "自訂"
+    },
+    "usage": {
+      "count": "呼叫 {{count}} 次",
+      "never": "從未使用",
+      "lastUsed": "最後使用 {{time}}",
+      "neverHint": "呼叫記錄中沒有此技能的紀錄"
+    },
     "title": "技能庫",
     "applyToDefault": "套用 Preset",
     "applied": "已套用",
@@ -467,7 +487,10 @@
       "openSourceFile": "開啟檔案",
       "activityEmpty": "此技能尚無呼叫記錄",
       "activityError": "呼叫記錄讀取失敗",
-      "activityOpenPage": "在呼叫記錄頁檢視"
+      "activityOpenPage": "在呼叫記錄頁檢視",
+      "editProfile": "編輯資訊",
+      "aliasLabel": "原名",
+      "customAuthorLabel": "自訂作者"
     }
   },
   "install": {

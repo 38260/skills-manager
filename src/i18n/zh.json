@@ -239,6 +239,26 @@
   "mySkills": {
     "author": "作者",
     "authorMissing": "作者未提供",
+    "profile": {
+      "title": "编辑技能信息",
+      "action": "编辑信息",
+      "hint": "这里修改的是技能库里的展示信息，不会改动 SKILL.md 和已部署的副本；清空某一项即恢复技能文件里的值。",
+      "alias": "别名",
+      "aliasHint": "留空则使用技能名",
+      "description": "自定义说明",
+      "descriptionHint": "留空则使用 SKILL.md 里的描述",
+      "author": "作者",
+      "authorHint": "留空则使用 SKILL.md 里的作者",
+      "saving": "保存中…",
+      "saved": "技能信息已更新",
+      "custom": "自定义"
+    },
+    "usage": {
+      "count": "调用 {{count}} 次",
+      "never": "从未使用",
+      "lastUsed": "最后使用 {{time}}",
+      "neverHint": "调用记录里没有该技能的记录"
+    },
     "title": "技能库",
     "applyToDefault": "应用 Preset",
     "applied": "已应用",
@@ -510,7 +530,10 @@
       "openSourceFile": "打开文件",
       "activityEmpty": "该技能还没有调用记录",
       "activityError": "调用记录读取失败",
-      "activityOpenPage": "在调用记录页查看"
+      "activityOpenPage": "在调用记录页查看",
+      "editProfile": "编辑信息",
+      "aliasLabel": "原名",
+      "customAuthorLabel": "自定义作者"
     }
   },
   "install": {

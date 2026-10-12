@@ -239,6 +239,26 @@
   "mySkills": {
     "author": "Author",
     "authorMissing": "Author not provided",
+    "profile": {
+      "title": "Edit skill info",
+      "action": "Edit info",
+      "hint": "These are display values stored in the library. SKILL.md and deployed copies are not modified; clearing a field falls back to the value in the skill file.",
+      "alias": "Alias",
+      "aliasHint": "Leave empty to use the skill name",
+      "description": "Custom description",
+      "descriptionHint": "Leave empty to use the description in SKILL.md",
+      "author": "Author",
+      "authorHint": "Leave empty to use the author in SKILL.md",
+      "saving": "Saving…",
+      "saved": "Skill info updated",
+      "custom": "Custom"
+    },
+    "usage": {
+      "count": "{{count}} calls",
+      "never": "Never used",
+      "lastUsed": "Last used {{time}}",
+      "neverHint": "No records for this skill in the activity log"
+    },
     "title": "Library",
     "applyToDefault": "Apply Preset",
     "applied": "Applied",
@@ -510,7 +530,10 @@
       "openSourceFile": "Open file",
       "activityEmpty": "No activity recorded for this skill yet",
       "activityError": "Failed to load activity records",
-      "activityOpenPage": "Open in Activity page"
+      "activityOpenPage": "Open in Activity page",
+      "editProfile": "Edit info",
+      "aliasLabel": "Original name",
+      "customAuthorLabel": "Custom author"
     }
   },
   "install": {

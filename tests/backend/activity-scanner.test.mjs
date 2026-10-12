@@ -110,3 +110,31 @@ test("解析器升级后旧缓存的错误计数失效并重新读取，来源�
   assert.equal(again.parsed, 0);
   assert.equal(again.errors, 0);
 });
+
+test("技能调用统计：总次数与最后使用时间，同名技能不猜测归属", async t => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "activity-usage-")), logs = path.join(directory, ".workbuddy", "projects");
+  fs.mkdirSync(logs, { recursive: true });
+  fs.writeFileSync(path.join(logs, "a.jsonl"), line(call("c1")) + line(call("c2")));
+  const skills = [
+    { id: "s1", name: "design", display_name: "design", central_path: "/central/s1", targets: [] },
+    { id: "s2", name: "other", display_name: "other", central_path: "/central/s2", targets: [] },
+  ];
+  const service = new ActivityService({ directory: path.join(directory, "usage"), home: directory, env: {}, interval: 0,
+    skills: () => skills, tools: () => [] });
+  t.after(async () => { await service.close(); fs.rmSync(directory, { recursive: true, force: true }); });
+  service.scan();
+  const worker = service.worker;
+  await new Promise((resolve, reject) => { worker.once("exit", resolve); worker.once("error", reject); });
+
+  const usage = service.commands.get_skill_usage.call({});
+  assert.deepEqual(Object.keys(usage), ["s1"], "只有被调用的技能出现在统计里");
+  assert.equal(usage.s1.count, 2);
+  assert.equal(usage.s1.lastUsedAt, 1000);
+  assert.equal(usage.s2, undefined, "未使用的技能不出现在结果里，由界面显示为从未使用");
+
+  // 同名技能存在时不再按名称猜测归属，避免把次数算到错误的技能上。
+  const ambiguous = new ActivityService({ directory: path.join(directory, "usage"), home: directory, env: {}, interval: 0,
+    skills: () => [...skills, { id: "s3", name: "design", display_name: "design", central_path: "/central/s3", targets: [] }], tools: () => [] });
+  assert.deepEqual(ambiguous.commands.get_skill_usage.call({}), {});
+  await ambiguous.close();
+});

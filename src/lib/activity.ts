@@ -32,3 +32,10 @@ export const getActivitySources = () => invoke<{ sources: ActivitySource[]; runn
 export const scanActivity = () => invoke<{ running: boolean }>("scan_skill_activity");
 export const cancelActivityScan = () => invoke<{ running: boolean }>("cancel_skill_activity_scan");
 export const configureActivitySource = (tool: ActivityTool, path: string, enabled: boolean) => invoke<void>("configure_skill_activity_source", { tool, path, enabled });
+
+export interface SkillUsage {
+  count: number;
+  lastUsedAt: number | null;
+}
+/** 已纳管技能的调用统计：技能 id → 总次数与最后使用时间；从未使用的技能不出现在结果里。 */
+export const getSkillUsage = () => invoke<Record<string, SkillUsage>>("get_skill_usage");

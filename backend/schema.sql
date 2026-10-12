@@ -17,7 +17,10 @@ CREATE TABLE IF NOT EXISTS skills (
             status TEXT DEFAULT 'ok',
             update_status TEXT DEFAULT 'unknown',
             last_checked_at INTEGER,
-            last_check_error TEXT
+            last_check_error TEXT,
+            alias TEXT,
+            custom_description TEXT,
+            author_override TEXT
         );
 
 CREATE TABLE IF NOT EXISTS skill_targets (

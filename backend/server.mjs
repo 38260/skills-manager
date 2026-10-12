@@ -68,6 +68,9 @@ const commands = {
   get_skills_for_preset: { call: args => store.skillsForPreset(args.presetId) },
   get_all_tags: { call: () => store.all("SELECT DISTINCT tag FROM skill_tags ORDER BY tag").map(row => row.tag) },
   get_skill_categories: { call: () => store.categories() },
+  set_skill_profile: { call: args => store.setProfile(String(args.skillId ?? ""), {
+    alias: args.alias, customDescription: args.customDescription, authorOverride: args.authorOverride,
+  }), mutating: true },
   create_skill_category: { call: args => store.createCategory(args.name), mutating: true },
   set_skill_tags: { call: args => store.setTags(args.skillId, Array.isArray(args.tags) ? args.tags : []), mutating: true },
   rename_tag: { call: args => store.renameCategory(args.oldName, args.newName), mutating: true },

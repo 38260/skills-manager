@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import {
   ChevronDown, ChevronUp, Github, HardDrive, Globe, ArrowLeft,
   ListTree, Boxes, Link2, Info, PanelRightOpen, RefreshCw, History, Layers, FileDiff,
-  FolderTree, FolderOpen,
+  FolderTree, FolderOpen, Pencil,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../utils";
@@ -46,6 +46,8 @@ interface Props {
   /** 更新（git/skillssh）或重新导入（local/import）。 */
   onUpdate?: (skill: ManagedSkill) => Promise<void>;
   busyAction?: string | null;
+  /** 打开"编辑技能信息"对话框（别名／自定义说明／作者）。 */
+  onEditProfile?: (skill: ManagedSkill) => void;
 }
 
 export function SkillDetailPanel({
@@ -59,6 +61,7 @@ export function SkillDetailPanel({
   onProjectsChanged,
   onUpdate,
   busyAction,
+  onEditProfile,
 }: Props) {
   if (!skill) return null;
 
@@ -84,6 +87,7 @@ export function SkillDetailPanel({
       onProjectsChanged={onProjectsChanged}
       onUpdate={onUpdate}
       busyAction={busyAction}
+      onEditProfile={onEditProfile}
     />
   );
 }
@@ -99,6 +103,7 @@ interface ContentProps {
   onProjectsChanged?: () => void;
   onUpdate?: (skill: ManagedSkill) => Promise<void>;
   busyAction?: string | null;
+  onEditProfile?: (skill: ManagedSkill) => void;
 }
 
 function SkillDetailPanelContent({
@@ -112,6 +117,7 @@ function SkillDetailPanelContent({
   onProjectsChanged,
   onUpdate,
   busyAction,
+  onEditProfile,
 }: ContentProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -588,20 +594,36 @@ function SkillDetailPanelContent({
                     scrolled ? "line-clamp-1 text-[17px] leading-6" : "line-clamp-2 text-[22px] leading-7"
                   )}
                 >
-                  {skill.name}
+                  {skill.display_name || skill.name}
                 </h2>
+                {skill.alias && (
+                  <span className="rounded border border-border-subtle bg-surface-hover px-1.5 py-px text-[11px] leading-4 text-tertiary" title={`${t("mySkills.detail.aliasLabel")}: ${skill.name}`}>
+                    {t("mySkills.detail.aliasLabel")}: {skill.name}
+                  </span>
+                )}
                 {skill.update_status === "update_available" && (
                   <span className="rounded-md bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-300">
                     {t("mySkills.detail.badgeUpdateAvailable")}
                   </span>
                 )}
+                {onEditProfile && (
+                  <button
+                    type="button"
+                    onClick={() => onEditProfile(skill)}
+                    className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11.5px] text-muted outline-none hover:bg-surface-hover hover:text-secondary focus-visible:ring-2 focus-visible:ring-accent"
+                    title={t("mySkills.profile.title")}
+                  >
+                    <Pencil className="h-3 w-3" />{t("mySkills.detail.editProfile")}
+                  </button>
+                )}
               </div>
-              {!scrolled && skill.description && (
-                <p className="mt-0.5 line-clamp-1 text-[13px] leading-5 text-secondary" title={skill.description}>{skill.description}</p>
+              {!scrolled && (skill.display_description || skill.description) && (
+                <p className="mt-0.5 line-clamp-1 text-[13px] leading-5 text-secondary" title={skill.display_description ?? undefined}>{skill.display_description || skill.description}</p>
               )}
               <div className={cn("flex flex-wrap items-center gap-2 text-[12.5px] leading-4 text-tertiary", scrolled ? "mt-0.5" : "mt-1")}>
-                <span className="max-w-full break-words" title={skill.author_source ?? undefined}>
-                  {t("mySkills.author")}: {skill.author || t("mySkills.authorMissing")}
+                <span className="max-w-full break-words" title={skill.display_author_source ?? undefined}>
+                  {t("mySkills.author")}: {skill.display_author || t("mySkills.authorMissing")}
+                  {skill.author_override ? ` · ${t("mySkills.profile.custom")}` : ""}
                 </span>
                 {skill.tags.map((tag, index) => (
                   <span
