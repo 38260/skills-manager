@@ -13,6 +13,26 @@
 
 ## 已完成
 
+### ✅ 小功能：清理 Preset「应用 / 活动」死代码（2026-10-12）
+
+**背景**：v1.16+ 起点击侧边栏 Preset 不再触发应用（`tauri.ts` 曾标 `@deprecated`），
+导致 `activePreset`、`applyPresetToDefault`、后端 `apply_preset_to_default` / `switch_preset`
+全部失去调用点。技能库页删掉单技能开关后，这条链路更无用途。
+
+- [x] 前端：删除 `activePreset` state / 接口字段 / value 导出；`viewedPreset` resolve 去掉该依赖
+- [x] 前端：删除 `handleApplyPresetToDefault` 及其接口与 value 导出；`refreshPresets` 不再拉 `getActivePreset`
+      （连带删掉 `lastActivePresetIdRef` 与那段「跟随外部切换」的逻辑）
+- [x] 前端：`tauri.ts` 删除 `getActivePreset` / `switchPreset` / `applyPresetToDefault`
+- [x] 后端：`presets.mjs` 删除 `switch_preset` / `apply_preset_to_default` 命令与 `applyPreset` 函数
+      （`presetCommands` 签名从 `(store, library)` 收敛为 `(store)`）
+- [x] 后端：`store.mjs` 删除失去调用点的 `setActiveScenario`
+- [x] 后端：`server.mjs` 删除 `get_active_preset` 命令
+- [x] **保留** `activeScenarioId()` 及其在 `sync_skill_to_tool` / `unsync_skill_from_tool` /
+      `set_skill_tool_toggle` 里的分支 —— 它们读 `active_scenario` 表，删除会改变同步行为，另行评估
+- [x] 验证：`node --check` ×3 ✓ / `npx tsc --noEmit` ✓ / `npx eslint` ✓ / `npm run build` ✓
+      / 无头截图确认侧边栏 Preset（Default 高亮）、筛选条、分类标签、列表列对齐均正常
+- [x] 提交 Git
+
 ### ✅ 小功能：删除技能库的「Preset 单技能开关」（2026-10-12）
 
 **背景**：用户在列表视图看到最右侧的启用开关，确认不需要这个入口（语义是把技能加入/移出当前 Preset）。

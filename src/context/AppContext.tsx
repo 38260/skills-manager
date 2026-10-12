@@ -9,8 +9,6 @@ import { toast } from "sonner";
 
 interface AppState {
   presets: Preset[];
-  /** Backend-tracked "last applied to default targets". Drives the "Applied to..." status, not the sidebar selection. */
-  activePreset: Preset | null;
   /** Frontend-only "currently being viewed/edited" preset. Persisted to localStorage. UI selection. */
   viewedPreset: Preset | null;
   tools: ToolInfo[];
@@ -30,7 +28,6 @@ interface AppState {
   refreshManagedSkills: () => Promise<void>;
   refreshProjects: () => Promise<void>;
   setViewedPresetId: (id: string) => void;
-  applyPresetToDefault: (id: string) => Promise<void>;
   clearAppError: () => void;
   openHelp: () => void;
   closeHelp: () => void;
@@ -47,7 +44,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const SKILL_UPDATE_TOAST_ID = "skill-update-available";
   const APP_UPDATE_TOAST_ID = "app-update-available";
   const [presets, setPresets] = useState<Preset[]>([]);
-  const [activePreset, setActivePreset] = useState<Preset | null>(null);
   const [viewedPresetId, setViewedPresetIdState] = useState<string | null>(() => {
     try {
       return localStorage.getItem(VIEWED_PRESET_LS_KEY) || localStorage.getItem(LEGACY_VIEWED_PRESET_LS_KEY);
@@ -67,7 +63,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const skillUpdateCheckedRef = useRef(false);
   const appUpdateCheckedRef = useRef(false);
   const lastUpdateNotificationRef = useRef<string | null>(null);
-  const lastActivePresetIdRef = useRef<string | null>(null);
 
   const setTranslatedError = useCallback((key: string) => {
     setAppError(i18n.t("common.loadFailed", { item: i18n.t(key) }));
@@ -75,33 +70,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const refreshPresets = useCallback(async () => {
     try {
-      const [s, active] = await Promise.all([
-        api.getPresets(),
-        api.getActivePreset(),
-      ]);
-      setPresets(s);
-      setActivePreset(active);
-      const previousActiveId = lastActivePresetIdRef.current;
-      const nextActiveId = active?.id ?? null;
-      if (previousActiveId !== nextActiveId) {
-        lastActivePresetIdRef.current = nextActiveId;
-        // Carry the sidebar along only when the user was viewing the old
-        // active preset — that way an external switch (e.g. CLI) follows,
-        // but a user who's browsing some other preset isn't yanked away.
-        // Skip the initial load (previousActiveId === null) entirely so a
-        // persisted viewedPreset from localStorage isn't clobbered.
-        if (nextActiveId && previousActiveId !== null) {
-          setViewedPresetIdState((current) => {
-            if (current !== previousActiveId) return current;
-            try {
-              localStorage.setItem(VIEWED_PRESET_LS_KEY, nextActiveId);
-            } catch {
-              // localStorage may be unavailable; selection is still tracked in memory.
-            }
-            return nextActiveId;
-          });
-        }
-      }
+      setPresets(await api.getPresets());
       setAppError(null);
     } catch (e) {
       console.error("Failed to load presets:", e);
@@ -157,22 +126,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const handleApplyPresetToDefault = useCallback(
-    async (id: string) => {
-      await api.applyPresetToDefault(id);
-      await Promise.all([refreshPresets(), refreshManagedSkills()]);
-    },
-    [refreshManagedSkills, refreshPresets]
-  );
-
-  // Resolve viewedPreset: persisted id > activePreset > first preset.
+  // Resolve viewedPreset: persisted id > first preset.
   // Persist whichever resolves so the next launch matches what the user saw.
   const viewedPreset = (() => {
     if (viewedPresetId) {
       const found = presets.find((s) => s.id === viewedPresetId);
       if (found) return found;
     }
-    return activePreset ?? presets[0] ?? null;
+    return presets[0] ?? null;
   })();
 
   useEffect(() => {
@@ -442,7 +403,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider
       value={{
         presets,
-        activePreset,
         viewedPreset,
         tools,
         managedSkills,
@@ -459,7 +419,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         refreshManagedSkills,
         refreshProjects,
         setViewedPresetId,
-        applyPresetToDefault: handleApplyPresetToDefault,
         clearAppError: () => setAppError(null),
         openHelp: () => setHelpOpen(true),
         closeHelp: () => setHelpOpen(false),

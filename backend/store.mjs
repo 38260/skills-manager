@@ -211,17 +211,9 @@ export class Store {
       this.savePresets();
     });
   }
+  // 「活动 Preset」概念已随 v1.16 的 applyPreset 一起废弃，此表恒为空；
+  // 保留读取方法是因为 sync_skill_to_tool 等仍用它做「存在活动 Preset 时才同步开关」的防御判断。
   activeScenarioId() { return this.get("SELECT scenario_id FROM active_scenario WHERE key='current'")?.scenario_id ?? null; }
-  setActiveScenario(id) {
-    this.transaction(() => {
-      this.run("INSERT OR IGNORE INTO active_scenario(key,scenario_id) VALUES('current',NULL)");
-      this.run("UPDATE active_scenario SET scenario_id=NULL WHERE key='current'");
-      if (id) {
-        if (!this.get("SELECT id FROM scenarios WHERE id=?", id)) throw new Error("Preset 不存在");
-        this.run("UPDATE active_scenario SET scenario_id=? WHERE key='current'", id);
-      }
-    });
-  }
 
   // ── 项目工作区 ──
   projects() { return this.all("SELECT * FROM projects ORDER BY sort_order,created_at"); }

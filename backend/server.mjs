@@ -88,10 +88,6 @@ const commands = {
   rename_tag: { call: args => store.renameCategory(args.oldName, args.newName), mutating: true },
   delete_tag: { call: args => store.deleteCategory(args.name), mutating: true },
   get_presets: { call: () => store.presets() },
-  get_active_preset: { call: () => {
-    const id = store.activeScenarioId();
-    return id ? store.presets().find(preset => preset.id === id) ?? null : null;
-  } },
   get_settings: { call: args => store.getSetting(String(args.key ?? "")) },
   set_settings: { call: args => store.setSetting(String(args.key ?? ""), String(args.value ?? "")) },
   get_central_repo_path: { call: () => store.directory },
@@ -204,7 +200,7 @@ const commands = {
   remove_skill_from_preset: { call: args => store.removeSkillFromPreset(args.skillId, args.presetId), mutating: true },
 
   // ── Preset 管理 ──
-  ...presetCommands(store, library),
+  ...presetCommands(store),
 
   // ── 工具设置 ──
   ...toolCommands(store),

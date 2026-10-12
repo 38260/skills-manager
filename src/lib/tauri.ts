@@ -789,9 +789,6 @@ export const gitBackupRestoreVersion = (tag: string) =>
 
 export const getPresets = () => invoke<Preset[]>("get_presets");
 
-export const getActivePreset = () =>
-  invoke<Preset | null>("get_active_preset");
-
 export const createPreset = (name: string, description?: string, icon?: string) =>
   invoke<Preset>("create_preset", {
     name,
@@ -814,13 +811,6 @@ export const updatePreset = (
 
 export const deletePreset = (id: string) =>
   invoke<void>("delete_preset", { id });
-
-/** @deprecated v1.16+: clicking a scene no longer applies. Use applyPresetToDefault. */
-export const switchPreset = (id: string) =>
-  invoke<void>("switch_preset", { id });
-
-export const applyPresetToDefault = (id: string) =>
-  invoke<void>("apply_preset_to_default", { id });
 
 export const addSkillToPreset = (skillId: string, presetId: string) =>
   invoke<void>("add_skill_to_preset", { skillId, presetId });
