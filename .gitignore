@@ -52,3 +52,7 @@ output/readme-shots/manifest.json
 output/skill-classify-backup
 output/skill-category-backup
 
+# output/activity-fix/ 的对照脚本会临时导出 HEAD 版解析器到 _old/（不是源码，用 git show 生成）
+output/activity-fix/_old
+output/activity-fix/_commit-*.txt
+

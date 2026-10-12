@@ -1324,6 +1324,7 @@
     "evidenceCodes": {
       "user_selection": "An explicit user selection matched this skill",
       "user_auto_choice": "The current user explicitly asked the agent to choose skills",
+      "agent_choice": "The session has user messages but none named this skill — counted as agent-selected",
       "skill_call": "An explicit Skill tool call without clear trigger evidence",
       "document_read": "A skill document read; its result determines confirmed loading"
     }

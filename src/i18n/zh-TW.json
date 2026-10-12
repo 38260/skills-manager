@@ -1239,6 +1239,7 @@
     "evidenceCodes": {
       "user_selection": "使用者明確選擇，並與本次技能關聯",
       "user_auto_choice": "目前使用者明確要求 Agent 自主選擇技能",
+      "agent_choice": "本工作階段有使用者訊息但未點名該技能，判為 Agent 自選",
       "skill_call": "發現明確 Skill 工具呼叫，觸發來源未明確",
       "document_read": "發現技能文件讀取，並依對應結果判斷載入狀態"
     }

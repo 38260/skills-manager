@@ -14,7 +14,7 @@
 | # | 小功能 | 内容 | 状态 |
 | --- | --- | --- | --- |
 | A | 记录类型 / 触发方式加色彩底纹 | `lib/activityTone.ts` 抽出三类徽章配色（记录类型 / 触发方式 / 结果），列表与表格接入；补对比度自检 | [x] |
-| B | 修「来源未知」 | 起因：解析器只认 `$skill` / `/skill`，未点名即判 `unknown`。改为「有用户消息但未点名 → 自动（Agent 自选）」，并识别 WorkBuddy 的 `@skill:` 写法；`PARSER_VERSION` +1 强制重扫 | [~] |
+| B | 修「来源未知」 | 起因：解析器只认 `$skill` / `/skill`，未点名即判 `unknown`。改为「有用户消息但未点名 → 自动（Agent 自选）」，并识别 WorkBuddy 的 `@skill:` 写法；`PARSER_VERSION` +1 强制重扫；补 `evidenceCodes.agent_choice` 三语文案 | [x] |
 | C | 市场页显示下载量 / 热度 | skills.sh 改版，榜单页已无 `__NEXT_DATA__`，兜底正则也抓不到 `installs`（全为 0）；且 UI 只在「全部」页签显示 | [ ] |
 | D | 「查看来源」展示 GitHub 仓库 | 技能详情「来源信息」区块 + 安装页市场卡片展示对应 GitHub 仓库；逐个核实后加入映射，找不到留空 | [ ] |
 
@@ -30,7 +30,7 @@
 | 日期 | 批次 | 内容 | 涉及文件 | 验证 |
 | --- | --- | --- | --- | --- |
 | 2026-10-12 | A | 徽章配色抽成 `activityTone.ts`（此前「记录类型」是无底色灰字、触发色很淡），列表/表格接入 | `src/lib/activityTone.ts`、`src/components/ActivityRecordList.tsx`、`src/components/ActivityTable.tsx` | 对比度自检全绿（详见下） |
-| 2026-10-12 | B | 触发判定改为「用户消息是否出现过」，新增 `@skill:` 识别 | `backend/activity/context.mjs`、`backend/activity/scanner.mjs` | 见本批提交 |
+| 2026-10-12 | B | 触发判定改为「本轮是否出现过用户消息」，新增 `@skill:` 识别，补 `agent_choice` 文案 | `backend/activity/context.mjs`、`backend/activity/scanner.mjs`、`src/i18n/{zh,en,zh-TW}.json` | 全量重扫对照，unknown 177 → 0 |
 
 **批次 A 验证**（`output/activity-fix/check-chip-contrast.mjs`；色值不手抄 —— tailwind 内置色取自 `node_modules`，项目 token 取自 `src/index.css`）
 
@@ -43,6 +43,20 @@
 | 结果（已返回 / 等待 / 失败 / 未知） | 4.99 / 4.65 / **5.66** / 7.87 | 9.83 / 10.23 / 8.35 / 7.11 |
 
 全部 ≥ 4.5。**顺带修**：`failed` 徽章原用 `text-red-600`，浅色下只有 **4.23 ✗**，改 `text-red-700` 后 **5.66 ✓**。
+
+**批次 B 验证**（`output/activity-fix/compare-trigger.mjs`：同一批真实日志 + 两份库副本，**从空表**分别用改动前/后的解析器重扫）
+
+| 解析器 | 结果 |
+| --- | --- |
+| 改动前（`git show HEAD` 版） | **177 条全部 `unknown`**（`skill_call` 114 + `document_read` 63） |
+| 改动后（当前） | `automatic` 172（`agent_choice`）+ `manual` 10（`user_selection`），**`unknown` 0 条** |
+
+根因：旧判定是「只有用户写了 `$技能名` / `/skill 技能名` 才算 manual，其余一律 unknown」，
+而本机 WorkBuddy 的日志里**一条 `$` / `/skill` 都没匹配到**，于是整页都是「来源未知」。
+
+⚠️ 对照方法上的坑：`events` 表的 UPSERT 是**只升级不降级**（`trigger` 仅在 `excluded='manual'`
+或 `events='unknown'` 时才被覆盖），所以拿一份已被新解析器写过的库当起点，旧解析器的 `unknown`
+根本写不进去 —— 会得到「新旧一样」的假结论。必须两边都从空表重扫。
 
 ---
 
