@@ -8,7 +8,8 @@ import { parseQoder } from "./qoder.mjs";
 import { parseWorkbuddy } from "./workbuddy.mjs";
 import { readZcode } from "./zcode.mjs";
 
-const parsers = { codex: parseCodex, dsh: parseDsh, qoder: parseQoder, workbuddy: parseWorkbuddy };
+// workbuddy 与 workbuddy_ai 是同一产品线的两个客户端，日志格式一致，复用同一解析器。
+const parsers = { codex: parseCodex, dsh: parseDsh, qoder: parseQoder, workbuddy: parseWorkbuddy, workbuddy_ai: parseWorkbuddy };
 const cancelledError = () => Object.assign(new Error("扫描已取消"), { code: "CANCELLED" });
 
 // 解析器版本：修复解析缺陷后 +1。缓存里记录了写入时的版本，版本不一致的文件会重新读取一次，

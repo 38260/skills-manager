@@ -1,0 +1,47 @@
+[
+  {
+    "name": "来源数量",
+    "value": 6
+  },
+  {
+    "name": "来源列表",
+    "value": [
+      "codex",
+      "dsh",
+      "zcode",
+      "qoder",
+      "workbuddy",
+      "workbuddy_ai"
+    ]
+  },
+  {
+    "name": "workbuddy_ai 路径",
+    "value": "D:\\AIWorkSpace\\Codex\\SkillManager\\skills-manager\\output\\workbuddy-ai-verify\\data\\.workbuddy-ai\\projects"
+  },
+  {
+    "name": "扫描后 workbuddy_ai 状态",
+    "value": "ready"
+  },
+  {
+    "name": "扫描文件数",
+    "value": 1
+  },
+  {
+    "name": "总记录数",
+    "value": 1
+  },
+  {
+    "name": "workbuddy_ai 记录数",
+    "value": 1
+  },
+  {
+    "name": "解析出的 Skill 调用",
+    "value": [
+      {
+        "skillName": "local-web-ui-headless-verify",
+        "kind": "invocation",
+        "status": "returned"
+      }
+    ]
+  }
+]

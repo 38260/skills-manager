@@ -1,10 +1,10 @@
 import { invoke } from "./transport";
 
-export const activityTools = ["codex", "dsh", "zcode", "qoder", "workbuddy"] as const;
-export const toolNames = { codex: "Codex", dsh: "DSH", zcode: "ZCode", qoder: "Qoder", workbuddy: "WorkBuddy" };
-/** 调用记录的工具标识到 Agent 图标键的映射：DSH 的图标键是 deepseek_harness。 */
+export const activityTools = ["codex", "dsh", "zcode", "qoder", "workbuddy", "workbuddy_ai"] as const;
+export const toolNames = { codex: "Codex", dsh: "DSH", zcode: "ZCode", qoder: "Qoder", workbuddy: "WorkBuddy", workbuddy_ai: "WorkBuddy AI" };
+/** 调用记录的工具标识到 Agent 图标键的映射：DSH 的图标键是 deepseek_harness；WorkBuddy AI 复用 WorkBuddy 的图标。 */
 export const toolIconKeys: Record<string, string> = {
-  codex: "codex", dsh: "deepseek_harness", zcode: "zcode", qoder: "qoder", workbuddy: "workbuddy",
+  codex: "codex", dsh: "deepseek_harness", zcode: "zcode", qoder: "qoder", workbuddy: "workbuddy", workbuddy_ai: "workbuddy",
 };
 export type ActivityTool = typeof activityTools[number];
 export type ActivityKind = "invocation" | "document" | "request";

@@ -3,7 +3,8 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 
-export const TOOLS = ["codex", "dsh", "zcode", "qoder", "workbuddy"];
+// WorkBuddy 与 WorkBuddy AI 是两个独立产品，各自维护日志目录，因此作为两个来源分别采集。
+export const TOOLS = ["codex", "dsh", "zcode", "qoder", "workbuddy", "workbuddy_ai"];
 export const KINDS = ["invocation", "document", "request"];
 export const TRIGGERS = ["manual", "automatic", "unknown"];
 export const STATUSES = ["pending", "returned", "failed", "unknown"];
@@ -16,6 +17,8 @@ export function defaultSources(home, env = process.env) {
     zcode: path.join(home, ".zcode", "cli", "db", "db.sqlite"),
     qoder: path.join(home, ".qoder", "projects"),
     workbuddy: path.join(home, ".workbuddy", "projects"),
+    // WorkBuddy AI 的会话日志在 ~/.workbuddy-ai/projects（与 .workbuddy 不是同一目录）。
+    workbuddy_ai: path.join(env.WORKBUDDY_AI_HOME || path.join(home, ".workbuddy-ai"), "projects"),
   };
 }
 
