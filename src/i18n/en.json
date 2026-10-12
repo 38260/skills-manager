@@ -78,7 +78,10 @@
     "notSynced": "Not synced",
     "scanImport": "Scan & Import Local Skills",
     "installNew": "Install New Skills",
-    "recentActivity": "Recent Activity"
+    "recentActivity": "Recent Activity",
+    "recentActivityViewAll": "View all",
+    "recentActivityEmpty": "No activity yet — updates and Skill calls will appear after you install or import skills",
+    "recentActivityError": "Failed to load activity records; showing skill updates only"
   },
   "agentControl": {
     "title": "Let your agents manage skills",

@@ -1,5 +1,17 @@
 [
   {
+    "name": "近期动态内容",
+    "value": {
+      "hasHeading": true,
+      "hasViewAll": true,
+      "rows": 7,
+      "firstRow": "Uui-guidelocal未同步10/12 09:47",
+      "activityRows": 6,
+      "triggerChips": 6,
+      "times": 7
+    }
+  },
+  {
     "name": "技能卡片可见",
     "value": true
   },

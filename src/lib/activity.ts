@@ -2,6 +2,10 @@ import { invoke } from "./transport";
 
 export const activityTools = ["codex", "dsh", "zcode", "qoder", "workbuddy"] as const;
 export const toolNames = { codex: "Codex", dsh: "DSH", zcode: "ZCode", qoder: "Qoder", workbuddy: "WorkBuddy" };
+/** 调用记录的工具标识到 Agent 图标键的映射：DSH 的图标键是 deepseek_harness。 */
+export const toolIconKeys: Record<string, string> = {
+  codex: "codex", dsh: "deepseek_harness", zcode: "zcode", qoder: "qoder", workbuddy: "workbuddy",
+};
 export type ActivityTool = typeof activityTools[number];
 export type ActivityKind = "invocation" | "document" | "request";
 export type ActivityTrigger = "manual" | "automatic" | "unknown";

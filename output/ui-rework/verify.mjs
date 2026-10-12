@@ -98,6 +98,27 @@ try {
   await goto(`http://127.0.0.1:${port}/my-skills`);
   await evaluate(`localStorage.setItem('theme','light')`);
   await goto(`http://127.0.0.1:${port}/my-skills`);
+
+  // 仪表盘「近期动态」：技能更新与调用记录合并成一条时间线
+  await goto(`http://127.0.0.1:${port}/`);
+  record("近期动态内容", await evaluate(`(() => {
+    const heading = [...document.querySelectorAll('h2')].find(el => el.textContent.includes('近期动态'));
+    const panel = heading?.parentElement?.parentElement?.querySelector('.app-panel');
+    const rows = panel ? [...panel.querySelectorAll('[role="button"]')] : [];
+    const tools = ['Codex','DSH','ZCode','Qoder','WorkBuddy'];
+    return {
+      hasHeading: !!heading,
+      hasViewAll: !!(heading?.parentElement && [...heading.parentElement.querySelectorAll('button')].some(b => b.textContent.includes('查看全部'))),
+      rows: rows.length,
+      firstRow: rows[0] ? rows[0].textContent.replace(/\\s+/g, ' ').trim().slice(0, 60) : null,
+      activityRows: rows.filter(row => tools.some(name => row.textContent.includes(name))).length,
+      triggerChips: rows.filter(row => /手动触发|自动触发|来源未知/.test(row.textContent)).length,
+      times: rows.map(row => row.lastElementChild?.textContent).filter(Boolean).length,
+    };
+  })()`));
+  await shoot("07_dashboard_light");
+
+  await goto(`http://127.0.0.1:${port}/my-skills`);
   record("技能卡片可见", await evaluate(`[...document.querySelectorAll('.app-panel')].some(el => el.textContent.includes('ui-guide'))`));
 
   // 打开详情

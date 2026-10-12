@@ -78,7 +78,10 @@
     "notSynced": "未同步",
     "scanImport": "掃描本機 Skills 匯入",
     "installNew": "安裝新 Skills",
-    "recentActivity": "近期動態"
+    "recentActivity": "近期動態",
+    "recentActivityViewAll": "檢視全部",
+    "recentActivityEmpty": "尚無動態，安裝或匯入技能後會顯示更新與呼叫記錄",
+    "recentActivityError": "呼叫記錄讀取失敗，僅顯示技能更新"
   },
   "agentControl": {
     "title": "讓你的 Agent 管理 Skills",

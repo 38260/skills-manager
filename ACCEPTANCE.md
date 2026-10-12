@@ -137,8 +137,9 @@
 | 部署默认折叠 | 初始 `aria-expanded=false`，折叠时开关数为 0；展开后只出现已安装工具（Codex／Qoder／ZCode／WorkBuddy／DeepSeek Harness），未安装工具与「N 个不可用」入口均不展示 | 通过 |
 | 调用记录内嵌 | 切到「调用记录」页签后 `location.pathname` 仍为 `/my-skills`；内嵌 6 条记录；展开后展示识别依据／行号／会话 ID／调用 ID／项目／技能文件／来源文件 | 通过 |
 | 调用记录页样式 | 记录区无大圆角卡片（`rounded-xl` 计数 0）；统计为扁平数字行；6 条记录 | 通过 |
+| 近期动态含调用记录 | 仪表盘「近期动态」共 7 行：1 条技能更新 + 6 条调用记录；6 行含工具名与触发方式徽章；每行均有时间；区块右上角有「查看全部」 | 通过 |
 
-截图证据：`output/ui-rework/evidence/`（`01_detail_light`、`01b_detail_sidebar_bottom`、`02_activity_inline`、`03_activity_detail`、`04_detail_dark`、`05_activity_page_light`、`06_activity_deeplink`）；结构化断言见同目录 `report.json`。
+截图证据：`output/ui-rework/evidence/`（`01_detail_light`、`01b_detail_sidebar_bottom`、`02_activity_inline`、`03_activity_detail`、`04_detail_dark`、`05_activity_page_light`、`06_activity_deeplink`、`07_dashboard_light`）；结构化断言见同目录 `report.json`。
 
 ### 4. 测试与静态检查
 
