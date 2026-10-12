@@ -3,10 +3,12 @@ import { useTranslation } from "react-i18next";
 import { ChevronDown, FileSearch, FolderSearch, History, RefreshCw } from "lucide-react";
 import { cn } from "../utils";
 import { openPath } from "../lib/tauri";
-import { toolNames, type ActivityEvent } from "../lib/activity";
+import { toolIconKeys, toolNames, type ActivityEvent } from "../lib/activity";
+import { AgentIcon } from "./AgentIcon";
 
+// 触发方式徽章：浅色用深色文字，深色用浅色文字，避免只在单一主题下可读。
 const TRIGGER_TONE: Record<ActivityEvent["trigger"], string> = {
-  manual: "border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-300",
+  manual: "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300",
   automatic: "border-accent-border bg-accent-bg text-accent-dark dark:text-accent-light",
   unknown: "border-border-subtle bg-surface-hover text-tertiary",
 };
@@ -25,7 +27,8 @@ interface Props {
 
 /**
  * 调用记录列表：按参考图的平面分组样式渲染——不使用大圆角卡片，
- * 依靠细分隔线、绿色强调色和两行信息层级区分记录，展开后展示可追溯的定位信息。
+ * 每行以工具图标起头（与参考图右栏的工具行一致），依靠细分隔线、绿色强调色和
+ * 两行信息层级区分记录；展开的行使用参考图"目录"选中态同款的浅绿底＋左侧绿线。
  */
 export function ActivityRecordList({ items, loading, error, compact = false, emptyText, onOpenSkill, onRetry, className }: Props) {
   const { t, i18n } = useTranslation();
@@ -71,14 +74,22 @@ export function ActivityRecordList({ items, loading, error, compact = false, emp
               onClick={() => setExpanded(isOpen ? null : record.id)}
               aria-expanded={isOpen}
               aria-controls={`event-${record.id}`}
-              className="flex min-w-0 items-start gap-3 border-b border-border-subtle px-1 py-2.5 text-left outline-none transition-colors hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-accent"
+              className={cn(
+                "flex min-w-0 items-center gap-3 border-b border-l-[3px] border-border-subtle px-2 py-2.5 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent",
+                isOpen ? "border-l-accent bg-accent-bg" : "border-l-transparent hover:bg-surface-hover"
+              )}
             >
+              <AgentIcon
+                agentKey={toolIconKeys[record.tool] ?? record.tool}
+                displayName={toolNames[record.tool]}
+                className="h-7 w-7 shrink-0"
+              />
               <div className="min-w-0 flex-1">
                 <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                   <span className="min-w-0 truncate text-[14px] font-medium leading-5 text-primary" title={record.skillName}>{record.skillName}</span>
-                  <span className="rounded-md border border-border-subtle px-1.5 py-px text-[11px] leading-4 text-tertiary">{toolNames[record.tool]}</span>
-                  <span className={cn("rounded-md border px-1.5 py-px text-[11px] leading-4", TRIGGER_TONE[record.trigger])}>{t(`activity.triggers.${record.trigger}`)}</span>
-                  {record.status === "failed" && <span className="text-[11px] leading-4 text-danger">{t("activity.statuses.failed")}</span>}
+                  <span className="rounded border border-border-subtle bg-surface px-1.5 py-px text-[10px] leading-4 text-tertiary">{toolNames[record.tool]}</span>
+                  <span className={cn("rounded border px-1.5 py-px text-[10px] leading-4", TRIGGER_TONE[record.trigger])}>{t(`activity.triggers.${record.trigger}`)}</span>
+                  {record.status === "failed" && <span className="text-[10px] leading-4 text-danger">{t("activity.statuses.failed")}</span>}
                 </div>
                 <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 text-[12px] leading-4 text-tertiary">
                   <span className="truncate" title={record.project || ""}>{record.project || t("activity.noProject")}</span>
@@ -87,13 +98,13 @@ export function ActivityRecordList({ items, loading, error, compact = false, emp
                   {!compact && <><span className="text-faint">·</span><span>{t(`activity.evidenceCodes.${record.evidence}`, { defaultValue: record.evidence })}</span></>}
                 </div>
               </div>
-              <div className="flex shrink-0 items-center gap-2 pt-0.5">
+              <div className="flex shrink-0 items-center gap-2">
                 <span className="hidden whitespace-nowrap text-[12px] tabular-nums text-muted sm:inline">{date(record.timestamp)}</span>
                 <ChevronDown className={cn("h-4 w-4 text-muted transition-transform", isOpen && "rotate-180")} />
               </div>
             </button>
             {isOpen && (
-              <div id={`event-${record.id}`} className="border-b border-border-subtle bg-bg-secondary/60 px-3 py-3">
+              <div id={`event-${record.id}`} className="border-b border-l-[3px] border-border-subtle border-l-accent bg-accent-bg px-3 py-3 pl-[52px]">
                 <dl className="grid grid-cols-[auto_1fr] gap-x-5 gap-y-2 text-[12px]">
                   {([
                     ["evidence", t(`activity.evidenceCodes.${record.evidence}`, { defaultValue: record.evidence })],
@@ -113,7 +124,7 @@ export function ActivityRecordList({ items, loading, error, compact = false, emp
                     <span className="min-w-0 break-all text-secondary">{record.sourcePath || "—"}</span>
                     {record.sourcePath && (
                       <button type="button" onClick={() => void revealFile(record.sourcePath)}
-                        className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border-subtle px-2 py-0.5 text-[11.5px] text-secondary outline-none hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-accent">
+                        className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border-subtle bg-surface px-2 py-0.5 text-[11.5px] text-secondary outline-none hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-accent">
                         <FolderSearch className="h-3.5 w-3.5" />{t("mySkills.detail.revealInFolder")}
                       </button>
                     )}
@@ -122,7 +133,7 @@ export function ActivityRecordList({ items, loading, error, compact = false, emp
                 <p className="mt-2.5 text-[12px] text-tertiary">{t("activity.statusNote")}</p>
                 {!compact && (record.managedSkillId && onOpenSkill ? (
                   <button type="button" onClick={() => onOpenSkill(record.managedSkillId!)}
-                    className="mt-2.5 inline-flex items-center gap-1.5 rounded-md border border-accent-border bg-accent-bg px-2.5 py-1 text-[12px] text-accent-dark outline-none hover:bg-accent-bg focus-visible:ring-2 focus-visible:ring-accent dark:text-accent-light">
+                    className="mt-2.5 inline-flex items-center gap-1.5 rounded-md border border-accent-border bg-surface px-2.5 py-1 text-[12px] text-accent-dark outline-none hover:bg-accent-bg focus-visible:ring-2 focus-visible:ring-accent dark:text-accent-light">
                     <FileSearch className="h-3.5 w-3.5" />{t("activity.openSkill")}
                   </button>
                 ) : <p className="mt-2.5 text-[12px] text-tertiary">{t("activity.unlinked")}</p>)}

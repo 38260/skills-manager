@@ -137,9 +137,33 @@
 | 部署默认折叠 | 初始 `aria-expanded=false`，折叠时开关数为 0；展开后只出现已安装工具（Codex／Qoder／ZCode／WorkBuddy／DeepSeek Harness），未安装工具与「N 个不可用」入口均不展示 | 通过 |
 | 调用记录内嵌 | 切到「调用记录」页签后 `location.pathname` 仍为 `/my-skills`；内嵌 6 条记录；展开后展示识别依据／行号／会话 ID／调用 ID／项目／技能文件／来源文件 | 通过 |
 | 调用记录页样式 | 记录区无大圆角卡片（`rounded-xl` 计数 0）；统计为扁平数字行；6 条记录 | 通过 |
+| 调用记录对齐参考图（浅色 + 深色） | 每行以工具图标起头（与参考图右栏工具行一致）；展开态为浅绿底 + 3px 左侧绿线（与参考图"目录"选中态一致）。深色断言：展开底 `rgba(16,185,129,0.08)`、左线 `rgb(16,185,129)` / 3px；浅色断言徽章与正文对比度正常 | 通过 |
 | 近期动态含调用记录 | 仪表盘「近期动态」共 7 行：1 条技能更新 + 6 条调用记录；6 行含工具名与触发方式徽章；每行均有时间；区块右上角有「查看全部」 | 通过 |
 
-截图证据：`output/ui-rework/evidence/`（`01_detail_light`、`01b_detail_sidebar_bottom`、`02_activity_inline`、`03_activity_detail`、`04_detail_dark`、`05_activity_page_light`、`06_activity_deeplink`、`07_dashboard_light`）；结构化断言见同目录 `report.json`。
+截图证据：`output/ui-rework/evidence/`（`01_detail_light`、`01b_detail_sidebar_bottom`、`02_activity_inline`、`03_activity_detail`、`04_detail_dark`、`05_activity_page_light`、`05b_activity_page_light_detail`、`06_activity_deeplink`、`07_dashboard_light`、`08_activity_inline_dark`、`09_activity_detail_dark`、`10_activity_page_dark`、`11_activity_page_dark_detail`）；结构化断言见同目录 `report.json`。
+
+### 3.1 「打开文件」无法打开（第三轮修复）
+
+现象：点击项目结构中的文件或「打开文件」后没有任何反应。
+
+根因（有硬证据，非推测）：
+
+1. 桌面外壳用 `ELECTRON_RUN_AS_NODE=1` 拉起本地服务（`electron/main.mjs`），该变量会被本地服务继续传给被打开的程序。
+2. 本机 `.md` 的默认打开方式是 Typora（`HKCU\...\FileExts\.md\UserChoice` → `md_auto_file` → `D:\Apps\Typora\Typora.exe`），Typora 是 Electron 应用。
+3. 用工程内 `electron.exe` 实测同一脚本在两种环境下的差异：
+   - 带 `ELECTRON_RUN_AS_NODE=1`：`process.type` 为空、`require('electron')` 抛「Cannot find module 'electron'」——即被当作普通 Node 运行，Electron 应用无法创建窗口。
+   - 不设置该变量：`process.type = "browser"`、`require('electron').app` 可用——正常 Electron 应用。
+   因此 Typora 被拉起后立即以 Node 模式失败，表现为「点了没反应」。
+
+修复：
+
+- 打开外部程序前清理 Electron 注入的环境变量（`ELECTRON_RUN_AS_NODE`、`ELECTRON_NO_ATTACH_CONSOLE`、`ELECTRON_FORCE_IS_PACKAGED`、`ELECTRON_ENABLE_LOGGING`、`SKILLS_MANAGER_ROLE`），且不改动传入对象本身。
+- 打开方式改为按目标类型与平台生成候选序列，失败才回退：Windows 定位文件用 `explorer.exe "/select," <路径>` 两个参数（合并成一个参数在路径含空格时会被引号包裹，explorer 解析失败）；目录先用文件管理器打开；文件先交给系统默认程序，失败回退为在文件夹中定位。
+- 等待子进程真正建立（`spawn`）或明确失败（`error`），不再静默吞掉启动错误；失败时把真实原因返回给界面展示。
+
+新增单测：`launchEnv` 清理变量且不修改入参、`launchPlan` 的四种平台/类型组合、`pathWithinRoots` 的边界。`tests/backend/shell.test.mjs` 4/4 通过。
+
+未验证项：本机工具环境无法启动桌面程序（分离进程被回收），因此「修复后 Typora 实际弹出窗口」这一步需用户在本机确认；已验证的是环境变量差异（硬证据）、候选命令形状与错误上报链路。
 
 ### 4. 测试与静态检查
 

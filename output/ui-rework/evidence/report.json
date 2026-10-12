@@ -122,7 +122,7 @@
       "pathBefore": "/my-skills",
       "pathAfter": "/my-skills",
       "rows": 6,
-      "firstSkill": "ui-guide"
+      "firstSkill": ""
     }
   },
   {
@@ -145,16 +145,36 @@
     }
   },
   {
-    "name": "调用记录页",
+    "name": "深色内嵌调用记录",
+    "value": {
+      "rowBg": "rgba(0, 0, 0, 0)",
+      "nameColor": "rgb(244, 244, 245)",
+      "icon": true
+    }
+  },
+  {
+    "name": "深色展开态",
+    "value": {
+      "background": "rgba(16, 185, 129, 0.08)",
+      "leftBorder": "rgb(16, 185, 129)",
+      "leftWidth": "3px"
+    }
+  },
+  {
+    "name": "调用记录页（深色）",
     "value": {
       "rows": 6,
       "hasCardFrames": 0,
-      "summary": [
-        "5",
-        "1",
-        "0",
-        "6"
-      ]
+      "rowBg": "rgba(0, 0, 0, 0)",
+      "icons": true
+    }
+  },
+  {
+    "name": "调用记录页（浅色）",
+    "value": {
+      "rowBg": "rgba(0, 0, 0, 0)",
+      "badgeColor": "rgb(24, 24, 27)",
+      "icons": true
     }
   }
 ]

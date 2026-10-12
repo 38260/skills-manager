@@ -246,20 +246,61 @@ try {
   await shoot("04_detail_dark");
   await shoot("04_detail_dark_full", { full: true });
 
+  // 深色下的调用记录：详情页内嵌 + 调用记录页，逐项取计算样式核对对比度
+  await evaluate(`(() => { const tab = [...document.querySelectorAll('header button')].find(button => button.textContent.trim() === '调用记录'); tab.click(); return true; })()`);
+  await sleep(1600);
+  record("深色内嵌调用记录", await evaluate(`(() => {
+    const row = document.querySelector('.skill-detail-main button[aria-expanded]');
+    if (!row) return null;
+    const style = getComputedStyle(row);
+    const name = row.querySelector('span');
+    return { rowBg: style.backgroundColor, nameColor: getComputedStyle(name).color, icon: !!row.querySelector('img, svg') };
+  })()`));
+  await shoot("08_activity_inline_dark");
+  // 展开一行，核对展开态的绿底与左侧绿线
+  await evaluate(`(() => { const row = document.querySelector('.skill-detail-main button[aria-expanded]'); row.click(); return true; })()`);
+  await sleep(700);
+  record("深色展开态", await evaluate(`(() => {
+    const row = document.querySelector('.skill-detail-main button[aria-expanded="true"]');
+    const style = getComputedStyle(row);
+    return { background: style.backgroundColor, leftBorder: style.borderLeftColor, leftWidth: style.borderLeftWidth };
+  })()`));
+  await shoot("09_activity_detail_dark");
+
   // ── 调用记录页（参考图样式的扁平分组） ──
   await goto(`http://127.0.0.1:${port}/skill-activity`);
-  record("调用记录页", await evaluate(`(() => ({
-    rows: document.querySelectorAll('section button[aria-expanded]').length,
-    hasCardFrames: document.querySelectorAll('section .rounded-xl').length,
-    summary: [...document.querySelectorAll('div[aria-label] .tabular-nums')].map(el => el.textContent),
-  }))()`));
+  record("调用记录页（深色）", await evaluate(`(() => {
+    const row = document.querySelector('section button[aria-expanded]');
+    const style = row ? getComputedStyle(row) : null;
+    return { rows: document.querySelectorAll('section button[aria-expanded]').length,
+      hasCardFrames: document.querySelectorAll('section .rounded-xl').length,
+      rowBg: style ? style.backgroundColor : null,
+      icons: row ? !!row.querySelector('img, svg') : null };
+  })()`));
+  await shoot("10_activity_page_dark");
+  await shoot("10_activity_page_dark_full", { full: true });
+  await evaluate(`(() => { const row = document.querySelector('section button[aria-expanded]'); if (row) row.click(); return true; })()`);
+  await sleep(700);
+  await shoot("11_activity_page_dark_detail");
+
+  await evaluate(`localStorage.setItem('theme','light')`);
+  await goto(`http://127.0.0.1:${port}/skill-activity`);
+  record("调用记录页（浅色）", await evaluate(`(() => {
+    const row = document.querySelector('section button[aria-expanded]');
+    const style = row ? getComputedStyle(row) : null;
+    const badge = row ? [...row.querySelectorAll('span')].find(span => span.className.includes('border')) : null;
+    return { rowBg: style ? style.backgroundColor : null,
+      badgeColor: badge ? getComputedStyle(badge).color : null,
+      icons: row ? !!row.querySelector('img, svg') : null };
+  })()`));
   await shoot("05_activity_page_light");
-  await shoot("05_activity_page_light_full", { full: true });
+  await evaluate(`(() => { const row = document.querySelector('section button[aria-expanded]'); if (row) row.click(); return true; })()`);
+  await sleep(700);
+  await shoot("05b_activity_page_light_detail");
 
   await goto(`http://127.0.0.1:${port}/skill-activity?skill=ui-guide`);
   await shoot("06_activity_deeplink");
 
-  await evaluate(`localStorage.setItem('theme','light')`);
   fs.writeFileSync(path.join(evidence, "report.json"), JSON.stringify(results, null, 2));
   console.log("\n验收完成，结果写入 output/ui-rework/evidence/report.json");
 } catch (error) {

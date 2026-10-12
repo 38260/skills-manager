@@ -170,7 +170,7 @@ export function SkillActivity() {
         onOpenSkill={id => { openSkillDetailById(id); navigate("/my-skills"); }}
         onRetry={refresh}
       />
-      <footer className="flex items-center justify-between border-t border-border-subtle py-3 text-[12px] text-tertiary">
+      <footer className="flex items-center justify-between py-3 text-[12px] text-tertiary">
         <span>{t("activity.page", { current: result?.page ?? 1, pages })}</span>
         <div className="flex gap-2">
           <button type="button" className={button} disabled={!result || result.page <= 1} onClick={() => setQuery(q => ({ ...q, page: (result?.page ?? 1) - 1 }))} aria-label={t("activity.previous")}><ChevronLeft className="h-4 w-4" /></button>

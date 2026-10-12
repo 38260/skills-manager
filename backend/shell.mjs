@@ -16,6 +16,60 @@ export function pathWithinRoots(target, roots) {
 
 // 桌面外壳与诊断命令（APP-05）：浏览器/桌面模式下替代 Tauri 外壳能力。
 // 应用内更新检查采用保守策略：仅当配置了 update_manifest_url 时联网检查，否则报告当前版本无更新。
+
+// 打开外部程序时清理 Electron 注入的环境变量。
+// 桌面外壳用 ELECTRON_RUN_AS_NODE=1 拉起本地服务，这个变量会继续传给被打开的程序；
+// 如果用户的默认打开方式是 Electron 系应用（Typora、VS Code、Cursor 等），它们会以
+// Node 模式启动、不显示窗口，表现为"点了打开文件却没有任何反应"。
+const STRIPPED_ENV = ["ELECTRON_RUN_AS_NODE", "ELECTRON_NO_ATTACH_CONSOLE", "ELECTRON_FORCE_IS_PACKAGED", "ELECTRON_ENABLE_LOGGING", "SKILLS_MANAGER_ROLE"];
+export function launchEnv(source = process.env) {
+  const env = { ...source };
+  for (const key of STRIPPED_ENV) delete env[key];
+  return env;
+}
+
+// 打开方式（按顺序尝试，前一个失败才试下一个）：
+// - reveal：在文件管理器中定位该文件；Windows 必须拆成 "/select," 与路径两个参数，
+//   合并成一个参数在路径含空格时会被引号包裹，explorer 解析失败。
+// - 目录：直接用文件管理器打开。
+// - 文件：交给系统默认程序（ShellExecute），没有关联时由系统弹出"打开方式"选择框。
+export function launchPlan(target, { isDirectory, reveal, platform = process.platform } = {}) {
+  if (platform === "darwin") return reveal ? [["open", ["-R", target]]] : [["open", [target]]];
+  if (platform === "win32") {
+    if (reveal) return [["explorer.exe", ["/select,", target]]];
+    if (isDirectory) return [["explorer.exe", [target]], ["rundll32.exe", ["url.dll,FileProtocolHandler", target]]];
+    return [["rundll32.exe", ["url.dll,FileProtocolHandler", target]], ["explorer.exe", ["/select,", target]]];
+  }
+  return [["xdg-open", [reveal ? path.dirname(target) : target]]];
+}
+
+// 等待子进程真正建立（spawn）或明确失败（error），避免把"启动失败"当成"已打开"。
+function spawnConfirmed(command, args) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let child;
+    try { child = spawn(command, args, { detached: true, stdio: "ignore", env: launchEnv() }); }
+    catch (error) { reject(error); return; }
+    const timer = setTimeout(() => { if (!settled) { settled = true; resolve(child); } }, 2000);
+    child.once("spawn", () => { if (!settled) { settled = true; clearTimeout(timer); resolve(child); } });
+    child.once("error", error => { if (!settled) { settled = true; clearTimeout(timer); reject(error); } });
+  });
+}
+
+async function launch(target, reveal) {
+  const isDirectory = fs.statSync(target).isDirectory();
+  const plan = launchPlan(target, { isDirectory, reveal });
+  let lastError = null;
+  for (const [command, args] of plan) {
+    try {
+      const child = await spawnConfirmed(command, args);
+      child.unref();
+      return { command, path: target };
+    } catch (error) { lastError = error; }
+  }
+  throw new Error(`无法调用系统程序打开该路径：${lastError?.code || lastError?.message || "未知原因"}`);
+}
+
 export function shellCommands(store, { packageVersion, exit, restart, extraRoots = () => [] }) {
   const logsDir = () => path.join(store.directory, "logs");
   const panicFile = () => path.join(logsDir(), "panic.json");
@@ -44,22 +98,6 @@ export function shellCommands(store, { packageVersion, exit, restart, extraRoots
     if (!target || !fs.existsSync(resolved)) throw new Error("目标文件不存在或已被移动");
     if (!pathWithinRoots(resolved, allowedRoots())) throw new Error("该路径不在允许打开的目录内");
     return resolved;
-  }
-
-  function launch(target, reveal) {
-    const options = { detached: true, stdio: "ignore" };
-    let child;
-    if (process.platform === "win32") {
-      child = reveal
-        ? spawn("explorer.exe", [`/select,${target}`], options)
-        : spawn("rundll32.exe", ["url.dll,FileProtocolHandler", target], { ...options, windowsHide: true });
-    } else if (process.platform === "darwin") {
-      child = reveal ? spawn("open", ["-R", target], options) : spawn("open", [target], options);
-    } else {
-      child = spawn("xdg-open", [reveal ? path.dirname(target) : target], options);
-    }
-    child.on("error", () => { /* 系统没有对应打开方式时静默失败，前端保留路径可手动复制。 */ });
-    child.unref();
   }
 
   return {
@@ -119,13 +157,14 @@ export function shellCommands(store, { packageVersion, exit, restart, extraRoots
 
     // 用系统默认程序打开文件/目录；reveal 为 true 时在文件管理器中定位该文件。
     // 传入 skillId 时按技能中心库副本内的相对路径解析，避免前端拼接绝对路径。
-    open_path: { call: args => {
+    // 启动失败时抛出真实原因，不再静默成功（前端会展示该错误）。
+    open_path: { call: async args => {
       const target = args.skillId
         ? inside(store.skill(String(args.skillId)).central_path, String(args.relative ?? ""))
         : resolveOpenTarget(args.path);
       if (!fs.existsSync(target)) throw new Error("目标文件不存在或已被移动");
       const reveal = Boolean(args.reveal);
-      launch(target, reveal);
+      await launch(target, reveal);
       return { path: target, reveal };
     } },
   };

@@ -6,6 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { launchEnv, launchPlan, pathWithinRoots } from "../../backend/shell.mjs";
 
 const serverModule = fileURLToPath(new URL("../../backend/server.mjs", import.meta.url));
 
@@ -108,4 +109,44 @@ test("open_path 只允许打开已登记目录内的路径", async t => {
   const missing = await invoke("open_path", { path: path.join(directory, "repo", "logs", "nope.log") });
   assert.equal(missing.body.ok, false);
   assert.match(String(missing.body.message), /不存在/);
+});
+
+test("打开外部程序时清理 Electron 注入的环境变量", () => {
+  // 桌面外壳用 ELECTRON_RUN_AS_NODE=1 拉起本地服务，该变量会传给被打开的程序；
+  // Electron 系默认程序（Typora、VS Code、Cursor 等）会因此以 Node 模式启动、不显示窗口。
+  const env = launchEnv({ PATH: "C:\\Windows", ELECTRON_RUN_AS_NODE: "1", ELECTRON_NO_ATTACH_CONSOLE: "1", SKILLS_MANAGER_ROLE: "electron-backend", KEEP: "1" });
+  assert.equal(env.ELECTRON_RUN_AS_NODE, undefined);
+  assert.equal(env.ELECTRON_NO_ATTACH_CONSOLE, undefined);
+  assert.equal(env.SKILLS_MANAGER_ROLE, undefined);
+  assert.equal(env.PATH, "C:\\Windows");
+  assert.equal(env.KEEP, "1");
+  // 不能改动传入对象本身。
+  const source = { ELECTRON_RUN_AS_NODE: "1" };
+  launchEnv(source);
+  assert.equal(source.ELECTRON_RUN_AS_NODE, "1");
+});
+
+test("打开方式按平台与目标类型选择，且失败可回退", () => {
+  // 定位文件："/select," 与路径必须是两个参数；合并成一个参数在路径含空格时会被引号包裹，explorer 解析失败。
+  assert.deepEqual(
+    launchPlan("C:\\a b\\SKILL.md", { isDirectory: false, reveal: true, platform: "win32" }),
+    [["explorer.exe", ["/select,", "C:\\a b\\SKILL.md"]]],
+  );
+  // 目录：先用文件管理器打开，失败再交给默认程序。
+  assert.deepEqual(
+    launchPlan("C:\\dir", { isDirectory: true, reveal: false, platform: "win32" }).map(item => item[0]),
+    ["explorer.exe", "rundll32.exe"],
+  );
+  // 文件：默认程序优先，失败回退为在文件夹中定位（至少让用户看到该文件）。
+  assert.deepEqual(
+    launchPlan("C:\\dir\\a.md", { isDirectory: false, reveal: false, platform: "win32" }).map(item => item[0]),
+    ["rundll32.exe", "explorer.exe"],
+  );
+  assert.deepEqual(launchPlan("/tmp/a.md", { isDirectory: false, reveal: true, platform: "darwin" }), [["open", ["-R", "/tmp/a.md"]]]);
+  assert.deepEqual(launchPlan("/tmp/a.md", { isDirectory: false, reveal: false, platform: "linux" }), [["xdg-open", ["/tmp/a.md"]]]);
+  // 根目录判断本身：允许根目录自身与其子路径，拒绝同级与父级。
+  assert.equal(pathWithinRoots("C:\\root\\a.md", ["C:\\root"]), true);
+  assert.equal(pathWithinRoots("C:\\root", ["C:\\root"]), true);
+  assert.equal(pathWithinRoots("C:\\other\\a.md", ["C:\\root"]), false);
+  assert.equal(pathWithinRoots("C:\\a.md", ["C:\\root"]), false);
 });
