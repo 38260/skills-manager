@@ -34,6 +34,7 @@ import { cn } from "../utils";
 import { useApp } from "../context/AppContext";
 import { useMultiSelect } from "../hooks/useMultiSelect";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { CreatePresetDialog } from "../components/CreatePresetDialog";
 import { TagRenameDialog } from "../components/TagRenameDialog";
 import { SkillDetailPanel } from "../components/SkillDetailPanel";
 import { MultiSelectToolbar } from "../components/MultiSelectToolbar";
@@ -163,6 +164,7 @@ export function MySkills() {
     refreshProjects,
   } = useApp();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [showCreatePreset, setShowCreatePreset] = useState(false);
   const [filterMode, setFilterMode] = useState<"all" | "enabled" | "available">("all");
   const [sourceFilters, setSourceFilters] = useState<Set<string>>(new Set());
   const [tagFilters, setTagFilters] = useState<Set<string>>(new Set());
@@ -951,6 +953,13 @@ export function MySkills() {
 
   // Throws on failure so the rename dialog stays open (it only closes after a
   // resolved onRename), matching how RenamePresetDialog behaves.
+  // 新建 Preset 的入口从侧边栏搬到了技能库筛选条（侧边栏只在 ≥2 个 Preset 时才显示这一段）。
+  const handleCreatePreset = async (name: string, description?: string, icon?: string) => {
+    await api.createPreset(name, description, icon);
+    await Promise.all([refreshPresets(), refreshManagedSkills()]);
+    toast.success(t("preset.created"));
+  };
+
   const handleRenameTag = async (newName: string) => {
     const oldName = tagToRename;
     if (oldName === null) return;
@@ -1176,6 +1185,16 @@ export function MySkills() {
               </button>
             ))}
           </div>
+
+          {/* 新建 Preset：入口从侧边栏搬到这里（侧边栏只在 ≥2 个 Preset 时显示该段） */}
+          <button
+            type="button"
+            onClick={() => setShowCreatePreset(true)}
+            className="app-toolbar-button app-toolbar-button-secondary"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            {t("mySkills.newPreset")}
+          </button>
 
         </div>
 
@@ -2014,6 +2033,11 @@ export function MySkills() {
         currentName={tagToRename || ""}
         onClose={() => setTagToRename(null)}
         onRename={handleRenameTag}
+      />
+      <CreatePresetDialog
+        open={showCreatePreset}
+        onClose={() => setShowCreatePreset(false)}
+        onCreate={handleCreatePreset}
       />
       <TagRenameDialog
         open={createCategoryOpen}

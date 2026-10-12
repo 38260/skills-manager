@@ -296,6 +296,7 @@
     "clearFilters": "清除筛选",
     "noPreset": "当前还没有可用 Preset",
     "currentPresetFallback": "当前 Preset",
+    "newPreset": "新建 Preset",
     "presetCount": "{{count}} 个 Preset",
     "syncCoverage": "同步覆盖",
     "syncSummary": "已同步 {{synced}} / {{total}}",

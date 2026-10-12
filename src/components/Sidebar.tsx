@@ -22,9 +22,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { cn } from "../utils";
 import { useApp } from "../context/AppContext";
-import { CreatePresetDialog } from "./CreatePresetDialog";
-import { RenamePresetDialog } from "./RenamePresetDialog";
-import { AddProjectDialog } from "./AddProjectDialog";
+import { RenamePresetDialog } from "./RenamePresetDialog";import { AddProjectDialog } from "./AddProjectDialog";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { AgentIcon } from "./AgentIcon";
 import { InstallProgressBar } from "./InstallProgressBar";
@@ -51,7 +49,6 @@ export function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { presets, viewedPreset, setViewedPresetId, closeSkillDetail, refreshPresets, refreshManagedSkills, projects, refreshProjects, tools, managedSkills, appUpdate } = useApp();
-  const [showCreate, setShowCreate] = useState(false);
   const [showAddProject, setShowAddProject] = useState(false);
   const [renameTarget, setRenameTarget] = useState<{ id: string; name: string; icon?: string | null; description?: string | null } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
@@ -180,15 +177,6 @@ export function Sidebar() {
     if (location.pathname !== "/my-skills") {
       navigate("/my-skills");
     }
-  };
-
-  const handleCreatePreset = async (name: string, description?: string, icon?: string) => {
-    await api.createPreset(name, description, icon);
-    await Promise.all([refreshPresets(), refreshManagedSkills()]);
-    if (location.pathname === "/settings") {
-      navigate("/my-skills");
-    }
-    toast.success(t("preset.created"));
   };
 
   const handleRenamePreset = async (newName: string, icon?: string, description?: string) => {
@@ -424,7 +412,10 @@ export function Sidebar() {
         {/* Scrollable section */}
         <div className="px-2.5 flex-1 overflow-y-auto scrollbar-hide min-h-0">
 
-          {/* ── Presets ── */}
+          {/* ── Presets ──（仅当存在 2 个以上 Preset 时渲染：单 Preset 用户的侧边栏
+              那一行「Default」只切换视图过滤，是噪音；新建入口已挪到技能库筛选条）── */}
+          {orderedPresets.length > 1 && (
+          <>
           <div className="mb-1.5 px-2.5 flex items-center gap-1">
             <button
               onClick={() => setPresetsOpen((v) => !v)}
@@ -532,18 +523,13 @@ export function Sidebar() {
                   )}
                 </Droppable>
               </DragDropContext>
-              <button
-                onClick={() => setShowCreate(true)}
-                className="flex items-center gap-2 px-2.5 py-[7px] mt-1 rounded-md text-sm text-muted hover:text-secondary hover:bg-surface-hover transition-colors w-full outline-none"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                {t("sidebar.newPreset")}
-              </button>
             </>
           )}
 
           {/* Divider */}
           <div className="mx-0.5 mt-3.5 mb-2.5 border-t border-border-subtle" />
+          </>
+          )}
 
           {renderToolGroup({
             category: "coding",
@@ -740,12 +726,6 @@ export function Sidebar() {
           </Link>
         </div>
       </div>
-
-      <CreatePresetDialog
-        open={showCreate}
-        onClose={() => setShowCreate(false)}
-        onCreate={handleCreatePreset}
-      />
 
       <RenamePresetDialog
         open={renameTarget !== null}

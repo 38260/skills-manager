@@ -296,6 +296,7 @@
     "clearFilters": "Clear filters",
     "noPreset": "No preset is currently available",
     "currentPresetFallback": "Current preset",
+    "newPreset": "New Preset",
     "presetCount": "{{count}} presets",
     "syncCoverage": "Sync coverage",
     "syncSummary": "{{synced}} / {{total}} synced",
