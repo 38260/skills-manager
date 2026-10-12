@@ -39,3 +39,19 @@ test("DSH 逐帧读取、三类触发、结果关联和截断前缀保留", asyn
   assert.equal(events.size, 3);
   assert.throws(() => parseDsh({ type: "session", version: 999 }, ctx), /版本/);
 });
+
+test("DSH 早期版本 0 的会话按同一结构解析", () => {
+  const events = new Map();
+  const ctx = new ParseContext("dsh", "/logs/session.jsonl.zstd", { put: row => events.set(row.id, { ...row }) });
+  const rows = [
+    { type: "session", version: 0, id: "s", cwd: "/legacy" },
+    { type: "user/message", data: { source: { kind: "user" }, content: "$legacy-skill" } },
+    { type: "tool/call", data: { name: "skill", callId: "c0", arguments: '{"name":"legacy-skill"}' } },
+    { type: "tool/result", data: { message: { toolCallId: "c0", isError: false } } },
+  ];
+  rows.forEach((row, index) => parseDsh({ time: 1000 + index, line: index + 1, ...row }, ctx));
+  ctx.finish();
+  assert.equal(events.size, 1);
+  const [event] = [...events.values()];
+  assert.deepEqual([event.skillName, event.trigger, event.project], ["legacy-skill", "manual", "/legacy"]);
+});
