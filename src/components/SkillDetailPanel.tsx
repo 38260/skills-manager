@@ -22,9 +22,9 @@ import {
 import { SkillSourceDiffViewer } from "./SkillSourceDiffViewer";
 import { SkillMarkdown } from "./SkillMarkdown";
 import { extractHeadings } from "../lib/markdownOutline";
-import { AgentToggleSection, type AgentToggleItem } from "./AgentToggleSection";
+import { AgentIcon } from "./AgentIcon";
+import { ToggleSwitch } from "./ToggleSwitch";
 import { SkillProjectsSection } from "./SkillProjectsSection";
-import { SyncDots } from "./SyncDots";
 
 type ContentTab = "doc" | "sourceDiff" | "activity";
 
@@ -119,6 +119,7 @@ function SkillDetailPanelContent({
   const [isSourceInfoExpanded, setIsSourceInfoExpanded] = useState(false);
   const [contentTab, setContentTab] = useState<ContentTab>("doc");
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [showUnavailable, setShowUnavailable] = useState(false);
   const [activeHeading, setActiveHeading] = useState<string | null>(null);
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const sourceSectionRef = useRef<HTMLElement>(null);
@@ -217,7 +218,7 @@ function SkillDetailPanelContent({
     const section = target === "source" ? sourceSectionRef.current : diffSectionRef.current;
     section?.scrollIntoView({ block: "start" });
   }
-  const toggleItems: AgentToggleItem[] = (toolToggles ?? []).map((toggle) => ({
+  const toggleItems = (toolToggles ?? []).map((toggle) => ({
     key: toggle.tool,
     displayName: toggle.display_name,
     enabled: toggle.enabled,
@@ -229,6 +230,19 @@ function SkillDetailPanelContent({
         ? t("mySkills.agentToggleDisabledGlobally")
         : null,
   }));
+  const availableItems = toggleItems.filter(item => item.isAvailable);
+  const unavailableItems = toggleItems.filter(item => !item.isAvailable);
+
+  const sourceLocation = skill.source_ref_resolved || skill.source_ref || "";
+  let webSource: URL | null = null;
+  try {
+    const parsed = new URL(sourceLocation);
+    if (["https:", "http:"].includes(parsed.protocol)) webSource = parsed;
+  } catch { /* 本地目录与 SSH 来源直接展示名称，不伪造网页地址。 */ }
+  const sourceLabel = webSource
+    ? `${webSource.hostname} · ${webSource.pathname.replace(/^\//, "").replace(/\.git$/, "")}`
+    : `${sourceTypeLabel(skill.source_type)} · ${sourceLocation.replace(/\\/g, "/").replace(/\/$/, "").split("/").pop() || skill.name}`;
+  const sourceHref = webSource ? webSource.origin + webSource.pathname.replace(/\.git$/, "") : null;
 
   const sourceIcon = (type: string) => {
     switch (type) {
@@ -243,7 +257,7 @@ function SkillDetailPanelContent({
     }
   };
 
-  const sourceTypeLabel = (type: string) => (type === "skillssh" ? "skills.sh" : type);
+  function sourceTypeLabel(type: string) { return type === "skillssh" ? "skills.sh" : type; }
 
   const metadataItems = [
     { label: t("mySkills.sourceType"), value: sourceTypeLabel(skill.source_type) },
@@ -299,11 +313,11 @@ function SkillDetailPanelContent({
   const updateBusy = busyAction === skill.id;
 
   const toc = (
-    <SidebarSection icon={<ListTree className="h-3.5 w-3.5" />} title={t("mySkills.detail.toc")}>
+    <SidebarSection icon={<ListTree className="h-[18px] w-[18px]" />} title={t("mySkills.detail.toc")}>
       {headings.length === 0 ? (
         <p className="px-2 py-1 text-[12px] text-tertiary">{t("mySkills.detail.tocEmpty")}</p>
       ) : (
-        <nav className="flex flex-col" aria-label={t("mySkills.detail.toc")}>
+        <nav className="flex max-h-[220px] flex-col overflow-y-auto scrollbar-hide" aria-label={t("mySkills.detail.toc")}>
           {headings.map((heading) => {
             const id = `${tocPrefix}-heading-${heading.line}`;
             return (
@@ -313,13 +327,11 @@ function SkillDetailPanelContent({
                 onClick={() => jumpToHeading(heading.line)}
                 aria-current={activeHeading === id ? "true" : undefined}
                 className={cn(
-                  "rounded-md px-2 py-1 text-left text-[12.5px] transition-colors outline-none hover:bg-surface-hover focus-visible:outline focus-visible:outline-accent",
-                  heading.level === 1 && "pl-2",
-                  heading.level === 2 && "pl-4",
-                  heading.level === 3 && "pl-6",
+                  "rounded-r-md border-l-[3px] py-1.5 pr-3 text-left text-[14px] leading-5 outline-none hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-accent",
+                  heading.level < 3 ? "pl-4" : "pl-6",
                   activeHeading === id
-                    ? "border-l-2 border-accent bg-accent-bg/60 font-medium text-accent-light"
-                    : "border-l-2 border-transparent text-tertiary"
+                    ? "border-accent bg-accent-bg font-medium text-accent-dark dark:text-accent-light"
+                    : "border-transparent text-tertiary"
                 )}
               >
                 <span className="block truncate" title={heading.text}>{heading.text}</span>
@@ -332,13 +344,25 @@ function SkillDetailPanelContent({
   );
 
   const deploySection = toolToggles && onToggleTool ? (
-    <SidebarSection icon={<Boxes className="h-3.5 w-3.5" />} title={t("mySkills.detail.deployToTools")}>
-      {tools && <div className="mb-2"><SyncDots skill={skill} tools={tools} size="sm" includeOrphan /></div>}
-      <AgentToggleSection
-        items={toggleItems}
-        togglingKey={togglingTool}
-        onToggle={onToggleTool}
-      />
+    <SidebarSection icon={<Boxes className="h-[18px] w-[18px]" />} title={<>
+      {t("mySkills.detail.deployToTools")}
+      <span className="ml-auto text-[11px] font-normal text-muted">{t("mySkills.enabledSummary", { enabled: availableItems.filter(item => item.enabled).length, total: availableItems.length })}</span>
+    </>}>
+      <div className="flex flex-col">
+        {[...availableItems, ...(showUnavailable ? unavailableItems : [])].map(item => (
+          <div key={item.key} className="flex min-h-[42px] min-w-0 items-center gap-3" title={tools?.find(tool => tool.key === item.key)?.skills_dir}>
+            <AgentIcon agentKey={item.key} displayName={item.displayName} className="skill-detail-agent-icon h-5 w-5" />
+            <span className={cn("min-w-0 flex-1 truncate text-[15px]", item.isAvailable ? "text-secondary" : "text-muted")}>{item.displayName}</span>
+            {item.badgeLabel && <span className="text-[10px] text-muted">{item.badgeLabel}</span>}
+            <ToggleSwitch checked={item.enabled} disabled={item.disabled} loading={togglingTool === item.key}
+              onChange={() => onToggleTool(item.key, !item.enabled)} title={item.displayName} className="mr-1 scale-110" />
+          </div>
+        ))}
+      </div>
+      {unavailableItems.length > 0 && <button type="button" onClick={() => setShowUnavailable(value => !value)} aria-expanded={showUnavailable}
+        className="mt-2 inline-flex items-center gap-1 text-[12px] text-muted outline-none focus-visible:ring-2 focus-visible:ring-accent">
+        {showUnavailable ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}{t("mySkills.agentUnavailableCount", { count: unavailableItems.length })}
+      </button>}
     </SidebarSection>
   ) : null;
 
@@ -353,16 +377,19 @@ function SkillDetailPanelContent({
   ) : null;
 
   const sourceInfo = metadataItems.length > 0 ? (
-    <SidebarSection icon={<Info className="h-3.5 w-3.5" />} title={t("mySkills.detail.sourceInfo")}>
+    <SidebarSection icon={<Info className="h-[18px] w-[18px]" />} title={t("mySkills.detail.sourceInfo")}>
+      <div className="mb-2 flex min-w-0 items-center gap-2 text-[14px] text-tertiary">
+        <span className="min-w-0 flex-1 truncate" title={sourceLabel}>{sourceLabel}</span>
+        {sourceHref && <a href={sourceHref} target="_blank" rel="noreferrer" aria-label={`${t("mySkills.detail.viewSource")}: ${sourceLabel}`} className="shrink-0 rounded p-1 outline-none focus-visible:ring-2 focus-visible:ring-accent"><Link2 className="h-4 w-4" /></a>}
+      </div>
       <button
         type="button"
         onClick={() => setIsSourceInfoExpanded((prev) => !prev)}
         aria-expanded={isSourceInfoExpanded}
-        aria-controls="skill-source-metadata"
-        className="flex w-full items-center justify-between gap-2 px-2 py-1 text-left text-[12.5px] text-muted outline-none hover:text-secondary focus-visible:outline focus-visible:outline-accent"
+        className="flex w-full items-center justify-between gap-2 py-1 text-left text-[12px] text-muted outline-none hover:text-secondary focus-visible:ring-2 focus-visible:ring-accent"
       >
         <span className="inline-flex min-w-0 items-center gap-1.5">
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border-subtle bg-bg-secondary px-2 py-0.5 text-[11.5px]">
+          <span className="inline-flex shrink-0 items-center gap-1">
             {sourceIcon(skill.source_type)}
             {sourceTypeLabel(skill.source_type)}
           </span>
@@ -371,7 +398,7 @@ function SkillDetailPanelContent({
         {isSourceInfoExpanded ? <ChevronUp className="h-3.5 w-3.5 shrink-0" /> : <ChevronDown className="h-3.5 w-3.5 shrink-0" />}
       </button>
       {isSourceInfoExpanded && (
-        <div id="skill-source-metadata" className="mt-1 flex flex-col gap-2 px-2 pb-1">
+        <div className="mt-2 flex flex-col gap-3 pb-1">
           {metadataItems.map((item) => (
             <div key={item.label} className="min-w-0">
               <div className="text-[10.5px] font-medium uppercase tracking-[0.08em] text-faint">{item.label}</div>
@@ -400,11 +427,11 @@ function SkillDetailPanelContent({
       />
       <div className="skill-detail-shell absolute inset-0 z-10 flex min-h-0 flex-col overflow-hidden border-l border-border-subtle bg-surface">
         {/* 页头：滚动时保持可访问 */}
-        <header className="skill-detail-header shrink-0 bg-surface px-10 pt-6">
+        <header className="skill-detail-header shrink-0 bg-surface pl-12 pr-8 pt-6">
           <button
                 type="button"
                 onClick={onClose}
-                className="inline-flex items-center gap-2 rounded-md text-[14px] leading-5 text-muted transition-colors outline-none hover:text-secondary focus-visible:outline focus-visible:outline-accent"
+                className="flex w-fit items-center gap-2 rounded-md text-[14px] leading-5 text-muted transition-colors outline-none hover:text-secondary focus-visible:outline focus-visible:outline-accent"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
                 {t("mySkills.detail.back")}
@@ -433,7 +460,7 @@ function SkillDetailPanelContent({
                 {skill.tags.map((tag, index) => (
                   <span
                     key={tag}
-                    className={cn("inline-flex items-center rounded-md px-2.5 py-0.5 text-[12px] font-medium", index === 0 ? "bg-accent-bg text-accent-dark dark:text-accent-light" : "bg-surface-hover text-secondary")}
+                    className={cn("inline-flex items-center rounded-md px-2.5 py-0.5 text-[12px] font-medium leading-[18px]", index === 0 ? "bg-accent-bg text-accent-dark dark:text-accent-light" : "bg-surface-hover text-secondary")}
                   >
                     {tag}
                   </span>
@@ -441,7 +468,7 @@ function SkillDetailPanelContent({
               </div>
               </div>
             </div>
-            <div className="skill-detail-actions flex shrink-0 flex-wrap items-center justify-end gap-3 pt-4">
+            <div className="skill-detail-actions flex shrink-0 flex-wrap items-center justify-end gap-3 pt-2">
               <button type="button" onClick={() => openComparison("source")} disabled={!supportsSourceDiff}
                 title={!supportsSourceDiff ? t("mySkills.detail.noSource") : undefined}
                 className="inline-flex h-10 items-center gap-2 rounded-md border border-border-subtle bg-surface px-3.5 text-[14px] text-secondary outline-none hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-40">
@@ -498,7 +525,7 @@ function SkillDetailPanelContent({
                 }}
                 aria-current={contentTab === tab ? "page" : undefined}
                 className={cn(
-                  "-mb-px border-b-2 px-4 py-2.5 text-[15px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                  "-mb-px inline-flex h-10 items-center border-b-2 px-4 text-[15px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-accent",
                   contentTab === tab
                     ? "border-accent text-accent-dark dark:text-accent-light"
                     : "border-transparent text-muted hover:text-secondary"
@@ -511,7 +538,7 @@ function SkillDetailPanelContent({
         </header>
 
         <div className="flex min-h-0 flex-1">
-          <main ref={mainScrollRef} className="skill-detail-main min-h-0 min-w-0 flex-1 overflow-y-auto px-10 py-6 scrollbar-hide">
+          <main ref={mainScrollRef} className="skill-detail-main min-h-0 min-w-0 flex-1 overflow-y-auto pl-12 pr-8 py-6 scrollbar-hide">
             {loading ? (
               <div className="mt-12 text-center text-[13px] text-muted">{t("common.loading")}</div>
             ) : contentTab === "sourceDiff" ? (
@@ -556,13 +583,13 @@ function SkillDetailPanelContent({
           </main>
 
           {/* 右侧辅助栏：宽窗口常驻，窄窗口收起为抽屉 */}
-          <aside className="hidden w-[290px] shrink-0 flex-col gap-4 overflow-y-auto border-l border-border-subtle bg-surface/40 px-3 py-4 scrollbar-hide lg:flex">
+          <aside className="skill-detail-sidebar hidden w-[312px] shrink-0 flex-col overflow-y-auto border-l border-border-subtle bg-background px-6 py-6 scrollbar-hide lg:flex">
             {sidebar}
           </aside>
           {drawerOpen && (
             <div className="absolute inset-0 z-20 flex lg:hidden" role="dialog" aria-label={t("mySkills.detail.sidebar")}>
               <div className="absolute inset-0 bg-black/50" onClick={() => setDrawerOpen(false)} />
-              <div className="relative ml-auto flex w-[300px] max-w-[85%] flex-col gap-4 overflow-y-auto border-l border-border-subtle bg-bg-secondary px-3 py-4">
+              <div className="relative ml-auto flex w-[312px] max-w-[85%] flex-col overflow-y-auto border-l border-border-subtle bg-surface px-6 py-6">
                 <button
                   type="button"
                   onClick={() => setDrawerOpen(false)}
@@ -582,10 +609,10 @@ function SkillDetailPanelContent({
   );
 }
 
-function SidebarSection({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
+function SidebarSection({ icon, title, children }: { icon: ReactNode; title: ReactNode; children: ReactNode }) {
   return (
-    <section className="rounded-xl border border-border-subtle bg-surface/70 p-2.5">
-      <h3 className="mb-2 flex items-center gap-1.5 px-1 text-[12px] font-semibold uppercase tracking-[0.06em] text-tertiary">
+    <section className="border-b border-border-subtle pb-6 mb-6 last:mb-0 last:border-b-0">
+      <h3 className="mb-3 flex items-center gap-2.5 text-[15px] font-semibold leading-6 text-primary">
         {icon}
         {title}
       </h3>

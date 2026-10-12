@@ -330,7 +330,7 @@ WorkBuddy 顶层事件解析已实现；样本测试覆盖 `callId` 关联、重
 按小功能实施，每项验证后与 TODO 一起独立提交：
 
 - [x] DETAIL-REF-01：页头增加技能标识、30px 名称、描述与作者／分类层级；面包屑显示在现有顶部栏；来源／差异／更新操作右对齐。隔离 GUI 实际点击来源与差异后定位顶部（两项约 250px，断言通过），lint 与 build 通过；截图 `output/detail-rework/evidence/header.jpg`。仅代表页头小功能，整体视觉待后续验证。
-- [ ] DETAIL-REF-02：右栏平面分组、目录选中样式、工具名称＋纵向开关、来源展示。复用 `AgentIcon`、`ToggleSwitch` 与既有回调；共享组件若需调整，核对 `ProjectDetail` 调用方。
+- [x] DETAIL-REF-02：右栏移除卡片及嵌套外框，使用分隔线；目录整行选中并限制独立滚动高度；五款可用工具纵向名称＋开关，来源名称常显。复用 `AgentIcon`／`ToggleSwitch`，共享项目工具组件不变。隔离 GUI Qoder 启停通过，断言实际副本生成／撤销；lint、build 通过，截图 `output/detail-rework/evidence/sidebar.jpg`。
 - [ ] DETAIL-REF-03：详情正文的标题、引用、列表、表格及代码块排版。主要文件：`SkillMarkdown.tsx`；核对全局工作区与来源文档预览，避免无关页面被意外改版。
 - [ ] DETAIL-REF-04：浅色样式对齐与深色映射、长标题、长路径、窄窗口抽屉及各滚动区域检查。
 - [ ] DETAIL-REF-05：使用参考图的 1536×1024 尺寸、默认字号、浅色主题和具有同类文档结构的隔离技能逐项截图对比，再验证深色、1280 宽和窄窗口；业务数据使用真实测试状态，不能用图片中的示意开关伪造部署。

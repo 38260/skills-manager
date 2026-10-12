@@ -77,6 +77,12 @@
 }
 
 @layer components {
+  .skill-detail-shell .skill-detail-agent-icon {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
