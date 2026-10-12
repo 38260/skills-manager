@@ -38,6 +38,7 @@ export class UsageStore {
         state TEXT NOT NULL DEFAULT 'idle',lastScan INTEGER,files INTEGER DEFAULT 0,processed INTEGER DEFAULT 0,
         errors INTEGER DEFAULT 0,detail TEXT);
       CREATE TABLE IF NOT EXISTS scanned_files (tool TEXT,path TEXT,fingerprint TEXT,errors INTEGER NOT NULL DEFAULT 0,
+        parser_version INTEGER NOT NULL DEFAULT 0,
         PRIMARY KEY(tool,path));`);
     this.insert = this.db.prepare(`INSERT INTO events(${columns.join(",")}) VALUES(${columns.map(() => "?").join(",")})
       ON CONFLICT(id) DO UPDATE SET
@@ -46,6 +47,9 @@ export class UsageStore {
         evidence=CASE WHEN excluded.trigger='manual' OR events.trigger='unknown' THEN excluded.evidence ELSE events.evidence END,
         kind=CASE WHEN excluded.kind='invocation' OR events.kind='request' THEN excluded.kind ELSE events.kind END,
         skillPath=COALESCE(excluded.skillPath,events.skillPath),timestamp=COALESCE(events.timestamp,excluded.timestamp)`);
+    // 解析器版本列：解析缺陷修复后让旧的缓存错误计数失效（见 scanner.mjs 的 PARSER_VERSION）。
+    const scannedColumns = this.db.prepare("PRAGMA table_info(scanned_files)").all().map(row => row.name);
+    if (!scannedColumns.includes("parser_version")) this.db.exec("ALTER TABLE scanned_files ADD COLUMN parser_version INTEGER NOT NULL DEFAULT 0");
   }
   initialize(paths) {
     const insert = this.db.prepare("INSERT OR IGNORE INTO sources(tool,path) VALUES(?,?)");

@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { zstdCompressSync } from "node:zlib";
 import { UsageStore, defaultSources } from "../../backend/activity/store.mjs";
-import { scanSources } from "../../backend/activity/scanner.mjs";
+import { scanSources, PARSER_VERSION } from "../../backend/activity/scanner.mjs";
 import { ActivityService, matchManagedSkill } from "../../backend/activity/service.mjs";
 
 function fixture(t) {
@@ -89,4 +89,24 @@ test("同名技能歧义保留未关联，明确路径不退回名称猜测", ()
   assert.equal(matchManagedSkill({ tool: "codex", skillName: "ui", project: "/project" }, skills), null);
   assert.equal(matchManagedSkill({ tool: "codex", skillName: "ui", skillPath: "/project/a/SKILL.md" }, skills), "a");
   assert.equal(matchManagedSkill({ tool: "codex", skillName: "ui", skillPath: "/other/SKILL.md" }, skills), null);
+});
+
+test("解析器升级后旧缓存的错误计数失效并重新读取，来源恢复为就绪", async t => {
+  const { directory, store } = fixture(t), logs = path.join(directory, "logs"); fs.mkdirSync(logs);
+  const file = path.join(logs, "a.jsonl");
+  fs.writeFileSync(file, line(call("c1")));
+  store.configure("workbuddy", logs, true);
+  await scanSources(store);
+  assert.equal(store.sources().find(s => s.tool === "workbuddy").state, "ready");
+
+  // 模拟旧版本解析器留下的错误计数（写入时版本比当前低）。
+  store.db.prepare("UPDATE scanned_files SET errors=3, parser_version=? WHERE tool='workbuddy'").run(PARSER_VERSION - 1);
+  const stale = await scanSources(store);
+  assert.equal(stale.parsed, 1, "解析器版本不一致时必须重新读取文件");
+  assert.equal(store.sources().find(s => s.tool === "workbuddy").state, "ready", "重新读取后不应残留旧的错误计数");
+
+  // 版本一致且文件未变化时仍走缓存（不重复读取，但保留当次真实错误数）。
+  const again = await scanSources(store);
+  assert.equal(again.parsed, 0);
+  assert.equal(again.errors, 0);
 });

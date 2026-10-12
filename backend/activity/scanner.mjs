@@ -11,6 +11,11 @@ import { readZcode } from "./zcode.mjs";
 const parsers = { codex: parseCodex, dsh: parseDsh, qoder: parseQoder, workbuddy: parseWorkbuddy };
 const cancelledError = () => Object.assign(new Error("扫描已取消"), { code: "CANCELLED" });
 
+// 解析器版本：修复解析缺陷后 +1。缓存里记录了写入时的版本，版本不一致的文件会重新读取一次，
+// 否则旧的错误计数会一直复用（文件内容没变 → 走缓存），来源会永远停在"部分读取"。
+// v1：DSH 接受日志版本 0；WorkBuddy 的 Skill 参数兼容 command 键。
+export const PARSER_VERSION = 1;
+
 async function discover(source, cancelled) {
   const files = [], visited = new Set();
   async function walk(filename, depth = 0) {
@@ -59,8 +64,8 @@ async function fingerprint(filename, database = false) {
 }
 
 export async function scanSources(store, { cancelled = () => false, progress = () => {} } = {}) {
-  const cached = store.db.prepare("SELECT fingerprint,errors FROM scanned_files WHERE tool=? AND path=?");
-  const saveFile = store.db.prepare("INSERT INTO scanned_files(tool,path,fingerprint,errors) VALUES(?,?,?,?) ON CONFLICT(tool,path) DO UPDATE SET fingerprint=excluded.fingerprint,errors=excluded.errors");
+  const cached = store.db.prepare("SELECT fingerprint,errors,parser_version FROM scanned_files WHERE tool=? AND path=?");
+  const saveFile = store.db.prepare("INSERT INTO scanned_files(tool,path,fingerprint,errors,parser_version) VALUES(?,?,?,?,?) ON CONFLICT(tool,path) DO UPDATE SET fingerprint=excluded.fingerprint,errors=excluded.errors,parser_version=excluded.parser_version");
   const summary = { files: 0, parsed: 0, errors: 0, cancelled: false };
   for (const source of store.sources()) {
     if (cancelled()) { summary.cancelled = true; break; }
@@ -77,7 +82,10 @@ export async function scanSources(store, { cancelled = () => false, progress = (
         if (cancelled()) throw cancelledError();
         const before = await fingerprint(filename, source.tool === "zcode");
         const previous = cached.get(source.tool, filename);
-        if (previous?.fingerprint === before) { processed++; errors += previous.errors; continue; }
+        // 文件未变化且写入时使用的解析器版本一致时才能复用缓存；否则重新读取。
+        if (previous && previous.fingerprint === before && previous.parser_version === PARSER_VERSION) {
+          processed++; errors += previous.errors; continue;
+        }
         let fileErrors = 0;
         try {
           if (source.tool === "zcode") fileErrors += readZcode(filename, store, cancelled).errors;
@@ -96,7 +104,7 @@ export async function scanSources(store, { cancelled = () => false, progress = (
         }
         summary.parsed++; errors += fileErrors; processed++;
         // 扫描期间变化的文件不记为完成，下次重新读取；已写入事件保持幂等。
-        if (before === await fingerprint(filename, source.tool === "zcode")) saveFile.run(source.tool, filename, before, fileErrors);
+        if (before === await fingerprint(filename, source.tool === "zcode")) saveFile.run(source.tool, filename, before, fileErrors, PARSER_VERSION);
         report("scanning");
       }
       report(errors ? "partial" : "ready", errors ? "部分记录不完整、格式未知或读取失败，已保留可确认的历史" : null);

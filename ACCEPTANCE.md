@@ -109,13 +109,15 @@
 | --- | --- | --- |
 | DSH「8 个读取问题」 | `parseDsh` 只接受日志版本 1–4，本机 24 份会话中 8 份为 `version: 0`，整份文件被拒 | 版本白名单加入 0（v0 的 `data.name`／`data.callId`／`tool/result` 结构与 v4 一致，已解压核对）；未知版本仍报错，`version: 999` 断言保留 |
 | WorkBuddy「2 个读取问题」 | Skill 工具参数键随版本变化，2 条历史记录使用 `{"command":"skill-creator"}`，只读 `arguments.skill` 时名称缺失并被计为解析问题 | 名称解析改为 `skill ?? command`；名称确实缺失时仍按解析问题上报，不伪造技能名 |
+| 修好解析器后提示仍不消失 | `scanned_files` 缓存了每个文件的错误计数，文件内容未变时扫描器直接复用旧计数（`errors += previous.errors`），所以旧版本的错误数会一直残留，来源永远停在「部分读取」 | 缓存增加 `parser_version` 列（旧库自动补列，默认 0），解析器版本不一致的文件强制重读一次；解析器版本常量 `PARSER_VERSION` 在修复解析缺陷时递增 |
 
-真实日志只读复扫结果（修复前 → 修复后）：
+真实日志只读复扫结果：
 
-- DSH：24 个来源文件，问题文件 8 → 0，读取问题 8 → 0。
-- WorkBuddy：440 个来源文件，问题文件 2 → 0，读取问题 2 → 0。
+- 全新缓存：DSH 24 文件、WorkBuddy 440 文件，问题文件 8 → 0、2 → 0，两来源状态均为 `ready`。
+- 旧库升级路径（模拟用户现状）：把缓存错误计数写成 24／440 并删掉 `parser_version` 列，用新版本重新打开后扫描一次，错误数降为 **0**、状态回到 `ready`、`detail` 清空。
+- 五款来源最终状态：codex 255 文件 / dsh 24 / zcode 1 / qoder 58 / workbuddy 440，全部 `ready`、错误 0，共 147 条记录。**因此界面上的黄色「部分读取 · N 个读取问题」在重启应用并完成一次扫描后不再出现。**
 
-新增单测：`tests/backend/activity-dsh.test.mjs`（版本 0 解析）、`tests/backend/activity-workbuddy.test.mjs`（command 键且 `ctx.errors` 为 0）。
+新增单测：`tests/backend/activity-dsh.test.mjs`（版本 0 解析）、`tests/backend/activity-workbuddy.test.mjs`（command 键且 `ctx.errors` 为 0）、`tests/backend/activity-scanner.test.mjs`（解析器升级后旧缓存失效并重读、来源恢复 `ready`）。
 
 ### 2. 新增后端能力
 
