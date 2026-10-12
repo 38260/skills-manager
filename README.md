@@ -1,285 +1,167 @@
 <p align="center">
-  <img src="assets/icon.png" width="80" />
+  <img src="assets/icon.png" width="72" />
 </p>
 
 <h1 align="center">Skills Manager</h1>
 
 <p align="center">
-  One app to manage AI agent skills across all your coding tools.
+  本地优先的 Agent Skills 管理器：中央库一处存放，按 Preset 分组，部署给任意编码 Agent。
 </p>
 
 <p align="center">
-  <strong><a href="https://skillsmanager.dev">skillsmanager.dev</a></strong>
+  <img src="assets/demo/library.png" width="820" alt="技能库" />
 </p>
+
+## 这是什么
+
+Agent Skills 本身只是文件，但「装在哪几个 Agent、是不是最新、谁在用」散落在各家目录约定里。这个应用把这件事收拢到一处：
+
+- 技能收进一个中央库（默认 `~/.skills-manager`）。来源可以是本地目录、Git 仓库、`.zip` / `.skill` 包，或 [skills.sh](https://skills.sh) 市场。
+- 需要时部署给 **54 个内置 Agent**（48 个编码 Agent + 6 个龙虾 Agent，清单见 `backend/agents.json`），方式为软链接或文件复制。
+- 来源元数据、Preset 归属、更新状态、调用记录都留在库里，不依赖任何单个 Agent 的目录规范。
+
+> 本仓是上游 [xingkongliang/skills-manager](https://github.com/xingkongliang/skills-manager) 的**本地开发分支**，不是官方发行版。桌面外壳为 Electron，当前只在 Windows 上构建。
 
 <p align="center">
-  🎬 <a href="https://www.youtube.com/watch?v=DJ9RIX8nbow">1.5-min intro (YouTube)</a>
-  &nbsp;·&nbsp;
-  <a href="https://www.youtube.com/watch?v=SNVD5ZN6QPE">Full walkthrough (9 min)</a>
-  &nbsp;·&nbsp;
-  <a href="https://www.bilibili.com/video/BV1cdpc6PExG/">视频介绍 (Bilibili)</a>
+  <img src="assets/diagram-concept-map.png" width="620" alt="概念图：技能库、Preset、工作区、Agent" />
 </p>
+
+## 现状与边界
+
+先把状态说清楚，避免误期待。
+
+| 项 | 现状 |
+| --- | --- |
+| 版本 | `1.40.3`（见 `package.json`） |
+| 平台 | Windows，自行构建：`npm run dist` → 绿色便携版 `SkillsManager-Portable.exe`。本分支不发布 Release 安装包 |
+| 桌面外壳 | Electron 44：起本地服务 → 等 `/api/health` → 加载 `http://127.0.0.1:<端口>`；主进程 119 行 + preload 4 项受控能力 |
+| Tauri | 三环境适配层保留，但 `src-tauri/` 为空，Rust / `cargo` 链路在本分支不成立 |
+| 上游遗留 | 设置页仍有「托盘」「应用内更新」「代理透传」等 Tauri 时期入口，Electron 外壳**未实现**对应链路，不要当成可用功能 |
+| CI | `.github/workflows/` 仍是上游的 Rust / Tauri 工作流，对本分支无意义；真正有效的是 `frontend.yml`（Node 22，lint + build） |
+| CLI | 上游随包提供的 `skills-manager-cli` 不在本分支内，`scripts/run-rust-cli.mjs` 是残留脚本 |
+| 测试 | 后端 19 个测试文件、前端 3 个，命令见[本地开发](#本地开发)；视觉类改动以无头实测 + 截图留证 |
+
+## 核心能力
+
+### 技能库
+
+- **来源**：本地目录、Git 仓库、`.zip` / `.skill` 包、skills.sh 市场。
+- **视图**：网格 / 列表；列表除描述列外全部固定列宽，逐行对齐。
+- **卡片信息**：状态点、别名、说明、作者、分类标签、调用统计（次数 + 最近使用）、来源徽标、各 Agent 同步角标。
+- **筛选**：搜索（含别名）、来源、分类、「全部 / 当前 Preset 已启用 / 当前 Preset 未启用」单选、未标注项。
+- **批量**：多选后批量启用停用、批量打分类、导出、删除。
+- **编辑**：别名、说明、作者可在应用内覆盖，不改动 `SKILL.md` 源文件。
+- **自定义工具**：可添加自有 Agent 并指定技能目录，也可覆盖内置 Agent 的默认路径。
+
+### 让你的 Agent 管理 Skills
+
+Dashboard 上有一个一次性入口：勾选哪些 Agent 可以这么做，应用就把 [`manage-skills`](skills/manage-skills/SKILL.md) 装进技能库，并只部署给你勾选的那些 Agent。之后它就是一个普通的库内技能——增减 Agent 用它自己卡片上的角标行。
+
+默认不预勾选任何 Agent：一键铺满所有已安装 Agent 等于全量部署，而这个应用本身就是用来管好「哪些 Agent 该看到哪些技能」的。
+
+### Preset
+
+- 作用是把技能分组，让同一套技能能按场景切换。
+- 当前语义：Preset 是**分组 + 视图过滤 + 逐 Agent 部署开关**的载体。点击侧边栏 Preset 只切换技能库的过滤与排序，不再「应用」任何东西——原先的一键应用链路已删除。
+- 显示规则：只有存在 **2 个及以上** Preset 时侧边栏才显示该段；新建入口在技能库筛选条。
+
+### 工作区
+
+- **全局工作区**：每个 Agent 一页，列出它全局目录里的全部技能（包含不是本应用装的），反映 Agent 实际看到的内容；「全部 Agents」可跨已安装 Agent 统一管理。
+- **龙虾 Agent**：同一套模型，承载另一类 Agent。
+- **项目工作区**：管理任意项目内的技能目录，可与中央库双向同步，支持按 Agent 导出。
+- **关联工作区**：把任意目录指定为技能根目录，不参与全局 Preset 同步。
 
 <p align="center">
-  <a href="./README.zh-CN.md">中文说明</a>
-  &nbsp;·&nbsp;
-  <a href="https://x.com/JayTL00">@JayTL00 on X</a>
-  &nbsp;·&nbsp;
-  <a href="https://buymeacoffee.com/jaytl">Buy me a coffee</a>
+  <img src="assets/diagram-workspace-model.png" width="620" alt="工作区模型" />
 </p>
+
+### 技能详情
+
+- 渲染 `SKILL.md`：标题锚点目录、代码块复制、表格与引用样式，兼容 Windows 换行与 BOM。
+- 右栏平面分组：目录、项目结构（默认收拢）、来源信息与来源差异、部署到工具（默认折叠，只列已安装 Agent）。
+- 调用记录在页签内嵌入展示，不跳页。
+- 页头在正文下滑后收成紧凑形态。
+
+### 调用记录
+
+- **6 个来源**：Codex、DeepSeek Harness、ZCode、Qoder、WorkBuddy、WorkBuddy AI，每个来源可单独启停。
+- **记录类型**：明确调用 / 已确认加载 / 仅请求（待确认）。
+- **触发方式**：手动触发 / 自动触发 / 来源未知；**结果**：等待结果 / 已返回 / 失败 / 结果未知（「已返回」只表示工具返回了结果，不代表整个任务成功）。
+- **统计口径**：仅请求不计入实际使用，数量只统计明确调用与已确认加载；缺少明确触发证据时显示「来源未知」，不猜。
+- 详情侧栏给出识别依据、来源文件、行号／记录位置、会话 ID 与调用 ID，可直接在文件夹中显示；记录读不到时保留原始记录，不静默丢弃。
+
+### 备份与多设备同步
+
+- 技能库托管在一个 Git 仓库：单机是带历史、可回滚快照的备份；多机连同一仓库自动保持一致。
+- GitHub 登录一键创建私有仓库；远端始终是纯 Git 仓库，随时可以 `git clone` 走。
+- 冲突以技能为单位，不覆盖、不阻塞：本机版本保留，由你三选一处理（保留本机 / 用远端 / 两者都留），每次选择前自动存快照。
+- 技能、标签、Preset 与逐 Agent 开关进备份；密钥和机器相关配置不离开本机；超过 100 MB 的技能留在本地并自动排除。
+
+### 设置
+
+仓库路径、同步模式（符号链接 / 文件复制）、主题（浅色 / 深色 / 跟随系统）、字号、界面语言（简体中文 / English / 繁體中文）、Git 远程、导出日志。
+
+<p align="center"><strong>全局工作区</strong></p>
+<p align="center"><img src="assets/demo/global-workspace.png" width="760" alt="全局工作区" /></p>
+
+<p align="center"><strong>项目工作区</strong></p>
+<p align="center"><img src="assets/demo/project-workspace.png" width="760" alt="项目工作区" /></p>
+
+<p align="center"><strong>备份与多设备同步</strong></p>
+<p align="center"><img src="assets/demo/backup.png" width="760" alt="备份与多设备同步" /></p>
+
+<p align="center"><strong>设置</strong></p>
+<p align="center"><img src="assets/demo/settings.png" width="760" alt="设置" /></p>
+
+## 技术栈
+
+| 层 | 选型 |
+| --- | --- |
+| 前端 | React 19 + Vite 7 + TypeScript 5.9 + Tailwind 3.4 + i18next |
+| 桌面 | Electron 44：主进程负责起服务、健康检查、窗口与外链守卫 |
+| 后端 | Node 22 内置 `http` + `node:sqlite`，无外部运行时依赖，随应用分发 |
+| 打包 | electron-builder，Windows `portable` 目标 |
+
+## 架构
+
+- 前端与本地服务之间只有一种调用形状：`POST /api/invoke/<command>`，事件走 SSE `/api/events`。请求必须带 `x-skills-manager-client` 头，缺失直接 403——避免普通网页误连本地服务。
+- 三环境统一：Tauri（原生 IPC）、Electron 与纯浏览器（本地 HTTP）、导入导出（不依赖任一宿主），业务代码无感知。见 `src/lib/transport.ts` 与 `src/lib/desktop.ts`。
+- 数据分三层：SQLite（`~/.skills-manager/skills-manager.db`）、中央库文件、部署产物（软链接或复制到各 Agent 目录）。
 
 <p align="center">
-  <a href="https://trendshift.io/repositories/23290?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-23290" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/23290" alt="xingkongliang%2Fskills-manager | Trendshift" width="250" height="55"/></a>
+  <img src="assets/diagram-how-it-works.png" width="620" alt="数据与调用链路" />
 </p>
 
-<p align="center">
-  <a href="https://skills.sh/xingkongliang/skills-manager"><img src="https://skills.sh/b/xingkongliang/skills-manager" alt="manage-skills on skills.sh" /></a>
-</p>
+## 本地开发
 
-<p align="center">
-  <img src="assets/demo/library.png" width="800" alt="Skills Manager Library" />
-</p>
+前置：Node **22 及以上**、Windows。不需要 Rust。
 
-<p align="center"><strong>Install Skills — Marketplace</strong></p>
-<p align="center"><img src="assets/demo/install-skills.png" width="800" alt="Install Skills Marketplace" /></p>
+| 命令 | 作用 |
+| --- | --- |
+| `npm install` | 安装依赖 |
+| `npm run dev` | 前端开发服务器（Vite） |
+| `npm run start` | 只起后端本地服务 |
+| `npm run app` | 以 Electron 启动桌面应用 |
+| `npm run build` | `tsc -b` + `vite build`，产物在 `dist/` |
+| `npm run lint` | ESLint |
+| `node --test tests/backend/*.test.mjs` | 后端测试 |
+| `npm run test:ui` | 前端测试 |
+| `npm run dist` | 打包便携版到 `release/` |
 
-<p align="center"><strong>Global Workspace</strong></p>
-<p align="center"><img src="assets/demo/global-workspace.png" width="800" alt="Global Workspace" /></p>
+## 目录结构
 
-<p align="center"><strong>Agent Workspace</strong></p>
-<p align="center"><img src="assets/demo/agent-workspace.png" width="800" alt="Agent Workspace" /></p>
-
-<p align="center"><strong>Project Workspace</strong></p>
-<p align="center"><img src="assets/demo/project-workspace.png" width="800" alt="Project Workspace" /></p>
-
-<p align="center"><strong>Backup & Multi-Device Sync</strong></p>
-<p align="center"><img src="assets/demo/backup.png" width="800" alt="Backup and multi-device sync" /></p>
-
-<p align="center"><strong>Settings</strong></p>
-<p align="center"><img src="assets/demo/settings.png" width="800" alt="Settings" /></p>
-
-## Features
-
-<p align="center">
-  <img src="assets/diagram-concept-map.png" width="640" alt="Concept map: Library, Preset, Global Workspace, Project Workspace, Agent" />
-</p>
-
-- **Unified skill library** — Install skills from Git repos, local folders, `.zip` / `.skill` archives, or the [skills.sh](https://skills.sh) marketplace. Everything goes into one central repo, which defaults to `~/.skills-manager` and can be customized in **Settings**.
-- **Marketplace** — Browse popular skills from the marketplace and find them with keyword search.
-- **Your agents can manage skills** — Claude Code, Codex, Cursor and the rest can install a skill, deploy it to another agent, or report what is where, by driving Skills Manager instead of writing into an agent's folder behind its back — so sources, presets, update tracking and per-agent state stay intact. The Dashboard sets this up in one click; see [Let your agents manage skills](#let-your-agents-manage-skills).
-- **Presets** — Group skills into named presets. In any workspace, click a preset pill to instantly activate or deactivate all its skills for the current agent scope. Applying a preset is a one-time copy, not a live sync. The sidebar lists all presets for quick access.
-- **Global Workspace** — Each agent gets its own page listing every skill in its global folder — including ones installed outside Skills Manager — so the view always reflects what the agent actually sees. Add or remove skills per agent, or use the All Agents overview to manage every installed agent at once.
-- **Project Workspaces** — View and manage project-local skill folders for supported agents, compare them with your central library, and sync changes in either direction. Supports nested skill directories and per-agent assignment when exporting.
-- **Linked Workspaces** — Point to any directory as a skills root — useful for skills that live outside the default agent paths. Managed as a standalone workspace without participating in global preset sync.
-- **Multi-tool sync** — Sync skills to any supported tool via symlink or copy with a single click. Every skill card shows an agent icon badge per enabled agent — click a badge to install or remove that skill for that agent right from the card, with the badge reflecting live sync state.
-- **Add from Library sheet** — In any workspace, click **+ Add Skills** to open a unified picker: search your central library, toggle target agents with always-visible chips (with select-all/clear), and batch-add multiple skills in one click.
-- **Batch operations** — Multi-select skills for bulk enable/disable, export, or delete. Project Workspaces also support bulk enable/disable for project-local skills.
-- **Skill tagging and filters** — Tag skills, use tags to group similar skills, and filter by source or tag — including an **Untagged** pill to quickly find skills missing labels.
-- **Update tracking** — Check for upstream updates on Git-based skills; re-import local ones.
-- **Skill preview and source inspection** — Read `SKILL.md` / `README.md`, inspect source metadata, and compare local content with the upstream version inside the app.
-- **Custom tools** — Add your own agents/tools with custom skills directories, or override the default path for any built-in tool.
-- **Backup & multi-device sync** — Connect a private GitHub repository with one sign-in (or any Git remote), and the app backs your library up automatically and keeps all connected devices in sync. Merges are skill-aware — a rename on one machine combines cleanly with an edit on another — and true conflicts never block: your local version stays put until you choose keep mine / use remote / keep both. Snapshot versions are restorable at any time.
-- **Activity log & Export Logs** — Install / remove / update / sync operations are recorded locally. Use **Settings → Export Logs** to bundle recent logs and activity history into a single zip for easier issue reports.
-- **Flexible app settings** — Configure repo path, sync mode, theme, text size, language, tray behavior, proxy, Git remote, update checks, and the order agents appear throughout the app — all in one place.
-- **In-app updates** — The app tells you when a new version is out and installs it for you on macOS and Windows. Nothing downloads or installs on its own: checking only notifies, and installing and restarting each take a click.
-
-## Install
-
-### macOS
-
-Install with [Homebrew](https://brew.sh):
-
-```bash
-brew install --cask skills-manager
+```
+backend/    本地服务：store / library / presets / tools / scan / workspace / projects / backup / activity
+electron/   桌面外壳：main.mjs（119 行）+ preload.cjs（4 项受控能力）
+src/        前端：views / components / lib / i18n / context
+tests/      backend / electron / ui
+output/     验收与探针产物（隔离数据不入库）
+assets/     图标、截图、概念图
 ```
 
-You can also download the `.dmg` for your Mac from the [latest release](https://github.com/xingkongliang/skills-manager/releases/latest).
+## 许可与来源
 
-### Windows and Linux
+MIT，见 [`LICENSE`](LICENSE)。
 
-Download the installer for your platform from the [latest release](https://github.com/xingkongliang/skills-manager/releases/latest): `.exe` or `.msi` for Windows, and `.AppImage`, `.deb`, or `.rpm` for Linux (x64 and arm64).
-
-Every installer ships the CLI inside the app — see [Where the binary lives](#where-the-binary-lives).
-
-## Quick Start
-
-1. Install skills from local folders, Git repositories, archives, or the marketplace.
-2. Open **Global Workspace** from the sidebar and pick an agent (e.g. Claude Code).
-3. Click a **Preset** pill to activate its skills for that agent, or use **+ Add Skills** to pick from your library and toggle target agents inline. Active presets show a ✓; partial installs show a count badge.
-4. To manage project-local skills, open a **Project Workspace** and use the same preset pills or the **+ Add Skills** picker with its multi-agent target selector.
-5. Configure agent paths, custom tools, theme, language, proxy, and Git preferences in **Settings**.
-6. If you want history or multi-machine sync, open **Backup** in the sidebar and click **Sign in with GitHub** — backup and cross-device sync run automatically from then on.
-
-## Let your agents manage skills
-
-Claude Code, Codex, Cursor and the rest can install a skill, deploy it to another agent, or report what is where — by driving Skills Manager rather than writing into an agent's folder behind its back. That is what keeps source metadata, preset membership, update tracking and cross-agent deployment state intact.
-
-The Dashboard offers a one-time setup: pick the agents that should be able to do it, and the app installs the [`manage-skills`](skills/manage-skills/SKILL.md) skill and deploys it to exactly those. Afterwards it is an ordinary library skill — adding or removing an agent is the agent badge row on its own card. No PATH setup is involved: the app publishes a copy of its CLI where agents look for it.
-
-It is also an ordinary published skill, so it can be installed without the app:
-
-```bash
-npx skills add xingkongliang/skills-manager
-```
-
-## Backup & Multi-Device Sync
-
-The **Backup** page (sidebar) keeps your skill library versioned in a Git repository. One device gets versioned backup with restorable snapshots; several devices connected to the same repository stay in sync with each other automatically. The remote stays a plain Git repository — you can `git clone` it anywhere, no lock-in.
-
-### Connect
-
-- **Sign in with GitHub** (recommended): an 8-digit device-flow sign-in creates a private `skills-manager-backup` repository for you. The token is stored in the OS keychain — never in files or the repo config.
-- **Advanced**: paste any Git URL (HTTPS + PAT, SSH, self-hosted) under **Settings → Git Sync Configuration**.
-- On a new machine with an empty library, the first launch asks: **start fresh, or restore from a backup?**
-
-### How syncing works
-
-- **Automatic**: local changes are committed and pushed in the background a couple of minutes after you stop editing; updates pushed by your other devices are merged in and pushed back automatically. **Back Up Now** is always available for an immediate run, and every backup in the history shows which device made it.
-- **Skill-aware merging**: changes are merged per skill, not per text line — renaming a skill on one machine combines cleanly with editing its content on another.
-- **Conflicts never block or overwrite**: if the same skill was edited on two devices at once, everything else syncs normally while that skill keeps your local version and appears under **Needs attention** (also badged on its card in the Library). Pick **keep mine / use remote / keep both** — a safety snapshot is taken before any choice is applied, so every decision is undoable.
-- **Snapshots & restore**: manual backups create snapshot versions; open the Backup page history to restore any of them. A restore first saves the current state as its own snapshot.
-
-### What's included
-
-Skills, tags, presets, and per-agent skill toggles are backed up. Secrets (API keys, tokens, proxy settings) and machine-specific wiring never leave the machine. Skills over 100 MB stay local and are excluded from backup automatically (labeled on the Backup page). The SQLite database is not in Git — it stores metadata that is rebuilt from the skill files.
-
-### Disconnecting
-
-The Backup page offers three levels: **disconnect this machine** (other devices and remote data untouched), **revoke the GitHub authorization**, or **delete the remote backup** entirely (routed through GitHub's own type-the-name confirmation).
-
-## Supported Tools
-
-54 agents are supported out of the box, including:
-
-Claude Code · Codex · Cursor · GitHub Copilot · Gemini CLI · GitLab Duo · OpenCode · OpenClaw · Hermes Agent · OpenHands · Cline · Goose · Windsurf · Continue · Grok · Antigravity · Qwen Code · ZCode · Crush · Kilo Code · Roo Code · Amp · Kiro CLI · Droid · TRAE IDE · Warp · Qoder · CodeBuddy
-
-**Settings** lists them all, leading with the ones detected on your machine. You can also add custom tools there and manage their skills the same way.
-
-## Tech Stack
-
-| Layer | Tech |
-|-------|------|
-| Frontend | React 19, TypeScript, Vite, Tailwind CSS |
-| Desktop | Tauri 2 |
-| Backend | Rust |
-| Storage | SQLite (`rusqlite`) |
-| i18n | react-i18next |
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 20.19+ or 22.12+ (required by Vite 7)
-- Rust 1.77.2 or newer
-- [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for your OS
-
-### Development
-
-```bash
-npm install
-npm run tauri:dev
-```
-
-### CLI
-
-The repository includes an agent-friendly CLI built on the same Rust shared core used by the desktop app. Both the CLI and the desktop app go through the same SQLite database, central library, and sync engine.
-
-```bash
-# Look around
-npm run cli -- skills list
-npm run cli -- skills show db
-
-# Install into the library (does NOT deploy to any agent by itself)
-npm run cli -- skills install ./my-skill
-npm run cli -- skills install https://github.com/foo/bar/tree/main/skills/baz
-npm run cli -- skills install vercel-labs/agent-skills@react-best-practices
-
-# Put it into the agents that should have it, then check
-npm run cli -- skills deploy react-best-practices --agent claude_code --agent codex
-npm run cli -- skills status react-best-practices
-
-# Pull upstream changes, and adopt what an agent already has
-npm run cli -- skills check --all
-npm run cli -- skills update --all
-npm run cli -- skills adopt ~/.claude/skills --dry-run
-```
-
-`--help` on any group or subcommand prints the full surface — the groups below
-each carry more than these examples show. `--dry-run` is available on selected
-commands, including `skills deploy/undeploy/sync/remove/adopt` and
-`presets deploy/undeploy/delete`; check each subcommand's help before using it.
-`skills remove` requires `--yes` for actual deletion.
-
-Available command groups:
-- `repo` — inspect or change the configured base directory
-- `agents` (`tools` alias) — list agents, globally enable or disable them, and add custom agents (`add-custom`)
-- `skills` — manage the central library and real per-agent deployments (`deploy / undeploy / status`)
-- `presets` — create, update, delete, organize, deploy, undeploy, and inspect presets
-- `git` — operate on the git-backed `skills/` repository (`clone`, `pull`, `push`, `commit`, `versions`, `restore`)
-
-Extra flags:
-- `--skills-root <path>` — operate on a cloned/exported skills repo directly instead of the local app default. The manager's state (DB, presets, cache, logs) lives in `~/.skills-manager/external/<name>-<hash>/`, namespaced by the canonical path of the skills root, so the external checkout itself stays clean.
-- `--json` — machine-readable output for scripts/agents. Failures print `{"ok": false, "code": …, "message": …}` on stderr with a non-zero exit. A deployment refused because the target is not ours carries the paths as data (`code: "TARGET_CONFLICT"`, `details.conflicts[].path`) so a caller can name the directory in the way instead of quoting a sentence.
-
-```bash
-npm run -s cli -- --skills-root /path/to/my-skills --json skills list
-```
-
-#### Agents inside WSL
-
-The Windows app cannot create links inside WSL, so it can only copy skills there. If your agents live in WSL, run the Linux CLI inside WSL instead — it keeps its own library there and deploys with real symlinks:
-
-```bash
-mkdir -p ~/.local/bin && curl -L -o ~/.local/bin/skills-manager-cli \
-  https://github.com/xingkongliang/skills-manager/releases/latest/download/skills-manager-cli-Linux-x64
-chmod +x ~/.local/bin/skills-manager-cli
-export PATH="$HOME/.local/bin:$PATH"
-skills-manager-cli agents add-custom hermes-work --path ~/.hermes/profiles/work/skills
-skills-manager-cli skills install ./my-skill
-skills-manager-cli skills deploy my-skill --agent hermes-work
-```
-
-#### Where the binary lives
-
-At startup the app publishes a copy of its own CLI to `~/.skills-manager/bin/skills-manager-cli`, always matching the running app, so agents can find it without anything on your PATH. A `.version` stamp beside it is written only after the copy is verified and removed before each republish, so a copy that failed — a binary held open on Windows, say — is never presented as usable.
-
-Putting the CLI on your *own* PATH, for typing commands yourself, is separate:
-
-```bash
-npm run cli:install
-# equivalent to:
-# cargo install --path src-tauri --bin skills-manager-cli --locked --force
-```
-
-This drops the binary at `~/.cargo/bin/skills-manager-cli`. Re-run after pulling updates to refresh it.
-
-Official releases also publish standalone CLI binaries for macOS arm64/x64, Windows x64, and Linux x64. Download the matching `skills-manager-cli-*` asset, make it executable on macOS/Linux, and place it on PATH.
-
-#### Concurrent use with the desktop app
-
-The CLI and desktop app share the same SQLite database and repository lock. The app's filesystem watcher normally refreshes after CLI metadata or deployment changes. If the app was suspended while a command ran, trigger one manual refresh.
-
-### Build
-
-```bash
-npm run tauri:build
-npm run cli:build
-```
-
-## Troubleshooting
-
-**macOS refuses to open the app.** Releases from **v1.29.0** onward are signed with an Apple Developer ID certificate and notarized, so they open normally. If you see "Apple could not verify…" or "App is damaged", you are on v1.28.5 or older — upgrading is the fix. (Upgrading changes the code signature, so macOS may ask once more for the `skills-manager-git-backup` keychain entry; click **Always Allow**.)
-
-Anything else — [open an issue](https://github.com/xingkongliang/skills-manager/issues), and attach the bundle from **Settings → Export Logs**.
-
-## Star History
-
-<p align="center">
-  <a href="https://github.com/xingkongliang/star-history-svg">
-    <img src="assets/star-history.svg" width="800" alt="Star History chart for xingkongliang/skills-manager" />
-  </a>
-</p>
-
-## License
-
-MIT
+上游：[xingkongliang/skills-manager](https://github.com/xingkongliang/skills-manager)。本分支（`38260/skills-manager`）的改造与维护：**BJTU-Yibo**。

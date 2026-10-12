@@ -13,6 +13,26 @@
 
 ## 已完成
 
+### ✅ 小功能：README 重写为中文主文档（2026-10-12）
+
+**背景**：`README.md` 一直是上游 `xingkongliang` 的英文原文（最后改动 2026-10-08），与本分支实际状态
+已经脱节：桌面外壳是 Electron、`src-tauri/` 为空、没有随包的 cargo CLI、上游 CI 工作流对本仓不成立。
+用户要求重写为符合自己行文风格的文档（结论先行、结构化、去营销腔、写明边界）。
+
+- [x] `README.md` 重写为中文主文档，166 行（原 285 行）：这是什么 / 现状与边界 / 核心能力（分节）/
+      技术栈 / 架构 / 本地开发 / 目录结构 / 许可与来源
+- [x] 事实逐条按当前代码核验：54 个内置 Agent（48 coding + 6 lobster，`backend/agents.json`）、
+      `v1.40.3`、三语言、`POST /api/invoke/<command>` + SSE `/api/events` + 缺 `x-skills-manager-client` 头即 403、
+      备份排除 >100 MB 技能、调用记录 6 来源与「仅请求不计入实际使用」口径（术语取自 `i18n/zh.json`）
+- [x] 新增「现状与边界」表：平台与构建方式、Electron 外壳规模、Tauri/cargo 链路不成立、
+      托盘/应用内更新/代理在 Electron 外壳未实现、上游 CI 失效、CLI 缺失、测试规模
+- [x] 去掉只对上游成立的区块（官网、Homebrew、Release 下载、视频、Trendshift、skills.sh 徽章、
+      Buy me a coffee、X），保留 MIT 与一句来源署名（署名 `BJTU-Yibo`）
+- [x] 删除 `README.zh-CN.md`（避免两份口径不一致；已确认仓库内无其他引用，仅 `output/ppt-skill/` 的
+      大纲把它列为源材料，属历史产物）
+- [x] 校验：引用图片 9 个全部存在、代码围栏配对、章节锚点（`#本地开发`）可解析
+- [x] 提交 Git
+
 ### ✅ 小功能：浅色主题重建卡片与页面层次（2026-10-12）
 
 **背景**：用户反馈技能库「灰蒙蒙」。无头 CDP 实测（`output/ui-contrast/probe.mjs`，逐层 alpha 合成后算 WCAG）
