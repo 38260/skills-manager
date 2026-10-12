@@ -1,0 +1,65 @@
+{
+  "chips": [
+    {
+      "name": "界面设计",
+      "count": "9"
+    },
+    {
+      "name": "动效与视频",
+      "count": "5"
+    },
+    {
+      "name": "前端验证",
+      "count": "6"
+    },
+    {
+      "name": "文档与演示",
+      "count": "6"
+    },
+    {
+      "name": "学术科研",
+      "count": "6"
+    },
+    {
+      "name": "调研与学习",
+      "count": "3"
+    },
+    {
+      "name": "生活与资讯",
+      "count": "3"
+    },
+    {
+      "name": "工程与发布",
+      "count": "5"
+    },
+    {
+      "name": "流程与协作",
+      "count": "8"
+    },
+    {
+      "name": "图像理解",
+      "count": "1"
+    }
+  ],
+  "cards": {
+    "panels": 52,
+    "taggedCards": 52,
+    "sample": [
+      "ai-rereseach对一份「AI 生成的文献调研 / 综述 / related work」做反向核验（reverse",
+      "ai-rereseach-v2—作者: 作者未提供学术科研local",
+      "aihot查询 AI HOT 的中文 AI 资讯、精选、当前热点和日报。用户询问今天或最近的 AI 新闻、AI 圈动态、"
+    ]
+  },
+  "filtered": {
+    "clicked": "学术科研6",
+    "cards": 6,
+    "names": [
+      "ai-rereseach",
+      "ai-rereseach-v2",
+      "nature-figure-qa-gate",
+      "thesis-review",
+      "verified-literature-survey",
+      "zotero-pdf-annotate"
+    ]
+  }
+}
