@@ -141,8 +141,9 @@
 | 调用记录页样式 | 记录区无大圆角卡片（`rounded-xl` 计数 0）；统计为扁平数字行；6 条记录 | 通过 |
 | 调用记录对齐参考图（浅色 + 深色） | 每行以工具图标起头（与参考图右栏工具行一致）；展开态为浅绿底 + 3px 左侧绿线（与参考图"目录"选中态一致）。深色断言：展开底 `rgba(16,185,129,0.08)`、左线 `rgb(16,185,129)` / 3px；浅色断言徽章与正文对比度正常 | 通过 |
 | 近期动态含调用记录 | 仪表盘「近期动态」共 7 行：1 条技能更新 + 6 条调用记录；6 行含工具名与触发方式徽章；每行均有时间；区块右上角有「查看全部」 | 通过 |
+| 详情页页头缩小与滚动紧凑化 | 顶部：页头 160px、标题 22px、图标与描述可见、操作按钮 32px；正文下滑后：页头 110px、标题 17px、图标与描述隐藏、按钮 28px；回到顶部还原为 160px。浅色与深色均核对 | 通过 |
 
-截图证据：`output/ui-rework/evidence/`（`01_detail_light`、`01b_detail_sidebar_bottom`、`02_activity_inline`、`03_activity_detail`、`04_detail_dark`、`05_activity_page_light`、`05b_activity_page_light_detail`、`06_activity_deeplink`、`07_dashboard_light`、`08_activity_inline_dark`、`09_activity_detail_dark`、`10_activity_page_dark`、`11_activity_page_dark_detail`）；结构化断言见同目录 `report.json`。
+截图证据：`output/ui-rework/evidence/`（`01_detail_light`、`01b_detail_sidebar_bottom`、`02_activity_inline`、`03_activity_detail`、`04_detail_dark`、`05_activity_page_light`、`05b_activity_page_light_detail`、`06_activity_deeplink`、`07_dashboard_light`、`08_activity_inline_dark`、`09_activity_detail_dark`、`10_activity_page_dark`、`11_activity_page_dark_detail`、`14_header_compact`、`14b_header_compact_dark`）；结构化断言见同目录 `report.json`。
 
 ### 3.1 「打开文件」无法打开（第三轮修复）
 

@@ -74,13 +74,44 @@
     "name": "右栏区块",
     "value": {
       "scrollHeight": 1163,
-      "clientHeight": 688,
+      "clientHeight": 740,
       "sections": [
         "目录8",
         "项目结构",
         "部署到工具已启用 5 / 5",
         "来源信息"
       ]
+    }
+  },
+  {
+    "name": "页头（顶部）",
+    "value": {
+      "header": 160,
+      "title": "22px",
+      "icon": true,
+      "description": true,
+      "actions": 32
+    }
+  },
+  {
+    "name": "页头（下滑后）",
+    "value": {
+      "header": 110,
+      "title": "17px",
+      "icon": false,
+      "description": false,
+      "actions": 28,
+      "scrollTop": 622
+    }
+  },
+  {
+    "name": "页头（回到顶部）",
+    "value": {
+      "header": 160,
+      "title": "22px",
+      "icon": true,
+      "description": true,
+      "actions": 32
     }
   },
   {

@@ -181,6 +181,29 @@ try {
   await sleep(500);
   await shoot("01b_detail_sidebar_bottom");
 
+  // 页头尺寸：顶部（完整）与正文下滑后（紧凑）对比
+  const headerSnapshot = `(() => {
+    const header = document.querySelector('.skill-detail-header');
+    const title = header.querySelector('h2');
+    return { header: Math.round(header.getBoundingClientRect().height),
+      title: getComputedStyle(title).fontSize,
+      icon: !!header.querySelector('svg.lucide-layers'),
+      description: !!header.querySelector('p'),
+      actions: header.querySelector('.skill-detail-actions button, .skill-detail-actions span')
+        ? Math.round(header.querySelector('.skill-detail-actions button, .skill-detail-actions span').getBoundingClientRect().height) : null };
+  })()`;
+  record("页头（顶部）", await evaluate(headerSnapshot));
+  await evaluate(`(() => { document.querySelector('.skill-detail-main').scrollTop = 700; return true; })()`);
+  await sleep(700);
+  record("页头（下滑后）", {
+    ...(await evaluate(headerSnapshot)),
+    scrollTop: await evaluate(`document.querySelector('.skill-detail-main').scrollTop`),
+  });
+  await shoot("14_header_compact");
+  await evaluate(`(() => { document.querySelector('.skill-detail-main').scrollTop = 0; return true; })()`);
+  await sleep(600);
+  record("页头（回到顶部）", await evaluate(headerSnapshot));
+
   // 项目结构：点击文件应发出 open_path 请求（拦截 fetch，不真打开）
   await evaluate(`(() => { window.__calls = []; const original = window.fetch;
     window.fetch = function (input, init) { const url = String(input);
@@ -245,6 +268,12 @@ try {
   })()`));
   await shoot("04_detail_dark");
   await shoot("04_detail_dark_full", { full: true });
+  // 深色下滚动后的紧凑页头
+  await evaluate(`(() => { document.querySelector('.skill-detail-main').scrollTop = 700; return true; })()`);
+  await sleep(700);
+  await shoot("14b_header_compact_dark");
+  await evaluate(`(() => { document.querySelector('.skill-detail-main').scrollTop = 0; return true; })()`);
+  await sleep(600);
 
   // 深色下的调用记录：详情页内嵌 + 调用记录页，逐项取计算样式核对对比度
   await evaluate(`(() => { const tab = [...document.querySelectorAll('header button')].find(button => button.textContent.trim() === '调用记录'); tab.click(); return true; })()`);

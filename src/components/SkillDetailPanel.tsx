@@ -128,6 +128,8 @@ function SkillDetailPanelContent({
   // 部署开关默认收起：技能详情以阅读文档为主，部署状态由标题右侧的已启用计数概括。
   const [deployExpanded, setDeployExpanded] = useState(false);
   const [sourceOpenError, setSourceOpenError] = useState("");
+  // 正文向下滚动后页头收成紧凑形态，把纵向空间让给内容。
+  const [scrolled, setScrolled] = useState(false);
   const [activityItems, setActivityItems] = useState<ActivityEvent[] | null>(null);
   const [activityError, setActivityError] = useState("");
   const [activityRevision, setActivityRevision] = useState(0);
@@ -168,6 +170,16 @@ function SkillDetailPanelContent({
     observer.observe(shell);
     return () => observer.disconnect();
   }, []);
+
+  // 页头紧凑化：正文滚动超过一屏的起始偏移后收起图标、描述并缩小字号与内边距。
+  useEffect(() => {
+    const container = mainScrollRef.current;
+    if (!container) return;
+    const onScroll = () => setScrolled(container.scrollTop > 24);
+    container.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => container.removeEventListener("scroll", onScroll);
+  }, [contentTab]);
 
   useEffect(() => {
     if (!drawerOpen || !compact) return;
@@ -548,41 +560,53 @@ function SkillDetailPanelContent({
         onClick={onClose}
       />
       <div ref={shellRef} className="skill-detail-shell absolute inset-0 z-10 flex min-h-0 flex-col overflow-hidden border-l border-border-subtle bg-surface">
-        {/* 页头：滚动时保持可访问 */}
-        <header inert={drawerOpen && compact} className="skill-detail-header shrink-0 bg-surface pl-12 pr-8 pt-6">
+        {/* 页头：滚动时保持可访问；正文下滑后收成紧凑形态 */}
+        <header
+          inert={drawerOpen && compact}
+          className={cn(
+            "skill-detail-header shrink-0 bg-surface pl-12 pr-8 transition-all duration-200",
+            scrolled ? "pt-2.5" : "pt-4"
+          )}
+        >
           <button
                 type="button"
                 onClick={onClose}
-                className="flex w-fit items-center gap-2 rounded-md text-[14px] leading-5 text-muted transition-colors outline-none hover:text-secondary focus-visible:outline focus-visible:outline-accent"
+                className="flex w-fit items-center gap-1.5 rounded-md text-[12.5px] leading-5 text-muted transition-colors outline-none hover:text-secondary focus-visible:outline focus-visible:outline-accent"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
                 {t("mySkills.detail.back")}
           </button>
-          <div className="skill-detail-heading-row mt-5 flex min-w-0 items-start justify-between gap-6">
-            <div className="flex min-w-0 flex-1 items-start gap-5">
-              <Layers className="mt-1 h-11 w-11 shrink-0 text-accent" strokeWidth={1.7} aria-hidden="true" />
+          <div className={cn("skill-detail-heading-row flex min-w-0 items-start justify-between gap-6 transition-all duration-200", scrolled ? "mt-1" : "mt-2.5")}>
+            <div className="flex min-w-0 flex-1 items-start gap-3.5">
+              {!scrolled && <Layers className="mt-0.5 h-8 w-8 shrink-0 text-accent" strokeWidth={1.7} aria-hidden="true" />}
               <div className="min-w-0">
-              <div className="flex min-w-0 flex-wrap items-center gap-3">
-                <h2 title={skill.name} className="min-w-0 line-clamp-2 break-words text-[30px] font-semibold leading-9 tracking-tight text-primary">
+              <div className="flex min-w-0 flex-wrap items-center gap-2.5">
+                <h2
+                  title={skill.name}
+                  className={cn(
+                    "min-w-0 break-words font-semibold tracking-tight text-primary transition-all duration-200",
+                    scrolled ? "line-clamp-1 text-[17px] leading-6" : "line-clamp-2 text-[22px] leading-7"
+                  )}
+                >
                   {skill.name}
                 </h2>
                 {skill.update_status === "update_available" && (
-                  <span className="rounded-md bg-amber-500/10 px-2 py-1 text-[12px] font-medium text-amber-700 dark:text-amber-300">
+                  <span className="rounded-md bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-300">
                     {t("mySkills.detail.badgeUpdateAvailable")}
                   </span>
                 )}
               </div>
-              {skill.description && (
-                <p className="mt-1 line-clamp-2 text-[15px] leading-6 text-secondary">{skill.description}</p>
+              {!scrolled && skill.description && (
+                <p className="mt-0.5 line-clamp-1 text-[13px] leading-5 text-secondary" title={skill.description}>{skill.description}</p>
               )}
-              <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[14px] leading-5 text-tertiary">
+              <div className={cn("flex flex-wrap items-center gap-2 text-[12.5px] leading-4 text-tertiary", scrolled ? "mt-0.5" : "mt-1")}>
                 <span className="max-w-full break-words" title={skill.author_source ?? undefined}>
                   {t("mySkills.author")}: {skill.author || t("mySkills.authorMissing")}
                 </span>
                 {skill.tags.map((tag, index) => (
                   <span
                     key={tag}
-                    className={cn("inline-flex items-center rounded-md px-2.5 py-0.5 text-[12px] font-medium leading-[18px]", index === 0 ? "bg-accent-bg text-accent-dark dark:text-accent-light" : "bg-surface-hover text-secondary")}
+                    className={cn("inline-flex items-center rounded px-1.5 py-px text-[11px] font-medium leading-4", index === 0 ? "bg-accent-bg text-accent-dark dark:text-accent-light" : "bg-surface-hover text-secondary")}
                   >
                     {tag}
                   </span>
@@ -590,30 +614,30 @@ function SkillDetailPanelContent({
               </div>
               </div>
             </div>
-            <div className="skill-detail-actions flex shrink-0 flex-wrap items-center justify-end gap-3 pt-2">
+            <div className={cn("skill-detail-actions flex shrink-0 flex-wrap items-center justify-end gap-2", scrolled ? "pt-0" : "pt-0.5")}>
               <button type="button" onClick={() => openComparison("source")} disabled={!supportsSourceDiff}
                 title={!supportsSourceDiff ? t("mySkills.detail.noSource") : undefined}
-                className="inline-flex h-10 items-center gap-2 rounded-md border border-border-subtle bg-surface px-3.5 text-[14px] text-secondary outline-none hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-40">
+                className={cn("inline-flex items-center gap-1.5 rounded-md border border-border-subtle bg-surface text-secondary outline-none hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-40", scrolled ? "h-7 px-2 text-[12px]" : "h-8 px-2.5 text-[12.5px]")}>
                 {sourceIcon(skill.source_type)}{t("mySkills.detail.viewSource")}
               </button>
               <button type="button" onClick={() => openComparison("diff")} disabled={!supportsSourceDiff}
                 title={!supportsSourceDiff ? t("mySkills.detail.noSource") : undefined}
-                className="inline-flex h-10 items-center gap-2 rounded-md border border-border-subtle bg-surface px-3.5 text-[14px] text-secondary outline-none hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-40">
-                <FileDiff className="h-4 w-4" />{t("mySkills.detail.viewDiff")}
+                className={cn("inline-flex items-center gap-1.5 rounded-md border border-border-subtle bg-surface text-secondary outline-none hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-40", scrolled ? "h-7 px-2 text-[12px]" : "h-8 px-2.5 text-[12.5px]")}>
+                <FileDiff className="h-3.5 w-3.5" />{t("mySkills.detail.viewDiff")}
               </button>
               {hasUpdateSource && onUpdate ? (
                 <button
                   type="button"
                   onClick={runUpdate}
                   disabled={updateBusy || busyAction === `check:${skill.id}`}
-                  className="inline-flex h-10 items-center gap-2 rounded-md bg-emerald-700 px-4 text-[14px] font-medium text-white outline-none hover:bg-emerald-800 focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-60"
+                  className={cn("inline-flex items-center gap-1.5 rounded-md bg-emerald-700 font-medium text-white outline-none hover:bg-emerald-800 focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-60", scrolled ? "h-7 px-2.5 text-[12px]" : "h-8 px-3 text-[12.5px]")}
                 >
                   <RefreshCw className={cn("h-3.5 w-3.5", updateBusy && "animate-spin")} />
                   {updateBusy ? t("mySkills.detail.updating") : updateLabel}
                 </button>
               ) : (
                 <span
-                  className="inline-flex h-10 items-center gap-2 rounded-md border border-border-subtle px-3 text-[13px] text-muted"
+                  className={cn("inline-flex items-center gap-1.5 rounded-md border border-border-subtle text-muted", scrolled ? "h-7 px-2 text-[12px]" : "h-8 px-2.5 text-[12.5px]")}
                   title={t("mySkills.detail.noSource")}
                 >
                   <RefreshCw className="h-3.5 w-3.5" />
@@ -623,7 +647,7 @@ function SkillDetailPanelContent({
               {compact && <button
                 type="button"
                 onClick={() => setDrawerOpen(true)}
-                className="skill-detail-sidebar-toggle rounded-md border border-border-subtle p-2 text-muted outline-none hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-accent"
+                className="skill-detail-sidebar-toggle rounded-md border border-border-subtle p-1 text-muted outline-none hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-accent"
                 aria-label={t("mySkills.detail.sidebar")}
               >
                 <PanelRightOpen className="h-4 w-4" />
@@ -631,7 +655,7 @@ function SkillDetailPanelContent({
             </div>
           </div>
           {/* 页签层级：文档 / 来源与差异 / 调用记录 */}
-          <nav className="mt-4 flex items-center gap-4 border-b border-border-subtle" aria-label={t("mySkills.detail.doc")}>
+          <nav className={cn("flex items-center gap-3.5 border-b border-border-subtle transition-all duration-200", scrolled ? "mt-1" : "mt-2.5")} aria-label={t("mySkills.detail.doc")}>
             {([
               ["doc", t("mySkills.detail.tabDoc")],
               ...(supportsSourceDiff ? [["sourceDiff", t("mySkills.detail.tabSourceDiff")] as [ContentTab, string]] : []),
@@ -649,7 +673,8 @@ function SkillDetailPanelContent({
                 }}
                 aria-current={contentTab === tab ? "page" : undefined}
                 className={cn(
-                  "-mb-px inline-flex h-10 items-center border-b-2 px-4 text-[15px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                  "-mb-px inline-flex items-center border-b-2 px-3 font-medium outline-none transition-all duration-200 focus-visible:ring-2 focus-visible:ring-accent",
+                  scrolled ? "h-7 text-[12.5px]" : "h-8 text-[13px]",
                   contentTab === tab
                     ? "border-accent text-accent-dark dark:text-accent-light"
                     : "border-transparent text-muted hover:text-secondary"
