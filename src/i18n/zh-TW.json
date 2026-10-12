@@ -541,6 +541,8 @@
     },
     "oneClickInstall": "一鍵安裝",
     "viewOnWeb": "在 skills.sh 檢視",
+    "installs": "下載量 {{value}}",
+    "change": "較昨日新增 {{value}}",
     "pagination": {
       "summary": "顯示第 {{start}} - {{end}} 項，共 {{total}} 個 Skill",
       "page": "第 {{current}} / {{total}} 頁",

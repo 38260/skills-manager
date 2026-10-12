@@ -42,6 +42,12 @@ const MARKET_SEARCH_DEBOUNCE_MS = 450;
 const MARKET_SEARCH_CACHE_TTL_MS = 120_000;
 const MARKET_SEARCH_CACHE_MAX_ENTRIES = 150;
 
+/** 下载量的紧凑写法：1_234_567 → 1.2M，12_345 → 12.3K。 */
+const formatCount = (value: number) =>
+  value >= 1_000_000 ? `${(value / 1_000_000).toFixed(1)}M`
+    : value >= 1_000 ? `${(value / 1_000).toFixed(1)}K`
+      : String(value);
+
 export function InstallSkills() {
   const { t } = useTranslation();
   const { refreshPresets, refreshManagedSkills, managedSkills, openSkillDetailById } = useApp();
@@ -1014,14 +1020,21 @@ export function InstallSkills() {
                           >
                             @{skill.source}
                           </button>
-                          {marketTab === "alltime" && skill.installs > 0 && (
-                            <span className="inline-flex items-center gap-1 rounded-[5px] border border-border-subtle bg-background px-1.5 py-0.5 text-[13px] leading-4 text-muted">
+                          {skill.installs > 0 && (
+                            <span
+                              className="inline-flex items-center gap-1 rounded-[5px] border border-border-subtle bg-background px-1.5 py-0.5 text-[13px] leading-4 text-muted"
+                              title={t("install.installs", { value: skill.installs.toLocaleString() })}
+                            >
                               <DownloadCloud className="h-3 w-3" />
-                              {skill.installs >= 1_000_000
-                                ? `${(skill.installs / 1_000_000).toFixed(1)}M`
-                                : skill.installs >= 1_000
-                                  ? `${(skill.installs / 1_000).toFixed(1)}K`
-                                  : skill.installs}
+                              {formatCount(skill.installs)}
+                            </span>
+                          )}
+                          {skill.change > 0 && (
+                            <span
+                              className="inline-flex items-center gap-1 rounded-[5px] border border-emerald-500/20 bg-emerald-500/10 px-1.5 py-0.5 text-[13px] leading-4 font-medium text-emerald-600 dark:text-emerald-400"
+                              title={t("install.change", { value: skill.change.toLocaleString() })}
+                            >
+                              <TrendingUp className="h-3 w-3" />+{formatCount(skill.change)}
                             </span>
                           )}
                           {isInstalled ? (

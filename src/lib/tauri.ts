@@ -142,6 +142,8 @@ export interface SkillsShSkill {
   name: string;
   source: string;
   installs: number;
+  /** 较昨日的增量；只有「热门」榜单提供，其余为 0。 */
+  change: number;
 }
 
 export interface SyncHealth {

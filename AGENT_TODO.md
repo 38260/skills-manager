@@ -15,7 +15,7 @@
 | --- | --- | --- | --- |
 | A | 记录类型 / 触发方式加色彩底纹 | `lib/activityTone.ts` 抽出三类徽章配色（记录类型 / 触发方式 / 结果），列表与表格接入；补对比度自检 | [x] |
 | B | 修「来源未知」 | 起因：解析器只认 `$skill` / `/skill`，未点名即判 `unknown`。改为「有用户消息但未点名 → 自动（Agent 自选）」，并识别 WorkBuddy 的 `@skill:` 写法；`PARSER_VERSION` +1 强制重扫；补 `evidenceCodes.agent_choice` 三语文案 | [x] |
-| C | 市场页显示下载量 / 热度 | skills.sh 改版，榜单页已无 `__NEXT_DATA__`，兜底正则也抓不到 `installs`（全为 0）；且 UI 只在「全部」页签显示 | [ ] |
+| C | 市场页显示下载量 / 热度 | skills.sh 改版，榜单页已无 `__NEXT_DATA__`，兜底正则也抓不到 `installs`（全为 0）；且 UI 只在「全部」页签显示 | [x] |
 | D | 「查看来源」展示 GitHub 仓库 | 技能详情「来源信息」区块 + 安装页市场卡片展示对应 GitHub 仓库；逐个核实后加入映射，找不到留空 | [ ] |
 
 **本轮不做**
@@ -31,6 +31,7 @@
 | --- | --- | --- | --- | --- |
 | 2026-10-12 | A | 徽章配色抽成 `activityTone.ts`（此前「记录类型」是无底色灰字、触发色很淡），列表/表格接入 | `src/lib/activityTone.ts`、`src/components/ActivityRecordList.tsx`、`src/components/ActivityTable.tsx` | 对比度自检全绿（详见下） |
 | 2026-10-12 | B | 触发判定改为「本轮是否出现过用户消息」，新增 `@skill:` 识别，补 `agent_choice` 文案 | `backend/activity/context.mjs`、`backend/activity/scanner.mjs`、`src/i18n/{zh,en,zh-TW}.json` | 全量重扫对照，unknown 177 → 0 |
+| 2026-10-12 | C | 榜单解析改走 RSC 载荷（`initialSkills`），卡片在三个页签都显示下载量，热门榜另显示较昨日增量 | `backend/skillssh.mjs`、`src/views/InstallSkills.tsx`、`src/lib/tauri.ts`、`src/i18n/{zh,en,zh-TW}.json` | 三个榜单实测，installs 由全 0 → 600/600 有值 |
 
 **批次 A 验证**（`output/activity-fix/check-chip-contrast.mjs`；色值不手抄 —— tailwind 内置色取自 `node_modules`，项目 token 取自 `src/index.css`）
 
@@ -57,6 +58,21 @@
 ⚠️ 对照方法上的坑：`events` 表的 UPSERT 是**只升级不降级**（`trigger` 仅在 `excluded='manual'`
 或 `events='unknown'` 时才被覆盖），所以拿一份已被新解析器写过的库当起点，旧解析器的 `unknown`
 根本写不进去 —— 会得到「新旧一样」的假结论。必须两边都从空表重扫。
+
+**批次 C 验证**（直连后端模块实测 skills.sh 三个榜单 + 搜索接口）
+
+| 榜单 | 修复前 | 修复后 |
+| --- | --- | --- |
+| 全部 alltime | 600 条，`installs` **全为 0** | 600 条，600 条有值（首条 3,809,344） |
+| 热门 hot | 600 条，`installs` **全为 0** | 600 条，600 条有值（首条 511，另有较昨日 +314） |
+| 趋势 trending | 600 条，`installs` **全为 0** | 600 条，600 条有值（首条 30,168） |
+| 搜索 pdf | 10 条，有值（走 `/api/search`） | 不变 |
+
+根因两条叠加：① 站点从 Pages Router 换成 App Router，`__NEXT_DATA__` 已消失（三个榜单实测
+`nextData false`），数据改成分片推在 `self.__next_f.push([1,"…"])` 的 RSC 载荷里，列表在
+`"initialSkills"` 字段下；② 兜底正则把 `(?:"installs":(\d+))?` 写在 `[^{}]*?` 之后，**可选组被
+引擎直接跳过**，于是 installs 一个都取不到。UI 侧还额外限了「只在全部页签渲染下载量」，
+两个原因叠在一起，热门 / 趋势页连位置都没有。
 
 ---
 

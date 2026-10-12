@@ -584,6 +584,8 @@
     },
     "oneClickInstall": "Install",
     "viewOnWeb": "View on skills.sh",
+    "installs": "{{value}} installs",
+    "change": "{{value}} more than yesterday",
     "pagination": {
       "summary": "Showing {{start}} - {{end}} of {{total}} skills",
       "page": "Page {{current}} of {{total}}",
