@@ -1,0 +1,60 @@
+[
+  {
+    "name": "初始状态",
+    "value": {
+      "removeButtons": 2,
+      "hasHiddenSection": false,
+      "detectedCount": "2",
+      "sidebarAgents": [
+        "Claude Code",
+        "Codex"
+      ]
+    }
+  },
+  {
+    "name": "点击移除按钮",
+    "value": true
+  },
+  {
+    "name": "移除后状态",
+    "value": {
+      "removeButtons": 1,
+      "hasHiddenSection": true,
+      "detectedCount": "1",
+      "sidebarAgents": [
+        "Codex"
+      ]
+    }
+  },
+  {
+    "name": "展开已移除分组",
+    "value": true
+  },
+  {
+    "name": "展开已移除分组后",
+    "value": {
+      "removeButtons": 1,
+      "hasHiddenSection": true,
+      "detectedCount": "1",
+      "sidebarAgents": [
+        "Codex"
+      ]
+    }
+  },
+  {
+    "name": "点击恢复按钮",
+    "value": true
+  },
+  {
+    "name": "恢复后状态",
+    "value": {
+      "removeButtons": 2,
+      "hasHiddenSection": false,
+      "detectedCount": "2",
+      "sidebarAgents": [
+        "Claude Code",
+        "Codex"
+      ]
+    }
+  }
+]

@@ -490,7 +490,11 @@
       "activityOpenPage": "在呼叫記錄頁檢視",
       "editProfile": "編輯資訊",
       "aliasLabel": "原名",
-      "customAuthorLabel": "自訂作者"
+      "customAuthorLabel": "自訂作者",
+      "structureShowAll": "顯示全部（共 {{count}} 項）",
+      "structureCount": "{{count}} 個檔案",
+      "sourceDetails": "來源詳情",
+      "sourceSummaryEmpty": "尚無來源資訊"
     }
   },
   "install": {
@@ -539,6 +543,19 @@
       "cancelled": "安裝已取消",
       "timeout": "安裝逾時 — 請檢查網路連線",
       "view": "檢視"
+    },
+    "progress": {
+      "title": "正在安裝",
+      "cloning": "正在複製倉庫",
+      "cloningWithPercent": "正在複製倉庫 {{percent}}%",
+      "installing": "正在安裝技能",
+      "item": "第 {{index}}/{{total}} 個 · {{name}}",
+      "count": "第 {{index}}/{{total}} 個",
+      "done": "安裝完成",
+      "dismiss": "收合",
+      "pending": "{{count}} 個技能待確認",
+      "pendingHint": "點擊回到安裝頁繼續",
+      "viewProgress": "檢視安裝進度"
     },
     "local": {
       "title": "匯入本機 Skill 來源",
@@ -598,6 +615,13 @@
     "detectedAgentsSection": "已偵測到的 Agent",
     "otherAgentsSection": "其他支援的 Agent（{{count}}）",
     "customAgentsSection": "自訂 Agent",
+    "hiddenAgentsSection": "已移除的 Agent（{{count}}）",
+    "hiddenAgentsHint": "這些 Agent 不參與部署與同步，恢復後可繼續使用。",
+    "hideAgent": "從清單移除",
+    "hideAgentConfirm": "確定把 {{name}} 從 Agent 清單移除嗎？只會取消管理，不會卸載該 Agent 本身，之後可隨時恢復。",
+    "agentHidden": "已移除 {{name}}",
+    "restoreAgent": "恢復到清單",
+    "agentRestored": "已恢復 {{name}}",
     "refresh": "重新偵測",
     "notInstalled": "未安裝",
     "enabledState": "已啟用",
@@ -1130,6 +1154,8 @@
     "to": "結束日期",
     "apply": "篩選",
     "reset": "重設",
+    "moreFilters": "更多篩選",
+    "hideFilters": "收合篩選",
     "invalidDates": "結束日期不能早於開始日期",
     "unknownTime": "時間未知",
     "noProject": "專案未知",

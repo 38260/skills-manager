@@ -27,8 +27,9 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { cn } from "../utils";
 import { useApp } from "../context/AppContext";
+import { useInstallTask } from "../context/InstallTaskContext";
 import * as api from "../lib/tauri";
-import type { ScanResult, SkillsShSkill, BatchImportResult, GitPreviewResult } from "../lib/tauri";
+import type { ScanResult, SkillsShSkill, BatchImportResult } from "../lib/tauri";
 import { openDirectory as open, openSkillFile, openExternal as openUrl } from "../lib/desktop";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { listen } from "../lib/transport";
@@ -44,6 +45,13 @@ const MARKET_SEARCH_CACHE_MAX_ENTRIES = 150;
 export function InstallSkills() {
   const { t } = useTranslation();
   const { refreshPresets, refreshManagedSkills, managedSkills, openSkillDetailById } = useApp();
+  // git 安装会话（进度 / 预览 / 勾选）由 InstallTaskContext 持有，
+  // 这样离开安装页后进度条继续更新、切回来预览列表也还在。
+  const {
+    gitUrl, setGitUrl, gitPreview, gitSelections, gitLoading, gitConfirmLoading,
+    startGitPreview, closeGitPreview, toggleGitSelection, setAllGitSelections,
+    renameGitSelection, confirmGitInstall,
+  } = useInstallTask();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<"market" | "local" | "git">("market");
@@ -58,13 +66,6 @@ export function InstallSkills() {
   const [marketError, setMarketError] = useState<string | null>(null);
   const [marketReloadKey, setMarketReloadKey] = useState(0);
   const [installing, setInstalling] = useState<string | null>(null);
-  const [gitUrl, setGitUrl] = useState("");
-  const [gitLoading, setGitLoading] = useState(false);
-  const [gitCancelKey, setGitCancelKey] = useState<string | null>(null);
-  const [gitPreview, setGitPreview] = useState<GitPreviewResult | null>(null);
-  const [gitPreviewRepoUrl, setGitPreviewRepoUrl] = useState<string | null>(null);
-  const [gitSelections, setGitSelections] = useState<{ rel_path: string; name: string; description: string | null; selected: boolean }[]>([]);
-  const [gitConfirmLoading, setGitConfirmLoading] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [scanLoading, setScanLoading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -456,88 +457,6 @@ export function InstallSkills() {
     api.cancelInstall(cancelKey).catch(() => {
       // Ignore race: install may have completed before cancel request arrives.
     });
-  };
-
-  const handleGitPreview = async () => {
-    if (!gitUrl.trim()) return;
-    setGitLoading(true);
-    const url = gitUrl.trim();
-    setGitCancelKey(url);
-
-    const toastId = toast.loading(t("install.toast.cloning"));
-    let unlisten: (() => void) | null = null;
-
-    try {
-      unlisten = await listen<{ skill_id: string; phase: string; detail?: string }>(
-        "install-progress",
-        (event) => {
-          if (event.payload.skill_id !== url) return;
-          if (event.payload.phase === "cloning") {
-            const detail = event.payload.detail?.trim();
-            const msg = detail
-              ? `${t("install.toast.cloning")}\n${detail}`
-              : t("install.toast.cloning");
-            toast.loading(msg, { id: toastId });
-          }
-        }
-      );
-      const preview = await api.previewGitInstall(url);
-      toast.dismiss(toastId);
-      setGitPreview(preview);
-      setGitPreviewRepoUrl(url);
-      setGitSelections(preview.skills.map((s) => ({
-        rel_path: s.rel_path,
-        name: s.name,
-        description: s.description,
-        selected: true,
-      })));
-    } catch (error: unknown) {
-      if (getErrorKind(error) === "cancelled") {
-        toast.info(t("install.toast.cancelled"), { id: toastId });
-      } else {
-        toast.error(getErrorMessage(error, t("common.error")), { id: toastId });
-      }
-    } finally {
-      setGitLoading(false);
-      setGitCancelKey(null);
-      unlisten?.();
-    }
-  };
-
-  const handleGitPreviewClose = () => {
-    if (gitConfirmLoading) return;
-    if (gitPreview) {
-      api.cancelGitPreview(gitPreview.temp_dir).catch(() => {});
-    }
-    setGitPreview(null);
-    setGitPreviewRepoUrl(null);
-    setGitSelections([]);
-  };
-
-  const handleGitConfirm = async () => {
-    if (!gitPreview) return;
-    const repoUrl = gitPreviewRepoUrl ?? gitUrl.trim();
-    if (!repoUrl) return;
-    const selected = gitSelections.filter((s) => s.selected);
-    if (selected.length === 0) return;
-    setGitConfirmLoading(true);
-    try {
-      await api.confirmGitInstall(
-        repoUrl,
-        gitPreview.temp_dir,
-        selected.map((s) => ({ rel_path: s.rel_path, name: s.name }))
-      );
-      await Promise.all([refreshPresets(), refreshManagedSkills()]);
-      toast.success(t("install.toast.success", { name: selected.map((s) => s.name).join(", ") }));
-      setGitUrl("");
-      setGitPreview(null);
-      setGitPreviewRepoUrl(null);
-      setGitSelections([]);
-    } catch (error: unknown) {
-      toast.error(getErrorMessage(error, t("common.error")));
-    } finally {
-      setGitConfirmLoading(false);
-    }
   };
 
   const handleImportDiscovered = async (sourcePath: string, name: string) => {
@@ -1459,7 +1378,7 @@ export function InstallSkills() {
                   type="text"
                   value={gitUrl}
                   onChange={(e) => setGitUrl(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter" && !gitLoading && gitUrl.trim()) handleGitPreview(); }}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !gitLoading && gitUrl.trim()) void startGitPreview(); }}
                   placeholder={t("install.repoUrlPlaceholder")}
                   disabled={gitLoading}
                   className="app-input w-full bg-background"
@@ -1476,16 +1395,16 @@ export function InstallSkills() {
               <div className="flex gap-2 pt-2">
                 {gitLoading ? (
                   <button
-                    onClick={() => gitCancelKey && handleCancelInstall(gitCancelKey)}
+                    onClick={() => handleCancelInstall(gitUrl.trim())}
                     className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-[13px] font-medium text-red-400 transition-colors hover:bg-red-500/20"
-                    disabled={!gitCancelKey}
+                    disabled={!gitUrl.trim()}
                   >
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     {t("install.cancel")}
                   </button>
                 ) : (
                   <button
-                    onClick={handleGitPreview}
+                    onClick={() => void startGitPreview()}
                     disabled={!gitUrl.trim()}
                     className={cn(
                       "flex w-full",
@@ -1511,13 +1430,13 @@ export function InstallSkills() {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            onClick={handleGitPreviewClose}
+            onClick={closeGitPreview}
           />
           <div className="relative w-full max-w-md rounded-xl border border-border bg-surface p-5 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-[14px] font-semibold text-primary">{t("install.gitPreview.title")}</h2>
               <button
-                onClick={handleGitPreviewClose}
+                onClick={closeGitPreview}
                 disabled={gitConfirmLoading}
                 className="rounded p-1 text-muted transition-colors hover:text-secondary"
               >
@@ -1530,7 +1449,7 @@ export function InstallSkills() {
             <div className="mb-2 flex gap-2">
               <button
                 type="button"
-                onClick={() => setGitSelections((prev) => prev.map((s) => ({ ...s, selected: true })))}
+                onClick={() => setAllGitSelections(true)}
                 disabled={gitConfirmLoading}
                 className="text-[13px] text-accent-light hover:underline"
               >
@@ -1539,7 +1458,7 @@ export function InstallSkills() {
               <span className="text-faint">·</span>
               <button
                 type="button"
-                onClick={() => setGitSelections((prev) => prev.map((s) => ({ ...s, selected: false })))}
+                onClick={() => setAllGitSelections(false)}
                 disabled={gitConfirmLoading}
                 className="text-[13px] text-muted hover:underline"
               >
@@ -1551,7 +1470,7 @@ export function InstallSkills() {
               <p className="py-6 text-center text-[13px] text-muted">{t("install.gitPreview.empty")}</p>
             ) : (
               <div className="max-h-64 space-y-2 overflow-y-auto scrollbar-hide pr-1">
-                {gitSelections.map((item, idx) => (
+                {gitSelections.map((item) => (
                   <div
                     key={item.rel_path}
                     className={cn(
@@ -1565,22 +1484,14 @@ export function InstallSkills() {
                       type="checkbox"
                       checked={item.selected}
                       disabled={gitConfirmLoading}
-                      onChange={(e) =>
-                        setGitSelections((prev) =>
-                          prev.map((s, i) => i === idx ? { ...s, selected: e.target.checked } : s)
-                        )
-                      }
+                      onChange={() => toggleGitSelection(item.rel_path)}
                       className="h-4 w-4 shrink-0 accent-accent"
                     />
                     <div className="min-w-0 flex-1">
                       <input
                         type="text"
                         value={item.name}
-                        onChange={(e) =>
-                          setGitSelections((prev) =>
-                            prev.map((s, i) => i === idx ? { ...s, name: e.target.value } : s)
-                          )
-                        }
+                        onChange={(e) => renameGitSelection(item.rel_path, e.target.value)}
                         disabled={!item.selected || gitConfirmLoading}
                         placeholder={t("install.gitPreview.namePlaceholder")}
                         className="app-input w-full bg-background py-1 text-[13px]"
@@ -1597,7 +1508,7 @@ export function InstallSkills() {
             <div className="mt-4 flex justify-end gap-2">
               <button
                 type="button"
-                onClick={handleGitPreviewClose}
+                onClick={closeGitPreview}
                 disabled={gitConfirmLoading}
                 className="px-3 py-1.5 text-[13px] font-medium text-muted hover:text-secondary transition-colors"
               >
@@ -1605,7 +1516,7 @@ export function InstallSkills() {
               </button>
               <button
                 type="button"
-                onClick={handleGitConfirm}
+                onClick={() => void confirmGitInstall()}
                 disabled={gitConfirmLoading || gitSelections.every((s) => !s.selected)}
                 className="app-button-primary"
               >

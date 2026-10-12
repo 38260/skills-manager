@@ -1,0 +1,56 @@
+[
+  {
+    "name": "切到 Git 标签",
+    "value": true
+  },
+  {
+    "name": "点击克隆并预览",
+    "value": true
+  },
+  {
+    "name": "预览弹窗出现",
+    "value": true
+  },
+  {
+    "name": "预览技能数",
+    "value": 30
+  },
+  {
+    "name": "安装中侧边栏有进度条",
+    "value": {
+      "hasProgress": true,
+      "text": "Skills ManagerDashboard技能库调用记录安装 Skills备份PresetDefault新建 Preset全局工作区全部 Agents未安装任何 Agent项目工作区关联项目正在安装技能设置"
+    }
+  },
+  {
+    "name": "点击侧边栏「技能库」",
+    "value": true
+  },
+  {
+    "name": "切到技能库后进度条仍在",
+    "value": {
+      "present": true,
+      "tail": "Skills ManagerDashboard技能库调用记录安装 Skills备份PresetDefault新建 Preset全局工作区全部 Agents未安装任何 Agent项目工作区关联项目正在安装技能设置"
+    }
+  },
+  {
+    "name": "点击侧边栏「Dashboard」",
+    "value": true
+  },
+  {
+    "name": "切到仪表盘后进度条仍在",
+    "value": true
+  },
+  {
+    "name": "安装完成后技能数",
+    "value": 30
+  },
+  {
+    "name": "点击侧边栏「安装 Skills」回到安装页",
+    "value": true
+  },
+  {
+    "name": "安装完成后预览已清理（预期）",
+    "value": true
+  }
+]

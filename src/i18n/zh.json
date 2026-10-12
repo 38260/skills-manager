@@ -533,7 +533,11 @@
       "activityOpenPage": "在调用记录页查看",
       "editProfile": "编辑信息",
       "aliasLabel": "原名",
-      "customAuthorLabel": "自定义作者"
+      "customAuthorLabel": "自定义作者",
+      "structureShowAll": "显示全部（共 {{count}} 项）",
+      "structureCount": "{{count}} 个文件",
+      "sourceDetails": "来源详情",
+      "sourceSummaryEmpty": "暂无来源信息"
     }
   },
   "install": {
@@ -583,6 +587,19 @@
       "timeout": "安装超时 — 请检查网络连接",
       "view": "查看"
     },
+    "progress": {
+      "title": "正在安装",
+      "cloning": "正在克隆仓库",
+      "cloningWithPercent": "正在克隆仓库 {{percent}}%",
+      "installing": "正在安装技能",
+      "item": "第 {{index}}/{{total}} 个 · {{name}}",
+      "count": "第 {{index}}/{{total}} 个",
+      "done": "安装完成",
+      "dismiss": "收起",
+      "pending": "{{count}} 个技能待确认",
+      "pendingHint": "点击回到安装页继续",
+      "viewProgress": "查看安装进度"
+    },
     "local": {
       "title": "导入本地 Skill 源",
       "description": "选择包含 `SKILL.md` 的文件夹，或导入 `.zip` / `.skill` 文件。",
@@ -603,6 +620,7 @@
     "gitAlreadyInstalled": "\"{{name}}\" 已安装，重新安装将会更新。",
     "onlyThisContributor": "仅看该贡献者",
     "installClone": "克隆并预览",
+    "gitReinstall": "重新安装并更新",
     "gitPreview": {
       "title": "选择要导入的技能",
       "description": "从仓库中发现了以下技能，可自定义名称后导入。",
@@ -646,6 +664,13 @@
     "detectedAgentsSection": "已检测到的 Agent",
     "otherAgentsSection": "其他支持的 Agent（{{count}}）",
     "customAgentsSection": "自定义 Agent",
+    "hiddenAgentsSection": "已移除的 Agent（{{count}}）",
+    "hiddenAgentsHint": "这些 Agent 不参与部署与同步，恢复后可继续使用。",
+    "hideAgent": "从列表移除",
+    "hideAgentConfirm": "确定把 {{name}} 从 Agent 列表移除吗？只会取消管理，不会卸载该 Agent 本身，之后可随时恢复。",
+    "agentHidden": "已移除 {{name}}",
+    "restoreAgent": "恢复到列表",
+    "agentRestored": "已恢复 {{name}}",
     "refresh": "重新检测",
     "notInstalled": "未安装",
     "enabledState": "已启用",
@@ -1214,6 +1239,8 @@
     "to": "结束日期",
     "apply": "筛选",
     "reset": "重置",
+    "moreFilters": "更多筛选",
+    "hideFilters": "收起筛选",
     "invalidDates": "结束日期不能早于开始日期",
     "unknownTime": "时间未知",
     "noProject": "项目未知",

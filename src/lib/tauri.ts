@@ -15,6 +15,8 @@ export interface ToolInfo {
   project_relative_skills_dir: string | null;
   has_project_path_override: boolean;
   category: ToolCategory;
+  /** 已从 Agent 列表移除（仅设置页可见，可恢复）。 */
+  hidden?: boolean;
 }
 
 export interface ManagedSkill {
@@ -244,6 +246,11 @@ export const addCustomTool = (
 
 export const removeCustomTool = (key: string) =>
   invoke<void>("remove_custom_tool", { key });
+
+/** 从 Agent 列表移除 / 恢复：只改应用设置，不卸载磁盘上的 Agent 程序。 */
+export const hideTool = (key: string) => invoke<void>("hide_tool", { key });
+export const restoreTool = (key: string) => invoke<void>("restore_tool", { key });
+export const getHiddenTools = () => invoke<ToolInfo[]>("get_hidden_tools");
 
 // ── Skills ──
 

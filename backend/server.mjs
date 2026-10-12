@@ -54,11 +54,23 @@ function notifyChange() {
 
 const library = new Library(store, notifyChange);
 
+// git 的进度行形如 "Receiving objects:  45% (1234/2740), 1.2 MiB | 500 KiB/s"。
+// 只取第一个百分比，非进度行（如 remote: Enumerating objects）返回 null，前端据此保留上一次百分比。
+const gitPercent = line => {
+  const match = /(\d{1,3})%/.exec(line);
+  if (!match) return null;
+  const value = Number(match[1]);
+  return Number.isFinite(value) && value >= 0 && value <= 100 ? value : null;
+};
+
 // git 操作取消与进度：key 与旧客户端约定一致（安装=来源标识，更新="update:<技能ID>"）。
+// 事件负载同时供"安装页"和"侧边栏常驻进度条"消费，因此字段保持自描述：
+// phase（cloning/installing/done）+ percent（克隆百分比）+ index/total/name（逐项安装）。
 const gitHooks = key => ({
   cancel: registerCancel(key),
   onPhase: phase => broadcast("install-progress", { skill_id: key, phase }),
-  onProgress: detail => broadcast("install-progress", { skill_id: key, phase: "cloning", detail }),
+  onProgress: detail => broadcast("install-progress", { skill_id: key, phase: "cloning", detail, percent: gitPercent(detail) }),
+  onItem: (index, total, name) => broadcast("install-progress", { skill_id: key, phase: "installing", index, total, name }),
 });
 
 // 命令参数使用前端传入的 camelCase 键名；mutating 命令成功后触发一次防抖的事件广播。
@@ -102,7 +114,11 @@ const commands = {
     try { return await library.previewGitInstall(args.repoUrl, hooks); }
     finally { releaseCancel(key); }
   } },
-  confirm_git_install: { call: async args => { await library.confirmGitInstall(args.repoUrl, args.tempDir, Array.isArray(args.items) ? args.items : []); }, mutating: true },
+  confirm_git_install: { call: async args => {
+    const key = args.repoUrl, hooks = gitHooks(key);
+    try { await library.confirmGitInstall(args.repoUrl, args.tempDir, Array.isArray(args.items) ? args.items : [], hooks); broadcast("install-progress", { skill_id: key, phase: "done" }); }
+    finally { releaseCancel(key); }
+  }, mutating: true },
   cancel_git_preview: { call: args => { library.cancelGitPreview(args.tempDir); } },
   cancel_install: { call: args => requestCancel(args.key) },
   batch_import_folder: { call: args => library.batchImportFolder(args.folderPath, data => broadcast("batch-import-progress", data)), mutating: true },

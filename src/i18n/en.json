@@ -533,7 +533,11 @@
       "activityOpenPage": "Open in Activity page",
       "editProfile": "Edit info",
       "aliasLabel": "Original name",
-      "customAuthorLabel": "Custom author"
+      "customAuthorLabel": "Custom author",
+      "structureShowAll": "Show all ({{count}} items)",
+      "structureCount": "{{count}} files",
+      "sourceDetails": "Source details",
+      "sourceSummaryEmpty": "No source info"
     }
   },
   "install": {
@@ -583,6 +587,19 @@
       "timeout": "Installation timed out — check your network",
       "view": "View"
     },
+    "progress": {
+      "title": "Installing",
+      "cloning": "Cloning repository",
+      "cloningWithPercent": "Cloning repository {{percent}}%",
+      "installing": "Installing skills",
+      "item": "{{index}} of {{total}} · {{name}}",
+      "count": "{{index}} of {{total}}",
+      "done": "Installation complete",
+      "dismiss": "Dismiss",
+      "pending": "{{count}} skills awaiting confirmation",
+      "pendingHint": "Click to return to the install page",
+      "viewProgress": "View install progress"
+    },
     "local": {
       "title": "Import a local skill source",
       "description": "Choose a folder that contains `SKILL.md`, or import a `.zip` or `.skill` package.",
@@ -603,6 +620,7 @@
     "gitAlreadyInstalled": "\"{{name}}\" is already installed. Reinstalling will update it.",
     "onlyThisContributor": "Only this contributor",
     "installClone": "Clone & Preview",
+    "gitReinstall": "Reinstall and update",
     "gitPreview": {
       "title": "Select Skills to Import",
       "description": "The following skills were found in the repository. Rename them if needed, then confirm.",
@@ -646,6 +664,13 @@
     "detectedAgentsSection": "Detected Agents",
     "otherAgentsSection": "Other Supported Agents ({{count}})",
     "customAgentsSection": "Custom Agents",
+    "hiddenAgentsSection": "Removed Agents ({{count}})",
+    "hiddenAgentsHint": "These agents are excluded from deploy and sync. Restore one to use it again.",
+    "hideAgent": "Remove from list",
+    "hideAgentConfirm": "Remove {{name}} from the agent list? This only stops managing it — the agent itself is not uninstalled, and you can restore it anytime.",
+    "agentHidden": "Removed {{name}}",
+    "restoreAgent": "Restore to list",
+    "agentRestored": "Restored {{name}}",
     "refresh": "Refresh",
     "notInstalled": "Not installed",
     "enabledState": "Enabled",
@@ -1214,6 +1239,8 @@
     "to": "Through",
     "apply": "Filter",
     "reset": "Reset",
+    "moreFilters": "More filters",
+    "hideFilters": "Hide filters",
     "invalidDates": "The end date must not precede the start date",
     "unknownTime": "Unknown time",
     "noProject": "Unknown project",

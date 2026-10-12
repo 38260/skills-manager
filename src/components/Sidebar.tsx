@@ -27,6 +27,7 @@ import { RenamePresetDialog } from "./RenamePresetDialog";
 import { AddProjectDialog } from "./AddProjectDialog";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { AgentIcon } from "./AgentIcon";
+import { InstallProgressBar } from "./InstallProgressBar";
 import * as api from "../lib/tauri";
 import type { SyncHealth, ToolCategory, ToolInfo } from "../lib/tauri";
 import { getPresetIconOption } from "../lib/presetIcons";
@@ -706,6 +707,9 @@ export function Sidebar() {
           )}
 
         </div>
+
+        {/* 安装进度：常驻在设置项上方，切到任何视图都能看到，点击回到安装页 */}
+        <InstallProgressBar />
 
         {/* Settings */}
         <div className="p-2.5 border-t border-border-subtle shrink-0">

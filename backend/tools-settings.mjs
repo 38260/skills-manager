@@ -1,11 +1,12 @@
 import path from "node:path";
 
-// 工具设置命令：自定义工具、全局启停、排序与技能目录覆盖。
+// 工具设置命令：自定义工具、全局启停、排序、技能目录覆盖与从列表移除。
 // 全部状态保存在既有 settings 键中（custom_tools / disabled_tools / tool_order /
-// custom_tool_paths / custom_tool_project_paths），由 store.tools() 统一读取。
+// custom_tool_paths / custom_tool_project_paths / hidden_tools），由 store.tools() 统一读取。
 export function toolCommands(store) {
+  // 用 allTools()：被移除（hidden）的工具也要能被找到，否则无法恢复。
   const requireTool = key => {
-    const tool = store.tools().find(item => item.key === key);
+    const tool = store.allTools().find(item => item.key === key);
     if (!tool) throw new Error("工具不存在");
     return tool;
   };
@@ -46,6 +47,10 @@ export function toolCommands(store) {
     set_all_tools_enabled: { call: args => {
       updateSettingJson("disabled_tools", () => args.enabled ? [] : store.tools().map(tool => tool.key));
     }, mutating: true },
+    // 从 Agent 列表移除 / 恢复：只改设置，不触碰磁盘上的 Agent 程序本身，可随时恢复。
+    hide_tool: { call: args => { store.setToolHidden(requireTool(args.key).key, true); }, mutating: true },
+    restore_tool: { call: args => { store.setToolHidden(requireTool(args.key).key, false); }, mutating: true },
+    get_hidden_tools: { call: () => store.hiddenTools() },
     get_tool_order_cmd: { call: () => store.settingJson("tool_order", []) },
     set_tool_order_cmd: { call: args => {
       const order = Array.isArray(args.order) ? args.order.map(String) : [];

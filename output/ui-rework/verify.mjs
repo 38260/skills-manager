@@ -51,7 +51,7 @@ try {
     "--window-size=1536,1024", "about:blank"], { stdio: "ignore" });
 
   let target = null;
-  for (let index = 0; index < 80 && !target; index++) {
+  for (let index = 0; index < 160 && !target; index++) {
     try {
       const list = await (await fetch(`http://127.0.0.1:${debugPort}/json/list`)).json();
       target = list.find(item => item.type === "page" && item.webSocketDebuggerUrl);
@@ -151,6 +151,47 @@ try {
     return { names };
   })()`));
 
+  // 分级收拢：项目结构默认只列 6 行，标题右侧带文件数角标
+  record("项目结构默认行数上限", await evaluate(`(() => {
+    const aside = document.querySelector('aside');
+    const section = [...aside.querySelectorAll('section')].find(s => s.textContent.includes('项目结构'));
+    const title = section.querySelector('button[aria-expanded]');
+    // 文件/目录行都带 title（"路径"或"路径 · 大小"），据此与操作按钮区分。
+    const rows = [...section.querySelectorAll('button[title]')];
+    const showAll = [...section.querySelectorAll('button')].find(b => b.textContent.includes('显示全部'));
+    return { titleTrailing: title.textContent.replace('项目结构','').trim(), visibleRows: rows.length, hasShowAll: !!showAll };
+  })()`));
+
+  // 来源信息：6 条元数据默认收进"来源详情"，常驻只有一行摘要 + 打开入口
+  record("来源详情默认收拢", await evaluate(`(() => {
+    const aside = document.querySelector('aside');
+    const section = [...aside.querySelectorAll('section')].find(s => s.textContent.includes('来源信息'));
+    const details = [...section.querySelectorAll('button')].find(b => b.textContent.trim() === '来源详情');
+    const summary = section.querySelector('.break-words')?.textContent ?? null;
+    const openButton = [...section.querySelectorAll('button')].find(b => /打开来源/.test(b.textContent));
+    return { detailsExpanded: details?.getAttribute('aria-expanded') ?? null, dlRows: section.querySelectorAll('dl dt').length,
+      summary, hasOpenButton: !!openButton };
+  })()`));
+  // 展开"来源详情"后应恢复全部元数据
+  await evaluate(`(() => { const aside = document.querySelector('aside');
+    const section = [...aside.querySelectorAll('section')].find(s => s.textContent.includes('来源信息'));
+    const details = [...section.querySelectorAll('button')].find(b => b.textContent.trim() === '来源详情');
+    if (details) details.click(); return !!details; })()`);
+  await sleep(400);
+  record("展开来源详情后", await evaluate(`(() => {
+    const aside = document.querySelector('aside');
+    const section = [...aside.querySelectorAll('section')].find(s => s.textContent.includes('来源信息'));
+    const details = [...section.querySelectorAll('button')].find(b => b.textContent.trim() === '来源详情');
+    return { detailsExpanded: details?.getAttribute('aria-expanded') ?? null,
+      dtLabels: [...section.querySelectorAll('dl dt')].map(el => el.textContent) };
+  })()`));
+  // 复原为默认收起，避免影响后续"右栏区块 / 折叠开关"的高度基线断言
+  await evaluate(`(() => { const aside = document.querySelector('aside');
+    const section = [...aside.querySelectorAll('section')].find(s => s.textContent.includes('来源信息'));
+    const details = [...section.querySelectorAll('button')].find(b => b.textContent.trim() === '来源详情');
+    if (details && details.getAttribute('aria-expanded') === 'true') details.click(); return !!details; })()`);
+  await sleep(300);
+
   // 部署到工具：默认折叠，展开后只出现已安装工具
   record("部署默认折叠", await evaluate(`(() => {
     const aside = document.querySelector('aside');
@@ -174,9 +215,40 @@ try {
   // 右栏内容较长：滚到底部确认"部署到工具（已展开）"与"来源信息"布局正常。
   record("右栏区块", await evaluate(`(() => {
     const aside = document.querySelector('aside');
-    return { scrollHeight: aside.scrollHeight, clientHeight: aside.clientHeight,
-      sections: [...aside.querySelectorAll('section h3')].map(h => h.textContent.trim()) };
+    // 只取区块级标题（section 的直接子节点），排除"来源详情"这类区块内次级开关。
+    const headers = [...aside.querySelectorAll('section')].map(s =>
+      [...s.children].map(c => c.matches('button[aria-expanded], h3') ? c.textContent.trim() : null).find(Boolean));
+    return { scrollHeight: aside.scrollHeight, clientHeight: aside.clientHeight, sections: headers };
   })()`));
+  // 嵌套滚动：右栏内部不应再出现独立滚动容器（原来目录与项目结构各有自己的滚动条）。
+  record("右栏嵌套滚动容器", await evaluate(`(() => {
+    const aside = document.querySelector('aside');
+    return [...aside.querySelectorAll('*')].filter(el => {
+      const style = getComputedStyle(el);
+      return (style.overflowY === 'auto' || style.overflowY === 'scroll') && el !== aside;
+    }).length;
+  })()`));
+  // 折叠开关：目录 / 项目结构 / 部署到工具 / 来源信息 都可收起（"来源详情"是区块内的次级开关，这里只统计区块级）
+  record("右栏折叠开关", await evaluate(`(() => {
+    const aside = document.querySelector('aside');
+    const toggles = [...aside.querySelectorAll('section > button[aria-expanded]')];
+    const before = toggles.map(b => ({ label: b.textContent.trim().slice(0, 6), expanded: b.getAttribute('aria-expanded') }));
+    const structure = toggles.find(b => b.textContent.includes('项目结构'));
+    const heightBefore = aside.scrollHeight;
+    if (structure) structure.click();
+    return { toggles: before.length, labels: before.map(t => t.label), heightBefore };
+  })()`));
+  await sleep(500);
+  record("收起项目结构后", await evaluate(`(() => {
+    const aside = document.querySelector('aside');
+    const structure = [...aside.querySelectorAll('button[aria-expanded]')].find(b => b.textContent.includes('项目结构'));
+    return { expanded: structure.getAttribute('aria-expanded'), scrollHeight: aside.scrollHeight };
+  })()`));
+  await evaluate(`(() => { const aside = document.querySelector('aside');
+    const structure = [...aside.querySelectorAll('button[aria-expanded]')].find(b => b.textContent.includes('项目结构'));
+    if (structure) structure.click(); return true; })()`);
+  await sleep(400);
+  record("重新展开后", await evaluate(`document.querySelector('aside').scrollHeight`));
   await evaluate(`(() => { const aside = document.querySelector('aside'); aside.scrollTop = aside.scrollHeight; return true; })()`);
   await sleep(500);
   await shoot("01b_detail_sidebar_bottom");

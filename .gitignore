@@ -43,4 +43,5 @@ output/*/data
 
 # 改动用户技能库前的本地备份（含用户数据，不入库）
 output/skill-classify-backup
+output/skill-category-backup
 

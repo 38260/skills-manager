@@ -54,6 +54,10 @@ export function SkillActivity() {
   const [searchParams] = useSearchParams();
   const deepLinkSkill = searchParams.get("skill") ?? "";
   const [filters, setFilters] = useState({ ...initialFilters, skillName: deepLinkSkill });
+  // 筛选面板默认收起，只留技能搜索框；展开后才显示其余 6 项，避免占用近 150px 高度。
+  // 收起状态不影响已填条件（只是视觉收起），提交/重置行为不变。
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const activeFilterCount = Object.values(filters).filter(value => value !== "").length;
   const [query, setQuery] = useState<api.ActivityQuery>({ page: 1, pageSize: 50, skillName: deepLinkSkill });
   const [result, setResult] = useState<api.ActivityResult | null>(null);
   const [sources, setSources] = useState<api.ActivitySource[]>([]);
@@ -134,19 +138,52 @@ export function SkillActivity() {
     </div>
     <p className="-mt-4 text-[12px] text-tertiary">{t("activity.countNote")}</p>
 
-    {/* 筛选：扁平一行，去掉大圆角卡片 */}
-    <form onSubmit={apply} className="grid grid-cols-2 gap-x-4 gap-y-3 border-b border-border-subtle pb-4 xl:grid-cols-4">
-      <label className="grid gap-1 text-[12px] text-secondary">{t("activity.skill")}<input value={filters.skillName} onChange={e => change("skillName", e.target.value)} className={field} placeholder={t("activity.skillSearch")} /></label>
-      <label className="grid gap-1 text-[12px] text-secondary">{t("activity.project")}<input value={filters.project} onChange={e => change("project", e.target.value)} className={field} placeholder={t("activity.projectSearch")} /></label>
-      <label className="grid gap-1 text-[12px] text-secondary">{t("activity.tool")}<select value={filters.tool} onChange={e => change("tool", e.target.value)} className={field}><option value="">{t("activity.allTools")}</option>{api.activityTools.map(tool => <option key={tool} value={tool}>{api.toolNames[tool]}</option>)}</select></label>
-      <label className="grid gap-1 text-[12px] text-secondary">{t("activity.trigger")}<select value={filters.trigger} onChange={e => change("trigger", e.target.value)} className={field}><option value="">{t("activity.allTriggers")}</option>{(["manual", "automatic", "unknown"] as const).map(trigger => <option key={trigger} value={trigger}>{t(`activity.triggers.${trigger}`)}</option>)}</select></label>
-      <label className="grid gap-1 text-[12px] text-secondary">{t("activity.from")}<input type="date" value={filters.from} onChange={e => change("from", e.target.value)} className={field} /></label>
-      <label className="grid gap-1 text-[12px] text-secondary">{t("activity.to")}<input type="date" value={filters.to} onChange={e => change("to", e.target.value)} className={field} /></label>
-      <label className="grid gap-1 text-[12px] text-secondary">{t("activity.kind")}<select value={filters.kind} onChange={e => change("kind", e.target.value)} className={field}><option value="">{t("activity.allKinds")}</option>{(["invocation", "document", "request"] as const).map(kind => <option key={kind} value={kind}>{t(`activity.kinds.${kind}`)}</option>)}</select></label>
-      <div className="flex items-end gap-2">
-        <button className="inline-flex h-[38px] items-center gap-2 rounded-lg border border-accent-border bg-accent-bg px-3 text-[13px] font-medium text-accent-dark outline-none hover:bg-accent-bg focus-visible:ring-2 focus-visible:ring-accent dark:text-accent-light"><Search className="h-4 w-4" />{t("activity.apply")}</button>
-        <button type="button" className={cn(button, "h-[38px]")} onClick={() => { setFilters(initialFilters); setQuery({ page: 1, pageSize: 50 }); }}>{t("activity.reset")}</button>
+    {/* 筛选：常驻一行（技能搜索 + 更多筛选开关），其余条件按需展开 */}
+    <form onSubmit={apply} className="border-b border-border-subtle pb-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          value={filters.skillName}
+          onChange={e => change("skillName", e.target.value)}
+          className={cn(field, "min-w-[180px] flex-1")}
+          placeholder={t("activity.skillSearch")}
+          aria-label={t("activity.skill")}
+        />
+        <button
+          type="button"
+          onClick={() => setFiltersOpen(value => !value)}
+          aria-expanded={filtersOpen}
+          className={cn(button, "shrink-0")}
+        >
+          <Settings2 className="h-3.5 w-3.5" />
+          {filtersOpen ? t("activity.hideFilters") : t("activity.moreFilters")}
+          {activeFilterCount > 0 && (
+            <span className="ml-0.5 rounded-full bg-accent-bg px-1.5 text-[11px] font-medium tabular-nums text-accent-dark dark:text-accent-light">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
+        {activeFilterCount > 0 && (
+          <button
+            type="button"
+            className={cn(button, "shrink-0")}
+            onClick={() => { setFilters(initialFilters); setQuery({ page: 1, pageSize: 50 }); }}
+          >
+            {t("activity.reset")}
+          </button>
+        )}
+        <button className="inline-flex h-[38px] shrink-0 items-center gap-2 rounded-lg border border-accent-border bg-accent-bg px-3 text-[13px] font-medium text-accent-dark outline-none hover:bg-accent-bg focus-visible:ring-2 focus-visible:ring-accent dark:text-accent-light"><Search className="h-4 w-4" />{t("activity.apply")}</button>
       </div>
+
+      {filtersOpen && (
+        <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 xl:grid-cols-4">
+          <label className="grid gap-1 text-[12px] text-secondary">{t("activity.project")}<input value={filters.project} onChange={e => change("project", e.target.value)} className={field} placeholder={t("activity.projectSearch")} /></label>
+          <label className="grid gap-1 text-[12px] text-secondary">{t("activity.tool")}<select value={filters.tool} onChange={e => change("tool", e.target.value)} className={field}><option value="">{t("activity.allTools")}</option>{api.activityTools.map(tool => <option key={tool} value={tool}>{api.toolNames[tool]}</option>)}</select></label>
+          <label className="grid gap-1 text-[12px] text-secondary">{t("activity.trigger")}<select value={filters.trigger} onChange={e => change("trigger", e.target.value)} className={field}><option value="">{t("activity.allTriggers")}</option>{(["manual", "automatic", "unknown"] as const).map(trigger => <option key={trigger} value={trigger}>{t(`activity.triggers.${trigger}`)}</option>)}</select></label>
+          <label className="grid gap-1 text-[12px] text-secondary">{t("activity.kind")}<select value={filters.kind} onChange={e => change("kind", e.target.value)} className={field}><option value="">{t("activity.allKinds")}</option>{(["invocation", "document", "request"] as const).map(kind => <option key={kind} value={kind}>{t(`activity.kinds.${kind}`)}</option>)}</select></label>
+          <label className="grid gap-1 text-[12px] text-secondary">{t("activity.from")}<input type="date" value={filters.from} onChange={e => change("from", e.target.value)} className={field} /></label>
+          <label className="grid gap-1 text-[12px] text-secondary">{t("activity.to")}<input type="date" value={filters.to} onChange={e => change("to", e.target.value)} className={field} /></label>
+        </div>
+      )}
     </form>
 
     <details className="border-b border-border-subtle pb-3">

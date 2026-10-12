@@ -45,8 +45,34 @@
         "references",
         "checklist.md",
         "tokens.md",
-        "scripts",
-        "build.sh"
+        "scripts"
+      ]
+    }
+  },
+  {
+    "name": "项目结构默认行数上限",
+    "value": {
+      "titleTrailing": "5 个文件",
+      "visibleRows": 6,
+      "hasShowAll": true
+    }
+  },
+  {
+    "name": "来源详情默认收拢",
+    "value": {
+      "detailsExpanded": "false",
+      "dlRows": 0,
+      "summary": "local · ui-guide",
+      "hasOpenButton": true
+    }
+  },
+  {
+    "name": "展开来源详情后",
+    "value": {
+      "detailsExpanded": "true",
+      "dtLabels": [
+        "来源类型",
+        "来源位置"
       ]
     }
   },
@@ -73,15 +99,43 @@
   {
     "name": "右栏区块",
     "value": {
-      "scrollHeight": 1163,
+      "scrollHeight": 903,
       "clientHeight": 740,
       "sections": [
         "目录8",
-        "项目结构",
+        "项目结构5 个文件",
         "部署到工具已启用 5 / 5",
         "来源信息"
       ]
     }
+  },
+  {
+    "name": "右栏嵌套滚动容器",
+    "value": 1
+  },
+  {
+    "name": "右栏折叠开关",
+    "value": {
+      "toggles": 4,
+      "labels": [
+        "目录8",
+        "项目结构5 ",
+        "部署到工具已",
+        "来源信息"
+      ],
+      "heightBefore": 903
+    }
+  },
+  {
+    "name": "收起项目结构后",
+    "value": {
+      "expanded": "false",
+      "scrollHeight": 740
+    }
+  },
+  {
+    "name": "重新展开后",
+    "value": 903
   },
   {
     "name": "页头（顶部）",
@@ -101,7 +155,7 @@
       "icon": false,
       "description": false,
       "actions": 28,
-      "scrollTop": 622
+      "scrollTop": 625
     }
   },
   {

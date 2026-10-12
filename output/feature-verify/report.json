@@ -1,0 +1,51 @@
+[
+  {
+    "name": "移除后工具数变化",
+    "value": {
+      "before": 54,
+      "afterHide": 53,
+      "diff": 1
+    }
+  },
+  {
+    "name": "已移除列表",
+    "value": [
+      "codex"
+    ]
+  },
+  {
+    "name": "移除的 Agent 不再出现在工具列表",
+    "value": true
+  },
+  {
+    "name": "恢复后工具数",
+    "value": {
+      "afterRestore": 54,
+      "hiddenCount": 0
+    }
+  },
+  {
+    "name": "筛选（默认收起）",
+    "value": {
+      "height": 55,
+      "labels": 0,
+      "hasMoreButton": true
+    }
+  },
+  {
+    "name": "筛选（展开后）",
+    "value": {
+      "height": 202,
+      "labels": 6,
+      "hasMoreButton": true
+    }
+  },
+  {
+    "name": "收起后仍显示条件数徽章",
+    "value": "1"
+  },
+  {
+    "name": "重新展开后项目条件保留",
+    "value": "D:/demo/project"
+  }
+]

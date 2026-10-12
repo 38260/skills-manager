@@ -196,6 +196,10 @@ export function Settings() {
   const [customProjectPath, setCustomProjectPath] = useState("");
   const [addingCustom, setAddingCustom] = useState(false);
   const [showMoreAgents, setShowMoreAgents] = useState(false);
+  // 已从 Agent 列表移除的项：单独分组展示，便于随时恢复。它们不参与部署与同步。
+  const [hiddenTools, setHiddenTools] = useState<api.ToolInfo[]>([]);
+  const [showHiddenAgents, setShowHiddenAgents] = useState(false);
+  const [hidingTools, setHidingTools] = useState<Set<string>>(new Set());
 
   const GITHUB_URL = "https://github.com/xingkongliang/skills-manager";
   const WEBSITE_URL = "https://skillsmanager.dev";
@@ -314,10 +318,15 @@ export function Settings() {
     }
   };
 
+  const refreshHiddenTools = useCallback(async () => {
+    try { setHiddenTools(await api.getHiddenTools()); } catch { setHiddenTools([]); }
+  }, []);
+
   useEffect(() => {
     api.checkLastPanic().then(setLastPanic).catch(() => {});
     api.getCentralRepoWarnings().then(setRepoWarnings).catch(() => {});
-  }, []);
+    void refreshHiddenTools();
+  }, [refreshHiddenTools]);
 
   useEffect(() => {
     api.getSettings("sync_mode").then((v) => { if (v) setSyncMode(v); });
@@ -361,8 +370,38 @@ export function Settings() {
   const handleRefresh = async () => {
     setRefreshing(true);
     await refreshTools();
+    await refreshHiddenTools();
     setRefreshing(false);
     toast.success(t("common.success"));
+  };
+
+  // 从列表移除 Agent：只改应用设置，磁盘上的 Agent 程序不受影响，可随时恢复。
+  const handleHideAgent = async (key: string, name: string) => {
+    const confirmed = await dialogConfirm(t("settings.hideAgentConfirm", { name }));
+    if (!confirmed) return;
+    setHidingTools(prev => new Set(prev).add(key));
+    try {
+      await api.hideTool(key);
+      await Promise.all([refreshTools(), refreshHiddenTools()]);
+      toast.success(t("settings.agentHidden", { name }));
+    } catch {
+      toast.error(t("common.error"));
+    } finally {
+      setHidingTools(prev => { const next = new Set(prev); next.delete(key); return next; });
+    }
+  };
+
+  const handleRestoreAgent = async (key: string, name: string) => {
+    setHidingTools(prev => new Set(prev).add(key));
+    try {
+      await api.restoreTool(key);
+      await Promise.all([refreshTools(), refreshHiddenTools()]);
+      toast.success(t("settings.agentRestored", { name }));
+    } catch {
+      toast.error(t("common.error"));
+    } finally {
+      setHidingTools(prev => { const next = new Set(prev); next.delete(key); return next; });
+    }
   };
 
   const handleToggleTool = async (key: string, enabled: boolean) => {
@@ -882,13 +921,31 @@ export function Settings() {
           </div>
         </div>
 
-        {agent.is_custom && (
+        {agent.hidden ? (
+          <button
+            onClick={() => handleRestoreAgent(agent.key, agent.display_name)}
+            disabled={hidingTools.has(agent.key)}
+            className="mt-0.5 shrink-0 p-0.5 text-muted outline-none transition-colors hover:text-accent disabled:opacity-40"
+            title={t("settings.restoreAgent")}
+          >
+            {hidingTools.has(agent.key) ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3" />}
+          </button>
+        ) : agent.is_custom ? (
           <button
             onClick={() => handleRemoveCustomAgent(agent.key, agent.display_name)}
             className="mt-0.5 shrink-0 p-0.5 text-muted opacity-0 outline-none transition-opacity hover:text-red-500 group-hover:opacity-100"
             title={t("settings.removeCustomAgent")}
           >
             <Trash2 className="h-3 w-3" />
+          </button>
+        ) : (
+          <button
+            onClick={() => handleHideAgent(agent.key, agent.display_name)}
+            disabled={hidingTools.has(agent.key)}
+            className="mt-0.5 shrink-0 p-0.5 text-muted opacity-0 outline-none transition-opacity hover:text-red-500 group-hover:opacity-100 disabled:opacity-40"
+            title={t("settings.hideAgent")}
+          >
+            {hidingTools.has(agent.key) ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
           </button>
         )}
 
@@ -1220,6 +1277,31 @@ export function Settings() {
                   onDragEnd={handleAgentDragEnd}
                   renderAgentCard={renderAgentCard}
                 />
+              </div>
+            )}
+
+            {hiddenTools.length > 0 && (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setShowHiddenAgents(value => !value)}
+                  className="mb-2 inline-flex items-center gap-1.5 text-[13px] font-medium text-muted transition-colors hover:text-secondary outline-none"
+                >
+                  {showHiddenAgents ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                  {t("settings.hiddenAgentsSection", { count: hiddenTools.length })}
+                </button>
+                {showHiddenAgents && (
+                  <div className="space-y-2">
+                    <p className="text-[12px] text-muted">{t("settings.hiddenAgentsHint")}</p>
+                    <AgentGroupDnd
+                      items={hiddenTools}
+                      sensors={dragSensors}
+                      dragLabel={t("settings.dragToReorder")}
+                      onDragEnd={handleAgentDragEnd}
+                      renderAgentCard={renderAgentCard}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>

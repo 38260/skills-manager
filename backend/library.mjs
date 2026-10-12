@@ -171,15 +171,18 @@ export class Library {
       return {temp_dir:temporary,skills};
     } catch(error) {fs.rmSync(temporary,{recursive:true,force:true});throw error;}
   }
-  async confirmGitInstall(repoUrl,tempDir,items) {
+  async confirmGitInstall(repoUrl,tempDir,items,hooks = {}) {
     const preview=this.previews.get(tempDir);
     if(!preview||!fs.existsSync(tempDir)) throw new Error("安装预览已失效，请重新获取");
     const repository=path.join(tempDir,"repo");
     const root=preview.subpath?inside(repository,preview.subpath):repository;
     const revision=await git(repository,["rev-parse","HEAD"]);
     try {
+      let index=0;
       for(const item of items) {
         const directory=inside(root,item.rel_path);
+        // 逐项上报，前端据此显示"正在安装 第 N/M 个"；名称与 install() 实际采用的保持一致。
+        hooks.onItem?.(++index,items.length,item.name?.trim()||path.basename(directory));
         this.install(directory,{name:item.name?.trim()||undefined,source_type:"git",source_ref:repoUrl,source_ref_resolved:preview.url,source_subpath:path.relative(repository,directory).split(path.sep).join("/"),source_branch:preview.branch,source_revision:revision});
       }
     } finally {preview.cleanup();this.previews.delete(tempDir);}

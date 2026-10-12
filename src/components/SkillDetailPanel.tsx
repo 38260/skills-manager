@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import {
-  ChevronDown, ChevronUp, Github, HardDrive, Globe, ArrowLeft,
+  ChevronDown, Github, HardDrive, Globe, ArrowLeft,
   ListTree, Boxes, Link2, Info, PanelRightOpen, RefreshCw, History, Layers, FileDiff,
   FolderTree, FolderOpen, Pencil,
 } from "lucide-react";
@@ -128,11 +128,19 @@ function SkillDetailPanelContent({
   const [sourceDocLoading, setSourceDocLoading] = useState(true);
   const [sourceFocus, setSourceFocus] = useState<"source" | "diff">("diff");
   const [loading, setLoading] = useState(true);
-  const [isSourceInfoExpanded, setIsSourceInfoExpanded] = useState(false);
+  const toggleSection = (key: string) => setCollapsedSections(current => {
+    const next = new Set(current);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    return next;
+  });
   const [contentTab, setContentTab] = useState<ContentTab>("doc");
   const [drawerOpen, setDrawerOpen] = useState(false);
-  // 部署开关默认收起：技能详情以阅读文档为主，部署状态由标题右侧的已启用计数概括。
-  const [deployExpanded, setDeployExpanded] = useState(false);
+  // 右栏区块折叠状态：默认收起"部署到工具"与来源区块内的"来源详情"，
+  // 其余按需收起——这样首屏只看到一行来源摘要，不会被长路径和 6 条元数据顶满。
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => new Set<string>(["deploy", "sourceDetails"]));
+  // 项目结构的文件总数，用于在区块标题右侧显示计数角标（由子组件回传）。
+  const [structureFileCount, setStructureFileCount] = useState<number | null>(null);
+  const handleStructureFileCount = useCallback((count: number | null) => setStructureFileCount(count), []);
   const [sourceOpenError, setSourceOpenError] = useState("");
   // 正文向下滚动后页头收成紧凑形态，把纵向空间让给内容。
   const [scrolled, setScrolled] = useState(false);
@@ -420,14 +428,17 @@ function SkillDetailPanelContent({
   const updateBusy = busyAction === skill.id;
 
   const toc = (
-    <SidebarSection icon={<ListTree className="h-[18px] w-[18px]" />} title={<>
-      {t("mySkills.detail.toc")}
-      {headings.length > 0 && <span className="ml-auto text-[11px] font-normal text-muted">{headings.length}</span>}
-    </>}>
+    <SidebarSection
+      icon={<ListTree className="h-4 w-4" />}
+      title={t("mySkills.detail.toc")}
+      trailing={headings.length > 0 ? String(headings.length) : undefined}
+      collapsed={collapsedSections.has("toc")}
+      onToggle={() => toggleSection("toc")}
+    >
       {headings.length === 0 ? (
-        <p className="px-2 py-1 text-[12px] text-tertiary">{t("mySkills.detail.tocEmpty")}</p>
+        <p className="px-1 py-1 text-[12px] text-tertiary">{t("mySkills.detail.tocEmpty")}</p>
       ) : (
-        <nav className="flex max-h-[min(42vh,360px)] flex-col overflow-y-auto scrollbar-hide" aria-label={t("mySkills.detail.toc")}>
+        <nav className="flex max-h-[min(28vh,220px)] flex-col overflow-y-auto scrollbar-hide" aria-label={t("mySkills.detail.toc")}>
           {headings.map((heading) => {
             const id = `${tocPrefix}-heading-${heading.line}`;
             const active = activeHeading === id;
@@ -460,43 +471,48 @@ function SkillDetailPanelContent({
 
   // 部署到工具：默认收起，仅列出当前可用（已安装且全局启用）的工具，不可用工具不展示。
   const deploySection = toolToggles && onToggleTool ? (
-    <SidebarSection icon={<Boxes className="h-[18px] w-[18px]" />} title={
-      <button
-        type="button"
-        onClick={() => setDeployExpanded(value => !value)}
-        aria-expanded={deployExpanded}
-        className="flex w-full items-center gap-2.5 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-accent"
-      >
-        {t("mySkills.detail.deployToTools")}
-        <span className="ml-auto text-[11px] font-normal text-muted">{t("mySkills.enabledSummary", { enabled: enabledAvailableCount, total: availableItems.length })}</span>
-        {deployExpanded ? <ChevronUp className="h-3.5 w-3.5 shrink-0 text-muted" /> : <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted" />}
-      </button>
-    }>
-      {deployExpanded && (availableItems.length === 0 ? (
+    <SidebarSection
+      icon={<Boxes className="h-4 w-4" />}
+      title={t("mySkills.detail.deployToTools")}
+      trailing={t("mySkills.enabledSummary", { enabled: enabledAvailableCount, total: availableItems.length })}
+      collapsed={collapsedSections.has("deploy")}
+      onToggle={() => toggleSection("deploy")}
+    >
+      {availableItems.length === 0 ? (
         <p className="px-1 py-1 text-[12px] text-tertiary">{t("mySkills.detail.deployNone")}</p>
       ) : (
         <div className="flex flex-col">
           {availableItems.map(item => (
-            <div key={item.key} className="flex min-h-[42px] min-w-0 items-center gap-3" title={tools?.find(tool => tool.key === item.key)?.skills_dir}>
-              <AgentIcon agentKey={item.key} displayName={item.displayName} className="skill-detail-agent-icon h-5 w-5" />
-              <span className="min-w-0 flex-1 truncate text-[15px] text-secondary">{item.displayName}</span>
+            <div key={item.key} className="flex min-h-[34px] min-w-0 items-center gap-3" title={tools?.find(tool => tool.key === item.key)?.skills_dir}>
+              <AgentIcon agentKey={item.key} displayName={item.displayName} className="skill-detail-agent-icon h-[18px] w-[18px]" />
+              <span className="min-w-0 flex-1 truncate text-[13.5px] text-secondary">{item.displayName}</span>
               <ToggleSwitch checked={item.enabled} disabled={item.disabled} loading={togglingTool === item.key}
                 onChange={() => onToggleTool(item.key, !item.enabled)} title={item.displayName} className="mr-1 scale-110" />
             </div>
           ))}
         </div>
-      ))}
+      )}
     </SidebarSection>
   ) : null;
 
   const structureSection = (
-    <SidebarSection icon={<FolderTree className="h-[18px] w-[18px]" />} title={t("mySkills.detail.structure")}>
-      <SkillStructureSection skillId={skill.id} version={localDocVersion} />
+    <SidebarSection
+      icon={<FolderTree className="h-4 w-4" />}
+      title={t("mySkills.detail.structure")}
+      trailing={structureFileCount != null ? t("mySkills.detail.structureCount", { count: structureFileCount }) : undefined}
+      collapsed={collapsedSections.has("structure")}
+      onToggle={() => toggleSection("structure")}
+    >
+      <SkillStructureSection
+        skillId={skill.id}
+        version={localDocVersion}
+        onFileCount={handleStructureFileCount}
+      />
     </SidebarSection>
   );
 
   const projectsSection = projects && projects.length > 0 ? (
-    <SidebarSection icon={<Link2 className="h-3.5 w-3.5" />} title={t("mySkills.detail.projects")}>
+    <SidebarSection icon={<Link2 className="h-4 w-4" />} title={t("mySkills.detail.projects")}>
       <SkillProjectsSection
         skill={skill}
         projects={projects}
@@ -505,49 +521,58 @@ function SkillDetailPanelContent({
     </SidebarSection>
   ) : null;
 
-  const sourceInfo = metadataItems.length > 0 ? (
-    <SidebarSection icon={<Info className="h-[18px] w-[18px]" />} title={t("mySkills.detail.sourceInfo")}>
-      <div className="mb-2 flex min-w-0 items-center gap-2 text-[14px] text-tertiary">
-        <span className="min-w-0 flex-1 truncate" title={sourceLabel}>{sourceLabel}</span>
-      </div>
-      {canOpenSourceLocation && (
-        <button
-          type="button"
-          onClick={() => void openSourceLocation()}
-          className="mb-1 inline-flex items-center gap-1.5 rounded-md text-[12.5px] text-accent-dark outline-none hover:underline focus-visible:ring-2 focus-visible:ring-accent dark:text-accent-light"
-        >
-          <FolderOpen className="h-3.5 w-3.5" />
-          {t(localSourceLocation ? "mySkills.detail.openSourceFolder" : "mySkills.detail.openSourceLink")}
-        </button>
-      )}
-      {sourceOpenError && <p role="alert" className="mb-1 text-[12px] text-danger">{sourceOpenError}</p>}
-      <button
-        type="button"
-        onClick={() => setIsSourceInfoExpanded((prev) => !prev)}
-        aria-expanded={isSourceInfoExpanded}
-        className="flex w-full items-center justify-between gap-2 py-1 text-left text-[12px] text-muted outline-none hover:text-secondary focus-visible:ring-2 focus-visible:ring-accent"
-      >
-        <span className="inline-flex min-w-0 items-center gap-1.5">
-          <span className="inline-flex shrink-0 items-center gap-1">
-            {sourceIcon(skill.source_type)}
-            {sourceTypeLabel(skill.source_type)}
-          </span>
-          <span className="truncate">{skill.source_branch || skill.source_revision?.slice(0, 7) || ""}</span>
-        </span>
-        {isSourceInfoExpanded ? <ChevronUp className="h-3.5 w-3.5 shrink-0" /> : <ChevronDown className="h-3.5 w-3.5 shrink-0" />}
-      </button>
-      {isSourceInfoExpanded && (
-        <div className="mt-2 flex flex-col gap-3 pb-1">
-          {metadataItems.map((item) => (
-            <div key={item.label} className="min-w-0">
-              <div className="text-[10.5px] font-medium uppercase tracking-[0.08em] text-faint">{item.label}</div>
-              <div className="mt-0.5 break-all font-mono text-[12px] text-secondary">{item.value}</div>
-            </div>
-          ))}
+  // 来源信息：区块整体可折叠；区块内"来源详情"（6 条元数据）默认收起，
+  // 常驻只留一行来源摘要与"打开来源"入口，避免长路径把右栏顶满。
+  const sourceInfo = (
+    <SidebarSection
+      icon={<Info className="h-4 w-4" />}
+      title={t("mySkills.detail.sourceInfo")}
+      collapsed={collapsedSections.has("source")}
+      onToggle={() => toggleSection("source")}
+    >
+      <div className="flex flex-col gap-2">
+        <div className="flex min-w-0 items-center gap-2 text-[13px] text-tertiary">
+          {sourceLabel
+            ? <span className="min-w-0 flex-1 break-words" title={sourceLabel}>{sourceLabel}</span>
+            : <span className="min-w-0 flex-1 text-faint">{t("mySkills.detail.sourceSummaryEmpty")}</span>}
         </div>
-      )}
+        {canOpenSourceLocation && (
+          <button
+            type="button"
+            onClick={() => void openSourceLocation()}
+            className="inline-flex w-fit items-center gap-1.5 rounded-md text-[12.5px] text-accent-dark outline-none hover:underline focus-visible:ring-2 focus-visible:ring-accent dark:text-accent-light"
+          >
+            <FolderOpen className="h-3.5 w-3.5" />
+            {t(localSourceLocation ? "mySkills.detail.openSourceFolder" : "mySkills.detail.openSourceLink")}
+          </button>
+        )}
+        {sourceOpenError && <p role="alert" className="text-[12px] text-danger">{sourceOpenError}</p>}
+        {metadataItems.length > 0 && (
+          <>
+            <button
+              type="button"
+              onClick={() => toggleSection("sourceDetails")}
+              aria-expanded={!collapsedSections.has("sourceDetails")}
+              className="inline-flex w-fit items-center gap-1 rounded-md text-[12px] text-muted outline-none hover:text-secondary focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <ChevronDown className={cn("h-3 w-3 transition-transform", collapsedSections.has("sourceDetails") && "-rotate-90")} />
+              {t("mySkills.detail.sourceDetails")}
+            </button>
+            {!collapsedSections.has("sourceDetails") && (
+              <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[11.5px] leading-4">
+                {metadataItems.map((item) => (
+                  <Fragment key={item.label}>
+                    <dt className="whitespace-nowrap text-faint">{item.label}</dt>
+                    <dd className="min-w-0 break-all font-mono text-secondary">{item.value}</dd>
+                  </Fragment>
+                ))}
+              </dl>
+            )}
+          </>
+        )}
+      </div>
     </SidebarSection>
-  ) : null;
+  );
 
   const sidebar = (
     <>
@@ -780,13 +805,13 @@ function SkillDetailPanelContent({
           </main>
 
           {/* 右侧辅助栏：宽窗口常驻，窄窗口收起为抽屉 */}
-          {!compact && <aside className="skill-detail-sidebar flex w-[312px] shrink-0 flex-col overflow-y-auto border-l border-border-subtle bg-background px-6 py-6 scrollbar-hide">
+          {!compact && <aside className="skill-detail-sidebar flex w-[340px] shrink-0 flex-col overflow-y-auto border-l border-border-subtle bg-background px-5 py-5 scrollbar-hide">
             {sidebar}
           </aside>}
           {drawerOpen && compact && (
             <div className="absolute inset-0 z-20 flex" role="dialog" aria-modal="true" aria-label={t("mySkills.detail.sidebar")}>
               <div className="absolute inset-0 bg-black/50" onClick={() => setDrawerOpen(false)} />
-              <div ref={drawerRef} className="relative ml-auto flex w-[312px] max-w-[85%] flex-col overflow-y-auto border-l border-border-subtle bg-surface px-6 py-6">
+              <div ref={drawerRef} className="relative ml-auto flex w-[340px] max-w-[85%] flex-col overflow-y-auto border-l border-border-subtle bg-surface px-5 py-5">
                 <button
                   type="button"
                   onClick={() => setDrawerOpen(false)}
@@ -806,14 +831,39 @@ function SkillDetailPanelContent({
   );
 }
 
-function SidebarSection({ icon, title, children }: { icon: ReactNode; title: ReactNode; children: ReactNode }) {
+function SidebarSection({ icon, title, trailing, collapsed, onToggle, children }: {
+  icon: ReactNode;
+  title: ReactNode;
+  /** 标题右侧的计数等次要信息。 */
+  trailing?: ReactNode;
+  collapsed?: boolean;
+  /** 传入后标题成为可折叠开关；右栏因此可以只保留当前关心的区块。 */
+  onToggle?: () => void;
+  children: ReactNode;
+}) {
+  const header = (
+    <>
+      <span className="shrink-0 text-muted">{icon}</span>
+      <span className="min-w-0 flex-1 truncate text-[14px] font-semibold leading-5 text-primary">{title}</span>
+      {trailing != null && <span className="shrink-0 text-[11px] font-normal text-muted">{trailing}</span>}
+      {onToggle && <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 text-muted transition-transform", collapsed && "-rotate-90")} />}
+    </>
+  );
   return (
-    <section className="border-b border-border-subtle pb-6 mb-6 last:mb-0 last:border-b-0">
-      <h3 className="mb-3 flex items-center gap-2.5 text-[15px] font-semibold leading-6 text-primary">
-        {icon}
-        {title}
-      </h3>
-      {children}
+    <section className="border-b border-border-subtle py-3.5 first:pt-0 last:border-b-0 last:pb-0">
+      {onToggle ? (
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={!collapsed}
+          className="flex w-full items-center gap-2.5 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          {header}
+        </button>
+      ) : (
+        <h3 className="flex items-center gap-2.5">{header}</h3>
+      )}
+      {!collapsed && <div className="mt-2">{children}</div>}
     </section>
   );
 }

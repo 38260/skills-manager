@@ -267,19 +267,35 @@ export class Store {
       presetId, skillId, tool, enabled, Date.now());
   }
 
-  tools() {
-    const disabled = new Set(this.settingJson("disabled_tools", []));    const paths = this.settingJson("custom_tool_paths", {});
+  // 全部工具（含已从列表移除的）。只有设置页需要看到隐藏项以便恢复，其余调用方一律用 tools()。
+  allTools() {
+    const disabled = new Set(this.settingJson("disabled_tools", []));
+    const hidden = new Set(this.settingJson("hidden_tools", []));
+    const paths = this.settingJson("custom_tool_paths", {});
     const projectPaths = this.settingJson("custom_tool_project_paths", {});
     const custom = this.settingJson("custom_tools", []);
     const builtins = definitions.filter(tool => !custom.some(item => item.key === tool.key));
     const result = [...builtins, ...custom.map(tool => ({ ...tool, is_custom: true }))].map(tool => {
       const skillsDirectory = tool.is_custom ? path.resolve(tool.skills_dir) : paths[tool.key] || path.join(this.home, tool.relative_skills_dir);
       return { ...tool, skills_dir: skillsDirectory, installed: tool.is_custom ? fs.existsSync(skillsDirectory) : fs.existsSync(paths[tool.key] || path.join(this.home, tool.relative_detect_dir)),
-        enabled: !disabled.has(tool.key), is_custom: !!tool.is_custom, has_path_override: !!paths[tool.key], has_project_path_override: !!projectPaths[tool.key],
+        enabled: !disabled.has(tool.key), hidden: hidden.has(tool.key), is_custom: !!tool.is_custom, has_path_override: !!paths[tool.key], has_project_path_override: !!projectPaths[tool.key],
         project_relative_skills_dir: projectPaths[tool.key] || tool.project_relative_skills_dir || tool.relative_skills_dir || null };
     });
     const order = this.settingJson("tool_order", []);
     return result.sort((a, b) => (order.indexOf(a.key) < 0 ? 999 : order.indexOf(a.key)) - (order.indexOf(b.key) < 0 ? 999 : order.indexOf(b.key)));
+  }
+
+  /** 已从 Agent 列表移除的项：不参与部署、同步与检测，仅设置页用于恢复。 */
+  hiddenTools() { return this.allTools().filter(tool => tool.hidden); }
+
+  tools() { return this.allTools().filter(tool => !tool.hidden); }
+
+  /** 移除/恢复 Agent：只改设置，不动磁盘上的 Agent 程序本身。 */
+  setToolHidden(key, hidden) {
+    if (!key) throw new Error("Agent 标识不能为空");
+    const current = this.settingJson("hidden_tools", []);
+    const next = hidden ? [...new Set([...current, key])] : current.filter(value => value !== key);
+    this.setSetting("hidden_tools", JSON.stringify(next));
   }
 
   presets() {
