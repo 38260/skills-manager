@@ -11,7 +11,11 @@ import { ActivityDetailPanel } from "../components/ActivityDetailPanel";
 
 const field = "min-w-0 rounded-lg border border-border-subtle bg-surface px-3 py-2 text-[13px] text-primary outline-none focus:border-accent focus:ring-1 focus:ring-accent";
 const button = "inline-flex items-center justify-center gap-2 rounded-lg border border-border-subtle px-3 py-2 text-[13px] text-secondary outline-none hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-40";
-const pageSize = 50;
+// 每页条数：列表是表格形态，一条一行；50 行会把页面撑到三千多像素，
+// 窄窗口下详情栏被顶到很远的地方。20 行既够扫、又能让详情与列表同屏。
+const pageSize = 20;
+// 扫描进度通知的刷新节流：后端约 250ms 推一次，节流到这里不会漏掉最终结果（另有 5s 兜底定时）。
+const ACTIVITY_REFRESH_THROTTLE_MS = 1200;
 const initialFilters = { tool: "", kind: "", trigger: "", status: "", skillName: "", project: "", from: "", to: "" };
 type Filters = typeof initialFilters;
 
@@ -73,12 +77,13 @@ export function SkillActivity() {
   const detailRef = useRef<HTMLElement | null>(null);
   const refresh = () => setRevision(value => value + 1);
 
-  // 窄窗口下详情在列表下方，单页可达 50 行；选中后把详情滚进视野。
-  // 宽屏（≥1280px）两栏并排，详情本来就可见，不打扰。
+  // 窄窗口（<1024px）详情在列表下方，选中后把它带进视野。用 "nearest" 只滚最小距离：
+  // 用 "start" 会把详情顶到视口最顶部，看起来像「详情跑到上面去了」（用户反馈的原话）。
+  // ≥1024px 两栏并排，详情本来就在旁边，不滚动。
   function selectRecord(record: api.ActivityEvent) {
     setSelected(record);
-    if (window.matchMedia("(min-width: 1280px)").matches) return;
-    detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (window.matchMedia("(min-width: 1024px)").matches) return;
+    detailRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
   useEffect(() => {
@@ -93,11 +98,23 @@ export function SkillActivity() {
   useEffect(() => {
     let disposed = false;
     let unlisten: (() => void) | undefined;
-    void listen("skill-activity-changed", () => setRevision(value => value + 1)).then(stop => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    // 扫描进行中后端约每 250ms 推一次进度，原来每次推送都整页重查（记录列表 + 来源），
+    // 页面会持续发烫。节流到 1.2s 一次；另有 5s 定时兜底，扫描结束后一定会收敛到最新结果。
+    const schedule = () => {
+      if (timer) return;
+      timer = setTimeout(() => { timer = null; setRevision(value => value + 1); }, ACTIVITY_REFRESH_THROTTLE_MS);
+    };
+    void listen("skill-activity-changed", schedule).then(stop => {
       if (disposed) stop(); else unlisten = stop;
     }).catch(() => { /* 定时刷新可覆盖通知连接中断。 */ });
-    const timer = setInterval(() => setRevision(value => value + 1), 5000);
-    return () => { disposed = true; unlisten?.(); clearInterval(timer); };
+    const interval = setInterval(() => setRevision(value => value + 1), 5000);
+    return () => {
+      disposed = true;
+      unlisten?.();
+      clearInterval(interval);
+      if (timer) clearTimeout(timer);
+    };
   }, []);
 
   // 右侧详情跟随列表：换页/换筛选后若选中项已不在本页，自动落到第一条。
@@ -286,7 +303,7 @@ export function SkillActivity() {
     </form>
 
     {/* 主区：左列表 + 右详情 */}
-    <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+    <div className="grid min-w-0 grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
       <section aria-label={t("activity.records")} className="app-panel min-w-0 overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-border-subtle px-3 py-2.5">
           <div className="flex flex-wrap items-center gap-1" role="tablist" aria-label={t("activity.kind")}>
@@ -332,7 +349,8 @@ export function SkillActivity() {
         </footer>
       </section>
 
-      <aside ref={detailRef} className="app-panel min-w-0 self-start px-4 py-3.5">
+      {/* 并排时详情栏吸顶跟随：列表长也不用把详情滚回来 */}
+      <aside ref={detailRef} className="app-panel min-w-0 self-start px-4 py-3.5 lg:sticky lg:top-4">
         <h2 className="border-b border-border-subtle pb-2.5 text-[13px] font-semibold text-secondary">{t("activity.recordDetail")}</h2>
         {selected
           ? <ActivityDetailPanel

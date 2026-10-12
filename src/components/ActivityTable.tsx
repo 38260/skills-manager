@@ -5,9 +5,11 @@ import { toolIconKeys, toolNames, type ActivityEvent } from "../lib/activity";
 import { KIND_TONE, STATUS_TONE, TRIGGER_TONE } from "../lib/activityTone";
 import { AgentIcon } from "./AgentIcon";
 
-// 列模板：窄窗口只留「技能/项目 + 结果」，≥1024px 展开为五列。
+// 列模板：窄窗口只留「技能/项目 + 结果」，≥1280px 展开为五列。
 // 表头与数据行共用同一模板，保证逐列对齐（与技能库列表同一约定）。
-const GRID = "grid grid-cols-[minmax(0,1fr)_72px] gap-3 lg:grid-cols-[minmax(0,1fr)_84px_100px_76px_96px]";
+// 断点定在 1280 而非 1024：1024–1280 这一段外层已经并排（详情栏占 380px），
+// 列表只剩五六百像素，再摊开五列会被挤扁 —— 这一档保持两列更可读。
+const GRID = "grid grid-cols-[minmax(0,1fr)_72px] gap-3 xl:grid-cols-[minmax(0,1fr)_84px_100px_76px_96px]";
 
 // 徽章底色见 lib/activityTone.ts（记录类型 / 触发方式 / 结果三类各自的色系）。
 
@@ -60,10 +62,10 @@ export function ActivityTable({ items, selectedId, onSelect, loading, error, emp
       {/* 表头 */}
       <div className={cn(GRID, "border-b border-border-subtle border-l-[3px] border-l-transparent px-3 py-2 text-[11.5px] font-medium text-tertiary")} role="presentation">
         <span className="truncate">{t("activity.skill")} / {t("activity.project")}</span>
-        <span className="hidden truncate lg:block">{t("activity.agent")}</span>
-        <span className="hidden truncate lg:block">{t("activity.kind")} / {t("activity.trigger")}</span>
+        <span className="hidden truncate xl:block">{t("activity.agent")}</span>
+        <span className="hidden truncate xl:block">{t("activity.kind")} / {t("activity.trigger")}</span>
         <span className="truncate">{t("activity.status")}</span>
-        <span className="hidden truncate text-right lg:block">{t("activity.time")}</span>
+        <span className="hidden truncate text-right xl:block">{t("activity.time")}</span>
       </div>
 
       {items.map(record => {
@@ -94,14 +96,14 @@ export function ActivityTable({ items, selectedId, onSelect, loading, error, emp
             </span>
 
             {/* Agent */}
-            <span className="hidden min-w-0 items-center gap-1.5 lg:flex">
+            <span className="hidden min-w-0 items-center gap-1.5 xl:flex">
               <AgentIcon agentKey={toolIconKeys[record.tool] ?? record.tool} displayName={toolNames[record.tool]} className="h-4 w-4 shrink-0" />
               <span className="truncate text-[12px] text-secondary">{toolNames[record.tool]}</span>
             </span>
 
             {/* 类型 / 触发：两个彩色徽章，扫一眼就能区分「明确调用 / 已确认加载 / 仅请求」
                 与「用户点名 / Agent 自选」 */}
-            <span className="hidden min-w-0 lg:flex lg:flex-col lg:items-start lg:gap-0.5">
+            <span className="hidden min-w-0 xl:flex xl:flex-col xl:items-start xl:gap-0.5">
               <span className={cn("inline-block rounded border px-1.5 py-px text-[10px] leading-4", KIND_TONE[record.kind])}>
                 {t(`activity.kinds.${record.kind}`)}
               </span>
@@ -118,7 +120,7 @@ export function ActivityTable({ items, selectedId, onSelect, loading, error, emp
             </span>
 
             {/* 时间 */}
-            <span className="hidden text-right text-[11.5px] tabular-nums leading-4 text-tertiary lg:block">
+            <span className="hidden text-right text-[11.5px] tabular-nums leading-4 text-tertiary xl:block">
               <span className="block">{stamp.day}</span>
               {stamp.clock && <span className="block">{stamp.clock}</span>}
             </span>
