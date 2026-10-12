@@ -94,56 +94,24 @@ export function AgentControlSetupCard() {
   };
 
   return (
-    <div className="app-panel p-4 transition-colors hover:border-border">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 rounded-md border border-border-subtle bg-accent-bg p-2 text-accent-light">
-          <Terminal className="h-4 w-4" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-[14px] font-semibold text-primary">
-            {t("agentControl.title")}
-          </h3>
-          <p className="mt-0.5 text-[12px] leading-5 text-muted">
-            {t("agentControl.body")}
-          </p>
+    <div className="app-panel border-l-[3px] border-l-accent px-4 py-2.5 transition-colors hover:border-border">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-accent-border bg-accent-bg text-accent-light">
+          <Terminal className="h-3.5 w-3.5" />
+        </span>
+        <h3 className="shrink-0 text-[13px] font-semibold text-primary">
+          {t("agentControl.title")}
+        </h3>
+        <p className="min-w-0 flex-1 truncate text-[12px] leading-5 text-muted" title={t("agentControl.body")}>
+          {t("agentControl.body")}
+        </p>
 
-          {expanded && (
-            <div className="mt-3">
-              <p className="app-section-title mb-2">{t("agentControl.pickAgents")}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {candidates.map((tool) => {
-                  const on = selected.includes(tool.key);
-                  return (
-                    <button
-                      key={tool.key}
-                      onClick={() => toggle(tool.key)}
-                      disabled={busy}
-                      className={`flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-all duration-150 disabled:opacity-50 ${
-                        on
-                          ? "border-accent bg-accent-bg text-accent"
-                          : "border-border-subtle bg-surface-active text-muted"
-                      }`}
-                    >
-                      <AgentIcon
-                        agentKey={tool.key}
-                        displayName={tool.display_name}
-                        className="h-4 w-4 rounded-[4px]"
-                      />
-                      {tool.display_name}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           {expanded ? (
             <button
               onClick={enable}
               disabled={busy || selected.length === 0}
-              className="app-button-primary h-[34px] disabled:opacity-50"
+              className="app-button-primary h-[32px] disabled:opacity-50"
             >
               {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               {selected.length === 0
@@ -153,7 +121,7 @@ export function AgentControlSetupCard() {
           ) : (
             <button
               onClick={() => setExpanded(true)}
-              className="app-button-secondary h-[34px]"
+              className="app-button-secondary h-[32px]"
             >
               {t("agentControl.cta")}
             </button>
@@ -167,6 +135,36 @@ export function AgentControlSetupCard() {
           </button>
         </div>
       </div>
+
+      {expanded && (
+        <div className="mt-2.5 border-t border-border-subtle pt-2.5">
+          <p className="app-section-title mb-2">{t("agentControl.pickAgents")}</p>
+          <div className="flex flex-wrap gap-1.5">
+            {candidates.map((tool) => {
+              const on = selected.includes(tool.key);
+              return (
+                <button
+                  key={tool.key}
+                  onClick={() => toggle(tool.key)}
+                  disabled={busy}
+                  className={`flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-all duration-150 disabled:opacity-50 ${
+                    on
+                      ? "border-accent bg-accent-bg text-accent"
+                      : "border-border-subtle bg-surface-active text-muted"
+                  }`}
+                >
+                  <AgentIcon
+                    agentKey={tool.key}
+                    displayName={tool.display_name}
+                    className="h-4 w-4 rounded-[4px]"
+                  />
+                  {tool.display_name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

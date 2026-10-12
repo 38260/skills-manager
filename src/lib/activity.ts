@@ -9,15 +9,17 @@ export const toolIconKeys: Record<string, string> = {
 export type ActivityTool = typeof activityTools[number];
 export type ActivityKind = "invocation" | "document" | "request";
 export type ActivityTrigger = "manual" | "automatic" | "unknown";
+export type ActivityStatus = "pending" | "returned" | "failed" | "unknown";
 export interface ActivityEvent {
   id: string; tool: ActivityTool; skillName: string; skillPath: string | null;
   timestamp: number | null; sessionId: string | null; project: string | null; callId: string | null;
-  kind: ActivityKind; trigger: ActivityTrigger; status: "pending" | "returned" | "failed" | "unknown";
+  kind: ActivityKind; trigger: ActivityTrigger; status: ActivityStatus;
   evidence: string; sourcePath: string; sourceLine: string; managedSkillId: string | null;
 }
 export interface ActivityQuery {
   page?: number; pageSize?: number; tool?: ActivityTool | ""; kind?: ActivityKind | "";
-  trigger?: ActivityTrigger | ""; skillName?: string; project?: string; from?: number; to?: number;
+  trigger?: ActivityTrigger | ""; status?: ActivityStatus | "";
+  skillName?: string; project?: string; from?: number; to?: number;
 }
 export interface ActivityResult {
   items: ActivityEvent[]; total: number; page: number; pageSize: number;

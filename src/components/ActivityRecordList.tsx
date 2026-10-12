@@ -1,10 +1,10 @@
 import { Fragment, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, FileSearch, FolderSearch, History, RefreshCw } from "lucide-react";
+import { ChevronDown, History, RefreshCw } from "lucide-react";
 import { cn } from "../utils";
-import { openPath } from "../lib/tauri";
 import { toolIconKeys, toolNames, type ActivityEvent } from "../lib/activity";
 import { AgentIcon } from "./AgentIcon";
+import { ActivityDetailPanel } from "./ActivityDetailPanel";
 
 // 触发方式徽章：浅色用深色文字，深色用浅色文字，避免只在单一主题下可读。
 const TRIGGER_TONE: Record<ActivityEvent["trigger"], string> = {
@@ -33,14 +33,7 @@ interface Props {
 export function ActivityRecordList({ items, loading, error, compact = false, emptyText, onOpenSkill, onRetry, className }: Props) {
   const { t, i18n } = useTranslation();
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [openError, setOpenError] = useState("");
   const date = (value: number | null) => value === null ? t("activity.unknownTime") : new Date(value).toLocaleString(i18n.language);
-
-  async function revealFile(path: string) {
-    setOpenError("");
-    try { await openPath(path, true); }
-    catch (cause) { setOpenError(String(cause instanceof Error ? cause.message : cause)); }
-  }
 
   if (loading) {
     return <div className={cn("flex items-center gap-2 py-8 text-[13px] text-tertiary", className)}>
@@ -64,7 +57,6 @@ export function ActivityRecordList({ items, loading, error, compact = false, emp
 
   return (
     <div className={cn("flex flex-col", className)}>
-      {openError && <p role="alert" className="border-b border-border-subtle py-2 text-[12px] text-danger">{openError}</p>}
       {items.map(record => {
         const isOpen = expanded === record.id;
         return (
@@ -105,38 +97,7 @@ export function ActivityRecordList({ items, loading, error, compact = false, emp
             </button>
             {isOpen && (
               <div id={`event-${record.id}`} className="border-b border-l-[3px] border-border-subtle border-l-accent bg-accent-bg px-3 py-3 pl-[52px]">
-                <dl className="grid grid-cols-[auto_1fr] gap-x-5 gap-y-2 text-[12px]">
-                  {([
-                    ["evidence", t(`activity.evidenceCodes.${record.evidence}`, { defaultValue: record.evidence })],
-                    ["position", record.sourceLine],
-                    ["session", record.sessionId],
-                    ["call", record.callId],
-                    ["project", record.project],
-                    ["skillPath", record.skillPath],
-                  ] as [string, string | null][]).map(([key, value]) => (
-                    <Fragment key={key}>
-                      <dt className="whitespace-nowrap text-tertiary">{t(`activity.${key}`)}</dt>
-                      <dd className="min-w-0 break-all text-secondary">{value || "—"}</dd>
-                    </Fragment>
-                  ))}
-                  <dt className="whitespace-nowrap text-tertiary">{t("activity.sourceFile")}</dt>
-                  <dd className="flex min-w-0 flex-wrap items-center gap-2">
-                    <span className="min-w-0 break-all text-secondary">{record.sourcePath || "—"}</span>
-                    {record.sourcePath && (
-                      <button type="button" onClick={() => void revealFile(record.sourcePath)}
-                        className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border-subtle bg-surface px-2 py-0.5 text-[11.5px] text-secondary outline-none hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-accent">
-                        <FolderSearch className="h-3.5 w-3.5" />{t("mySkills.detail.revealInFolder")}
-                      </button>
-                    )}
-                  </dd>
-                </dl>
-                <p className="mt-2.5 text-[12px] text-tertiary">{t("activity.statusNote")}</p>
-                {!compact && (record.managedSkillId && onOpenSkill ? (
-                  <button type="button" onClick={() => onOpenSkill(record.managedSkillId!)}
-                    className="mt-2.5 inline-flex items-center gap-1.5 rounded-md border border-accent-border bg-surface px-2.5 py-1 text-[12px] text-accent-dark outline-none hover:bg-accent-bg focus-visible:ring-2 focus-visible:ring-accent dark:text-accent-light">
-                    <FileSearch className="h-3.5 w-3.5" />{t("activity.openSkill")}
-                  </button>
-                ) : <p className="mt-2.5 text-[12px] text-tertiary">{t("activity.unlinked")}</p>)}
+                <ActivityDetailPanel record={record} compact={compact} onOpenSkill={onOpenSkill} />
               </div>
             )}
           </Fragment>

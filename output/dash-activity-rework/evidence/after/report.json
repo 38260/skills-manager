@@ -1,0 +1,250 @@
+{
+  "tag": "after",
+  "results": [
+    {
+      "name": "部署后 targets 非零的技能数",
+      "value": 5
+    },
+    {
+      "name": "Dashboard 页头",
+      "value": {
+        "text": "总览 / Dashboard工作台7 个 Skills · 6 个 Agent · 2 个项目扫描本地 Skills 导入安装新 Skills",
+        "actions": [
+          "扫描本地 Skills 导入",
+          "安装新 Skills"
+        ]
+      }
+    },
+    {
+      "name": "三张统计卡",
+      "value": [
+        {
+          "label": "技能总量",
+          "text": "技能总量7查看技能库",
+          "icons": 2,
+          "bar": null
+        },
+        {
+          "label": "部署覆盖",
+          "text": "部署覆盖5 / 771.4%2 项未部署",
+          "icons": 0,
+          "bar": "width: 71.4%;"
+        },
+        {
+          "label": "已启用 Agent",
+          "text": "已启用 Agent6查看工作区",
+          "icons": 7,
+          "bar": null
+        }
+      ]
+    },
+    {
+      "name": "Agent 部署行",
+      "value": {
+        "rows": 6,
+        "first": [
+          "Codex4",
+          "Claude Code2",
+          "Qoder2"
+        ],
+        "footer": true
+      }
+    },
+    {
+      "name": "同步提醒",
+      "value": {
+        "present": true,
+        "text": "同步提醒1 项内容存在差异项目副本与技能库内容不一致查看项目",
+        "action": true
+      }
+    },
+    {
+      "name": "近期动态",
+      "value": {
+        "tabs": [
+          "全部",
+          "技能调用",
+          "技能更新"
+        ],
+        "rows": 7,
+        "first": "uunknown-skill-0Codex手动触发D:/AIWorkSpace/Codex/SkillManager ·",
+        "viewAll": true
+      }
+    },
+    {
+      "name": "引导条",
+      "value": {
+        "present": true,
+        "actions": [
+          "去启用",
+          "不再提示"
+        ]
+      }
+    },
+    {
+      "name": "动态页签筛选",
+      "value": {
+        "all": 7,
+        "updates": 7,
+        "noTriggerChips": true
+      }
+    },
+    {
+      "name": "窄窗口(960) 首页横向溢出",
+      "value": 0
+    },
+    {
+      "name": "统计四项",
+      "value": [
+        "全部记录68",
+        "明确调用23",
+        "已确认加载23",
+        "仅请求／待确认22"
+      ]
+    },
+    {
+      "name": "口径说明与来源摘要",
+      "value": {
+        "countNote": true,
+        "sourceSummary": true,
+        "manage": true
+      }
+    },
+    {
+      "name": "筛选条控件",
+      "value": {
+        "selects": [
+          "全部工具",
+          "全部触发方式",
+          "全部记录类型",
+          "全部状态"
+        ],
+        "moreFilters": true,
+        "hasSearch": true
+      }
+    },
+    {
+      "name": "列表页签与行数",
+      "value": {
+        "tabs": [
+          "全部记录68",
+          "明确调用23",
+          "已确认加载23",
+          "仅请求／待确认22"
+        ],
+        "rows": 50,
+        "header": "技能 / 项目Agent记录类型 / 触发方式结果时间uunknown-skill-0D:/AIWorkSpace/Co"
+      }
+    },
+    {
+      "name": "首行选中态",
+      "value": {
+        "text": "uunknown-skill-0D:/AIWorkSpace/Codex/SkillManagerC",
+        "bg": "rgba(5, 150, 105, 0.08)",
+        "leftBorder": "rgb(5, 150, 105)",
+        "leftWidth": "3px"
+      }
+    },
+    {
+      "name": "右栏详情字段",
+      "value": {
+        "title": "记录详情",
+        "sections": [
+          "识别依据",
+          "记录信息",
+          "来源文件"
+        ],
+        "hasStatusNote": true,
+        "hasReveal": true,
+        "hasOpenSkill": false,
+        "monoPaths": [
+          "—",
+          "D:\\AIWorkSpace\\Codex\\SkillManager\\skills"
+        ]
+      }
+    },
+    {
+      "name": "详情长路径溢出",
+      "value": [
+        {
+          "text": "—",
+          "overflow": 0
+        },
+        {
+          "text": "D:\\AIWorkSpace\\Codex\\SkillMana",
+          "overflow": 0
+        }
+      ]
+    },
+    {
+      "name": "选中联动",
+      "value": {
+        "before": "unknown-skill-0",
+        "third": "ggamma-a11y项目未知ZCode仅请求／待确认来源未",
+        "after": "gamma-a11y",
+        "selectedCount": 1
+      }
+    },
+    {
+      "name": "关联行的技能详情入口",
+      "value": {
+        "found": true,
+        "title": "alpha-layout",
+        "openSkill": true,
+        "unlinked": false
+      }
+    },
+    {
+      "name": "类型页签筛选",
+      "value": {
+        "pressed": "true",
+        "rows": 22,
+        "allAreRequests": true
+      }
+    },
+    {
+      "name": "状态筛选（失败）",
+      "value": {
+        "rows": 11,
+        "allFailed": true,
+        "total": "11"
+      }
+    },
+    {
+      "name": "更多筛选展开",
+      "value": {
+        "project": true,
+        "from": true,
+        "labels": [
+          "项目",
+          "开始日期",
+          "结束日期"
+        ]
+      }
+    },
+    {
+      "name": "分页",
+      "value": {
+        "before": [
+          "1",
+          "2"
+        ],
+        "after": [
+          "2",
+          "2"
+        ],
+        "rowsOnPage2": 18
+      }
+    },
+    {
+      "name": "窄窗口(960) 布局",
+      "value": {
+        "stacked": true,
+        "listWidth": 700,
+        "asideWidth": 700,
+        "headerVisible": true,
+        "overflow": 0
+      }
+    }
+  ]
+}

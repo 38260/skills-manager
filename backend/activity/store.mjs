@@ -79,7 +79,7 @@ export class UsageStore {
   }
   query(filter = {}) {
     const where = [], args = [];
-    for (const [key, choices] of [["tool", TOOLS], ["kind", KINDS], ["trigger", TRIGGERS]]) {
+    for (const [key, choices] of [["tool", TOOLS], ["kind", KINDS], ["trigger", TRIGGERS], ["status", STATUSES]]) {
       if (filter[key]) {
         if (!choices.includes(filter[key])) throw new Error("无效的筛选条件");
         where.push(`${key}=?`); args.push(filter[key]);

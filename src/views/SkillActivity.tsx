@@ -1,16 +1,19 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { History, RefreshCw, Square, ChevronLeft, ChevronRight, Search, Settings2 } from "lucide-react";
+import { History, RefreshCw, Square, ChevronLeft, ChevronRight, Search, Settings2, AlertTriangle } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { listen } from "../lib/transport";
 import { cn } from "../utils";
 import * as api from "../lib/activity";
-import { ActivityRecordList } from "../components/ActivityRecordList";
+import { ActivityTable } from "../components/ActivityTable";
+import { ActivityDetailPanel } from "../components/ActivityDetailPanel";
 
 const field = "min-w-0 rounded-lg border border-border-subtle bg-surface px-3 py-2 text-[13px] text-primary outline-none focus:border-accent focus:ring-1 focus:ring-accent";
 const button = "inline-flex items-center justify-center gap-2 rounded-lg border border-border-subtle px-3 py-2 text-[13px] text-secondary outline-none hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-40";
-const initialFilters = { tool: "", kind: "", trigger: "", skillName: "", project: "", from: "", to: "" };
+const pageSize = 50;
+const initialFilters = { tool: "", kind: "", trigger: "", status: "", skillName: "", project: "", from: "", to: "" };
+type Filters = typeof initialFilters;
 
 function SourceEditor({ source, running, onSaved }: { source: api.ActivitySource; running: boolean; onSaved: () => void }) {
   const { t, i18n } = useTranslation();
@@ -28,7 +31,7 @@ function SourceEditor({ source, running, onSaved }: { source: api.ActivitySource
   return <form onSubmit={save} className="border-t border-border-subtle py-3 first:border-t-0">
     <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-[13px]">
       <label htmlFor={id} className="font-medium text-primary">{api.toolNames[source.tool]}</label>
-      <span className={cn("text-[12px]", ["partial", "missing", "denied", "error"].includes(source.state) ? "text-amber-500" : "text-tertiary")}>
+      <span className={cn("text-[12px]", ["partial", "missing", "denied", "error"].includes(source.state) ? "text-amber-600 dark:text-amber-400" : "text-tertiary")}>
         {t(`activity.sourceStates.${source.state}`, { defaultValue: source.state })}
         {source.state === "scanning" && ` · ${source.processed}/${source.files}`}
         {source.errors > 0 && ` · ${t("activity.issues", { count: source.errors })}`}
@@ -41,7 +44,7 @@ function SourceEditor({ source, running, onSaved }: { source: api.ActivitySource
       <button className={button} disabled={running || saving}>{t(saving ? "activity.saving" : "activity.save")}</button>
     </div>
     <p className="mt-2 text-[12px] text-tertiary">{t("activity.lastScan")}: {source.lastScan ? new Date(source.lastScan).toLocaleString(i18n.language) : t("activity.never")}</p>
-    {source.detail && <p className="mt-1 text-[12px] text-amber-500">{source.detail}</p>}
+    {source.detail && <p className="mt-1 text-[12px] text-amber-600 dark:text-amber-400">{source.detail}</p>}
     {error && <p role="alert" className="mt-1 text-[12px] text-danger">{error}</p>}
   </form>;
 }
@@ -53,12 +56,12 @@ export function SkillActivity() {
   // 详情页"调用记录"页签通过 /skill-activity?skill=名称 深链进入并预填筛选。
   const [searchParams] = useSearchParams();
   const deepLinkSkill = searchParams.get("skill") ?? "";
-  const [filters, setFilters] = useState({ ...initialFilters, skillName: deepLinkSkill });
-  // 筛选面板默认收起，只留技能搜索框；展开后才显示其余 6 项，避免占用近 150px 高度。
-  // 收起状态不影响已填条件（只是视觉收起），提交/重置行为不变。
+  const [filters, setFilters] = useState<Filters>({ ...initialFilters, skillName: deepLinkSkill });
+  // 常驻条件：技能搜索、工具、触发方式、记录类型、结果；低频条件收进"更多筛选"（项目、日期）。
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [sourcesOpen, setSourcesOpen] = useState(false);
   const activeFilterCount = Object.values(filters).filter(value => value !== "").length;
-  const [query, setQuery] = useState<api.ActivityQuery>({ page: 1, pageSize: 50, skillName: deepLinkSkill });
+  const [query, setQuery] = useState<api.ActivityQuery>({ page: 1, pageSize, skillName: deepLinkSkill });
   const [result, setResult] = useState<api.ActivityResult | null>(null);
   const [sources, setSources] = useState<api.ActivitySource[]>([]);
   const [running, setRunning] = useState(false);
@@ -66,7 +69,17 @@ export function SkillActivity() {
   const [error, setError] = useState("");
   const [revision, setRevision] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [selected, setSelected] = useState<api.ActivityEvent | null>(null);
+  const detailRef = useRef<HTMLElement | null>(null);
   const refresh = () => setRevision(value => value + 1);
+
+  // 窄窗口下详情在列表下方，单页可达 50 行；选中后把详情滚进视野。
+  // 宽屏（≥1280px）两栏并排，详情本来就可见，不打扰。
+  function selectRecord(record: api.ActivityEvent) {
+    setSelected(record);
+    if (window.matchMedia("(min-width: 1280px)").matches) return;
+    detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   useEffect(() => {
     let current = true;
@@ -87,67 +100,154 @@ export function SkillActivity() {
     return () => { disposed = true; unlisten?.(); clearInterval(timer); };
   }, []);
 
+  // 右侧详情跟随列表：换页/换筛选后若选中项已不在本页，自动落到第一条。
+  useEffect(() => {
+    setSelected(current => {
+      const items = result?.items ?? [];
+      if (current && items.some(item => item.id === current.id)) return current;
+      return items[0] ?? null;
+    });
+  }, [result]);
+
   async function scan() {
     setBusy(true);
     try { const status = running ? await api.cancelActivityScan() : await api.scanActivity(); setRunning(status.running); refresh(); }
     catch (cause) { setError(String(cause instanceof Error ? cause.message : cause)); }
     finally { setBusy(false); }
   }
+
+  /** 把界面筛选条件转成查询；日期终点按"含当天"处理。 */
+  function buildQuery(next: Filters, page = 1, from = next.from, to = next.to): api.ActivityQuery {
+    const start = from ? new Date(`${from}T00:00:00`).getTime() : undefined;
+    const end = to ? new Date(`${to}T00:00:00`) : null;
+    if (end) end.setDate(end.getDate() + 1);
+    return {
+      page, pageSize,
+      tool: next.tool as api.ActivityQuery["tool"], kind: next.kind as api.ActivityQuery["kind"],
+      trigger: next.trigger as api.ActivityQuery["trigger"], status: next.status as api.ActivityQuery["status"],
+      skillName: next.skillName.trim(), project: next.project.trim(), from: start, to: end?.getTime(),
+    };
+  }
+
   function apply(event: FormEvent) {
     event.preventDefault();
-    const from = filters.from ? new Date(`${filters.from}T00:00:00`).getTime() : undefined;
+    const start = filters.from ? new Date(`${filters.from}T00:00:00`).getTime() : undefined;
     const end = filters.to ? new Date(`${filters.to}T00:00:00`) : null;
     if (end) end.setDate(end.getDate() + 1);
-    const to = end?.getTime();
-    if (from !== undefined && to !== undefined && from >= to) { setError(t("activity.invalidDates")); return; }
+    if (start !== undefined && end !== null && start >= end.getTime()) { setError(t("activity.invalidDates")); return; }
     setLoading(true);
-    setQuery({ page: 1, pageSize: 50, tool: filters.tool as api.ActivityQuery["tool"], kind: filters.kind as api.ActivityQuery["kind"],
-      trigger: filters.trigger as api.ActivityQuery["trigger"], skillName: filters.skillName.trim(), project: filters.project.trim(), from, to });
+    setQuery(buildQuery(filters));
   }
-  const change = (key: keyof typeof filters, value: string) => setFilters(current => ({ ...current, [key]: value }));
+  const change = (key: keyof Filters, value: string) => setFilters(current => ({ ...current, [key]: value }));
+  // 记录类型页签与统计条联动：点页签即按该类型筛（连同已填的其余条件）。
+  const pickKind = (kind: string) => {
+    const next = { ...filters, kind };
+    setFilters(next);
+    setLoading(true);
+    setQuery(buildQuery(next));
+  };
   const pages = result ? Math.max(1, Math.ceil(result.total / result.pageSize)) : 1;
   const problems = sources.filter(source => source.enabled && ["partial", "missing", "denied", "error"].includes(source.state));
+  const enabledSourceCount = sources.filter(source => source.enabled).length;
   const stats = [
+    { key: "total", label: t("activity.statsAll"), value: result?.total },
     { key: "invocation", label: t("activity.kinds.invocation"), value: result?.counts.invocation },
     { key: "document", label: t("activity.kinds.document"), value: result?.counts.document },
     { key: "request", label: t("activity.kinds.request"), value: result?.counts.request },
-    { key: "total", label: t("activity.records"), value: result?.total },
   ];
+  const kindTabs = useMemo(() => ([
+    { key: "", label: t("activity.statsAll"), count: result?.total ?? 0 },
+    { key: "invocation", label: t("activity.kinds.invocation"), count: result?.counts.invocation ?? 0 },
+    { key: "document", label: t("activity.kinds.document"), count: result?.counts.document ?? 0 },
+    { key: "request", label: t("activity.kinds.request"), count: result?.counts.request ?? 0 },
+  ]), [result, t]);
+  const emptyText = t(problems.length ? "activity.checkSources" : "activity.empty");
 
   return <div className="app-page">
-    {/* 页头：与详情页一致的扁平页头，操作右对齐 */}
-    <header className="flex flex-wrap items-start justify-between gap-3 border-b border-border-subtle pb-4">
+    {/* 页头：标题与扫描操作 */}
+    <header className="app-page-header flex flex-wrap items-start justify-between gap-3">
       <div>
-        <h1 className="app-page-title flex items-center gap-2"><History className="h-5 w-5 text-accent" />{t("activity.title")}</h1>
-        <p className="mt-1.5 text-[13px] leading-5 text-muted">{t("activity.subtitle")}</p>
+        <h1 className="app-page-title flex items-center gap-2"><History className="h-4 w-4 text-accent" />{t("activity.title")}</h1>
+        <p className="app-page-subtitle">{t("activity.subtitle")}</p>
       </div>
-      <button type="button" onClick={() => void scan()} disabled={busy} className={button}>
-        {running ? <Square className="h-4 w-4" /> : <RefreshCw className={cn("h-4 w-4", busy && "animate-spin")} />}
+      <button type="button" onClick={() => void scan()} disabled={busy} className={cn(button, "shrink-0 bg-surface")}>
+        {running ? <Square className="h-3.5 w-3.5" /> : <RefreshCw className={cn("h-3.5 w-3.5", busy && "animate-spin")} />}
         {t(running ? "activity.stop" : "activity.refresh")}
       </button>
     </header>
 
     {error && <div role="alert" className="flex items-center justify-between gap-3 border-l-2 border-danger bg-danger-bg px-3 py-2 text-[13px] text-danger"><span>{error}</span><button className={button} onClick={refresh}>{t("activity.retry")}</button></div>}
 
-    {/* 统计：平面数字行，用分隔线代替卡片 */}
-    <div className="grid grid-cols-2 divide-x divide-border-subtle border-y border-border-subtle sm:grid-cols-4" aria-label={t("activity.summary")}>
-      {stats.map(stat => <div key={stat.key} className="px-4 py-3 first:pl-0">
-        <div className="text-[12px] text-tertiary">{stat.label}</div>
-        <div className="mt-1 text-[22px] font-semibold tabular-nums leading-7 text-primary">{stat.value ?? "—"}</div>
-      </div>)}
-    </div>
-    <p className="-mt-4 text-[12px] text-tertiary">{t("activity.countNote")}</p>
+    {/* 统计：四项紧凑横向排列，紧邻口径说明 */}
+    <section aria-label={t("activity.summary")}>
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border-subtle bg-border-subtle sm:grid-cols-4">
+        {stats.map(stat => <div key={stat.key} className="bg-surface px-4 py-3">
+          <div className="text-[12px] text-tertiary">{stat.label}</div>
+          <div className="mt-0.5 text-[22px] font-semibold tabular-nums leading-7 text-primary">{stat.value ?? "—"}</div>
+        </div>)}
+      </div>
+      <p className="mt-2 text-[12px] leading-5 text-tertiary">{t("activity.countNote")}</p>
+    </section>
 
-    {/* 筛选：常驻一行（技能搜索 + 更多筛选开关），其余条件按需展开 */}
-    <form onSubmit={apply} className="border-b border-border-subtle pb-4">
+    {/* 日志来源：一行摘要 + 展开编辑 */}
+    <section className="app-panel">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5">
+        <h2 className="text-[13px] font-semibold text-secondary">{t("activity.sources")}</h2>
+        <span aria-live="polite" className="text-[12px] text-tertiary">
+          {running ? t("activity.scanning") : t("activity.sourceSummary", { count: enabledSourceCount })}
+        </span>
+        {problems.length > 0 && (
+          <span className="inline-flex items-center gap-1 text-[12px] text-amber-600 dark:text-amber-400">
+            <AlertTriangle className="h-3.5 w-3.5" />{t("activity.sourceProblems", { count: problems.length })}
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={() => setSourcesOpen(value => !value)}
+          aria-expanded={sourcesOpen}
+          className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[12px] font-medium text-muted outline-none transition-colors hover:bg-surface-hover hover:text-secondary focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          <Settings2 className="h-3.5 w-3.5" />
+          {sourcesOpen ? t("activity.hideFilters") : t("activity.manageSources")}
+        </button>
+      </div>
+      {sourcesOpen && (
+        <div className="border-t border-border-subtle px-4 pb-1">
+          <p className="py-3 text-[12px] leading-relaxed text-tertiary">{t("activity.sourceHelp")}</p>
+          {sources.map(source => <SourceEditor key={`${source.tool}:${source.path}:${source.enabled}`} source={source} running={running} onSaved={refresh} />)}
+        </div>
+      )}
+    </section>
+
+    {/* 筛选：常驻搜索 + 工具 / 触发方式 / 类型 / 结果，"更多筛选"承载项目与日期 */}
+    <form onSubmit={apply} className="app-panel px-4 py-3">
       <div className="flex flex-wrap items-center gap-2">
-        <input
-          value={filters.skillName}
-          onChange={e => change("skillName", e.target.value)}
-          className={cn(field, "min-w-[180px] flex-1")}
-          placeholder={t("activity.skillSearch")}
-          aria-label={t("activity.skill")}
-        />
+        <div className="relative min-w-[200px] flex-1">
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
+          <input
+            value={filters.skillName}
+            onChange={e => change("skillName", e.target.value)}
+            className={cn(field, "w-full pl-9")}
+            placeholder={t("activity.skillSearch")}
+            aria-label={t("activity.skill")}
+          />
+        </div>
+        <select value={filters.tool} onChange={e => change("tool", e.target.value)} className={cn(field, "w-auto shrink-0")} aria-label={t("activity.tool")}>
+          <option value="">{t("activity.allTools")}</option>
+          {api.activityTools.map(tool => <option key={tool} value={tool}>{api.toolNames[tool]}</option>)}
+        </select>
+        <select value={filters.trigger} onChange={e => change("trigger", e.target.value)} className={cn(field, "w-auto shrink-0")} aria-label={t("activity.trigger")}>
+          <option value="">{t("activity.allTriggers")}</option>
+          {(["manual", "automatic", "unknown"] as const).map(trigger => <option key={trigger} value={trigger}>{t(`activity.triggers.${trigger}`)}</option>)}
+        </select>
+        <select value={filters.kind} onChange={e => change("kind", e.target.value)} className={cn(field, "w-auto shrink-0")} aria-label={t("activity.kind")}>
+          <option value="">{t("activity.allKinds")}</option>
+          {(["invocation", "document", "request"] as const).map(kind => <option key={kind} value={kind}>{t(`activity.kinds.${kind}`)}</option>)}
+        </select>
+        <select value={filters.status} onChange={e => change("status", e.target.value)} className={cn(field, "w-auto shrink-0")} aria-label={t("activity.status")}>
+          <option value="">{t("activity.allStatuses")}</option>
+          {(["pending", "returned", "failed", "unknown"] as const).map(status => <option key={status} value={status}>{t(`activity.statuses.${status}`)}</option>)}
+        </select>
         <button
           type="button"
           onClick={() => setFiltersOpen(value => !value)}
@@ -166,54 +266,82 @@ export function SkillActivity() {
           <button
             type="button"
             className={cn(button, "shrink-0")}
-            onClick={() => { setFilters(initialFilters); setQuery({ page: 1, pageSize: 50 }); }}
+            onClick={() => { setFilters(initialFilters); setLoading(true); setQuery({ page: 1, pageSize }); }}
           >
             {t("activity.reset")}
           </button>
         )}
-        <button className="inline-flex h-[38px] shrink-0 items-center gap-2 rounded-lg border border-accent-border bg-accent-bg px-3 text-[13px] font-medium text-accent-dark outline-none hover:bg-accent-bg focus-visible:ring-2 focus-visible:ring-accent dark:text-accent-light"><Search className="h-4 w-4" />{t("activity.apply")}</button>
+        <button className="inline-flex h-[38px] shrink-0 items-center gap-2 rounded-lg border border-accent-border bg-accent-dark px-3.5 text-[13px] font-medium text-white outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-accent">
+          <Search className="h-4 w-4" />{t("activity.apply")}
+        </button>
       </div>
 
       {filtersOpen && (
-        <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 xl:grid-cols-4">
+        <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-3">
           <label className="grid gap-1 text-[12px] text-secondary">{t("activity.project")}<input value={filters.project} onChange={e => change("project", e.target.value)} className={field} placeholder={t("activity.projectSearch")} /></label>
-          <label className="grid gap-1 text-[12px] text-secondary">{t("activity.tool")}<select value={filters.tool} onChange={e => change("tool", e.target.value)} className={field}><option value="">{t("activity.allTools")}</option>{api.activityTools.map(tool => <option key={tool} value={tool}>{api.toolNames[tool]}</option>)}</select></label>
-          <label className="grid gap-1 text-[12px] text-secondary">{t("activity.trigger")}<select value={filters.trigger} onChange={e => change("trigger", e.target.value)} className={field}><option value="">{t("activity.allTriggers")}</option>{(["manual", "automatic", "unknown"] as const).map(trigger => <option key={trigger} value={trigger}>{t(`activity.triggers.${trigger}`)}</option>)}</select></label>
-          <label className="grid gap-1 text-[12px] text-secondary">{t("activity.kind")}<select value={filters.kind} onChange={e => change("kind", e.target.value)} className={field}><option value="">{t("activity.allKinds")}</option>{(["invocation", "document", "request"] as const).map(kind => <option key={kind} value={kind}>{t(`activity.kinds.${kind}`)}</option>)}</select></label>
           <label className="grid gap-1 text-[12px] text-secondary">{t("activity.from")}<input type="date" value={filters.from} onChange={e => change("from", e.target.value)} className={field} /></label>
           <label className="grid gap-1 text-[12px] text-secondary">{t("activity.to")}<input type="date" value={filters.to} onChange={e => change("to", e.target.value)} className={field} /></label>
         </div>
       )}
     </form>
 
-    <details className="border-b border-border-subtle pb-3">
-      <summary className="cursor-pointer text-[13px] font-medium text-secondary"><Settings2 className="mr-2 inline h-4 w-4" />{t("activity.sources")}
-        <span aria-live="polite" className="ml-2 text-[12px] font-normal text-tertiary">{running ? t("activity.scanning") : t("activity.sourceSummary", { count: sources.filter(source => source.enabled).length })}{problems.length > 0 && ` · ${t("activity.sourceProblems", { count: problems.length })}`}</span>
-      </summary>
-      <p className="my-3 text-[12px] leading-relaxed text-tertiary">{t("activity.sourceHelp")}</p>
-      {sources.map(source => <SourceEditor key={`${source.tool}:${source.path}:${source.enabled}`} source={source} running={running} onSaved={refresh} />)}
-    </details>
-
-    <section aria-label={t("activity.records")}>
-      <div className="flex flex-wrap items-center justify-between gap-2 py-2 text-[12px] text-tertiary">
-        <span aria-live="polite">{t("activity.total", { count: result?.total ?? 0 })}</span>
-        <span>{(["manual", "automatic", "unknown"] as const).map(trigger => `${t(`activity.triggers.${trigger}`)} ${result?.counts[trigger] ?? 0}`).join(" · ")}</span>
-      </div>
-      <ActivityRecordList
-        items={result?.items ?? []}
-        loading={loading && !result}
-        error={result ? undefined : error || undefined}
-        emptyText={t(problems.length ? "activity.checkSources" : "activity.empty")}
-        onOpenSkill={id => { openSkillDetailById(id); navigate("/my-skills"); }}
-        onRetry={refresh}
-      />
-      <footer className="flex items-center justify-between py-3 text-[12px] text-tertiary">
-        <span>{t("activity.page", { current: result?.page ?? 1, pages })}</span>
-        <div className="flex gap-2">
-          <button type="button" className={button} disabled={!result || result.page <= 1} onClick={() => setQuery(q => ({ ...q, page: (result?.page ?? 1) - 1 }))} aria-label={t("activity.previous")}><ChevronLeft className="h-4 w-4" /></button>
-          <button type="button" className={button} disabled={!result || result.page >= pages} onClick={() => setQuery(q => ({ ...q, page: (result?.page ?? 1) + 1 }))} aria-label={t("activity.next")}><ChevronRight className="h-4 w-4" /></button>
+    {/* 主区：左列表 + 右详情 */}
+    <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <section aria-label={t("activity.records")} className="app-panel min-w-0 overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-border-subtle px-3 py-2.5">
+          <div className="flex flex-wrap items-center gap-1" role="tablist" aria-label={t("activity.kind")}>
+            {kindTabs.map(tab => (
+              <button
+                key={tab.key || "all"}
+                type="button"
+                role="tab"
+                aria-selected={filters.kind === tab.key}
+                onClick={() => pickKind(tab.key)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[12.5px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent",
+                  filters.kind === tab.key ? "bg-surface-active font-medium text-secondary" : "text-muted hover:bg-surface-hover hover:text-secondary"
+                )}
+              >
+                {tab.label}
+                <span className="tabular-nums text-[11.5px] text-tertiary">{tab.count}</span>
+              </button>
+            ))}
+          </div>
+          <span aria-live="polite" className="text-[12px] tabular-nums text-tertiary">
+            {(["manual", "automatic", "unknown"] as const).map(trigger => `${t(`activity.triggers.${trigger}`)} ${result?.counts[trigger] ?? 0}`).join(" · ")}
+          </span>
         </div>
-      </footer>
-    </section>
+
+        <ActivityTable
+          items={result?.items ?? []}
+          selectedId={selected?.id ?? null}
+          onSelect={selectRecord}
+          loading={loading && !result}
+          error={result ? undefined : error || undefined}
+          emptyText={emptyText}
+          onRetry={refresh}
+        />
+
+        <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border-subtle px-3 py-2.5 text-[12px] text-tertiary">
+          <span aria-live="polite">{t("activity.total", { count: result?.total ?? 0 })}</span>
+          <div className="flex items-center gap-2">
+            <span>{t("activity.page", { current: result?.page ?? 1, pages })}</span>
+            <button type="button" className={button} disabled={!result || result.page <= 1} onClick={() => setQuery(q => ({ ...q, page: (result?.page ?? 1) - 1 }))} aria-label={t("activity.previous")}><ChevronLeft className="h-4 w-4" /></button>
+            <button type="button" className={button} disabled={!result || result.page >= pages} onClick={() => setQuery(q => ({ ...q, page: (result?.page ?? 1) + 1 }))} aria-label={t("activity.next")}><ChevronRight className="h-4 w-4" /></button>
+          </div>
+        </footer>
+      </section>
+
+      <aside ref={detailRef} className="app-panel min-w-0 self-start px-4 py-3.5">
+        <h2 className="border-b border-border-subtle pb-2.5 text-[13px] font-semibold text-secondary">{t("activity.recordDetail")}</h2>
+        {selected
+          ? <ActivityDetailPanel
+            record={selected}
+            className="pt-3"
+            onOpenSkill={id => { openSkillDetailById(id); navigate("/my-skills"); }}
+          />
+          : <p className="py-6 text-center text-[13px] text-tertiary">{t("activity.noSelection")}</p>}
+      </aside>
+    </div>
   </div>;
 }
