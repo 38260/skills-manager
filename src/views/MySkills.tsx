@@ -40,7 +40,6 @@ import { MultiSelectToolbar } from "../components/MultiSelectToolbar";
 import { BatchTagDialog } from "../components/BatchTagDialog";
 import { BatchSyncAgentDialog } from "../components/BatchSyncAgentDialog";
 import { SyncDots } from "../components/SyncDots";
-import { ToggleSwitch } from "../components/ToggleSwitch";
 import { CardActionMenu } from "../components/CardActionMenu";
 import { SkillProfileDialog } from "../components/SkillProfileDialog";
 import * as api from "../lib/tauri";
@@ -796,19 +795,6 @@ export function MySkills() {
     }
   };
 
-  const handleTogglePreset = async (skill: ManagedSkill) => {
-    if (!viewedPreset) return;
-    const enabledInPreset = skill.preset_ids.includes(viewedPreset.id);
-    if (enabledInPreset) {
-      await api.removeSkillFromPreset(skill.id, viewedPreset.id);
-      toast.success(`${skill.name} ${t("mySkills.disabledInPreset")}`);
-    } else {
-      await api.addSkillToPreset(skill.id, viewedPreset.id);
-      toast.success(`${skill.name} ${t("mySkills.enabledInPreset")}`);
-    }
-    await Promise.all([refreshManagedSkills(), refreshPresets()]);
-  };
-
   const handleCheckAllUpdates = async () => {
     setCheckingAll(true);
     try {
@@ -1555,12 +1541,6 @@ export function MySkills() {
                             },
                           ]}
                         />
-                        <ToggleSwitch
-                          checked={enabledInPreset}
-                          disabled={!viewedPreset}
-                          onChange={() => handleTogglePreset(skill)}
-                          title={enabledInPreset ? t("mySkills.enabledButton") : t("mySkills.enable")}
-                        />
                       </>
                     )}
                   </div>
@@ -1752,7 +1732,7 @@ export function MySkills() {
               {(dragHandle) => (
               <div
                 className={cn(
-                  "app-panel group relative flex cursor-pointer items-center gap-3.5 rounded-xl border-transparent px-3.5 py-3 transition-all hover:border-border hover:bg-surface-hover",
+                  "app-panel group relative flex cursor-pointer items-center gap-3 rounded-xl border-transparent px-3.5 py-3 transition-all hover:border-border hover:bg-surface-hover",
                   isMultiSelect && selectedIds.has(skill.id) && "ring-1 ring-accent border-accent/40"
                 )}
                 onClick={() =>
@@ -1788,19 +1768,21 @@ export function MySkills() {
                 </div>
 
                 <h3
-                  className="w-[180px] shrink-0 truncate text-[14px] font-semibold text-secondary group-hover:text-primary"
+                  className="w-[150px] shrink-0 truncate text-[14px] font-semibold text-secondary group-hover:text-primary"
                   title={skill.alias ? `${displayName} (${skill.name})` : displayName}
                 >
                   {displayName}
                 </h3>
 
+                {/* 列表视图靠固定列宽对齐：除描述列用 flex-1 吸收剩余空间外，
+                    其余列一律给死宽度，否则每行内容长度不同会把后面的列推歪。 */}
                 <p className="min-w-0 flex-1 truncate text-[13px] text-muted" title={skill.display_description ?? undefined}>
                   {skill.display_description || "—"}
                 </p>
-                <span className="max-w-[140px] truncate text-[12px] text-faint" title={skill.display_author_source ?? undefined}>
+                <span className="w-[96px] shrink-0 truncate text-[12px] text-faint" title={skill.display_author_source ?? undefined}>
                   {skill.display_author || t("mySkills.authorMissing")}
                 </span>
-                <span className="w-[150px] shrink-0 truncate text-[12px] text-faint"
+                <span className="w-[120px] shrink-0 truncate text-[12px] text-faint"
                   title={usage[skill.id]?.lastUsedAt ? new Date(usage[skill.id].lastUsedAt!).toLocaleString(i18n.language) : t("mySkills.usage.neverHint")}>
                   {usage[skill.id]
                     ? usage[skill.id].lastUsedAt !== null
@@ -1809,12 +1791,12 @@ export function MySkills() {
                     : t("mySkills.usage.never")}
                 </span>
 
-                <div className="flex shrink-0 items-center gap-1.5">
+                <div className="flex w-[110px] shrink-0 items-center gap-1.5 overflow-hidden">
                   {skill.tags.map((tag) => (
                     <span
                       key={tag}
                       className={cn(
-                        "inline-flex items-center rounded-full px-1.5 py-0.5 text-[11px] font-medium",
+                        "inline-flex shrink-0 items-center rounded-full px-1.5 py-0.5 text-[11px] font-medium",
                         getTagColor(tag, allTags)
                       )}
                     >
@@ -1823,7 +1805,7 @@ export function MySkills() {
                   ))}
                 </div>
 
-                <div className="flex shrink-0 items-center gap-2.5">
+                <div className="flex w-[130px] shrink-0 items-center justify-end gap-2.5">
                   {conflictIds.has(skill.id) && (
                     <button
                       onClick={(e) => { e.stopPropagation(); navigate("/backup"); }}
@@ -1876,8 +1858,10 @@ export function MySkills() {
                   )}
                 </div>
 
-                {isMissingLocalSource && !isMultiSelect && (
-                  <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                {/* 固定宽度的槽位：即使没有缺失来源，也占住这一列，否则有/无该列的行会错位。 */}
+                <div className="flex w-[80px] shrink-0 items-center justify-end gap-1">
+                  {isMissingLocalSource && !isMultiSelect && (
+                    <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                     <button
                       onClick={(e) => { e.stopPropagation(); handleRelinkSource(skill); }}
                       disabled={updatingSkillId === skill.id}
@@ -1893,10 +1877,11 @@ export function MySkills() {
                       {t("mySkills.updateActions.detachSource")}
                     </button>
                   </div>
-                )}
+                  )}
+                </div>
 
                 {!isMultiSelect && (
-                  <div className="flex shrink-0 items-center gap-2">
+                  <div className="flex w-[32px] shrink-0 items-center justify-end">
                     <CardActionMenu
                       label={t("mySkills.moreActions")}
                       onOpenChange={(open) => setMenuSkillId(open ? skill.id : null)}
@@ -1937,12 +1922,6 @@ export function MySkills() {
                           onSelect: () => setSkillToDelete(skill),
                         },
                       ]}
-                    />
-                    <ToggleSwitch
-                      checked={enabledInPreset}
-                      disabled={!viewedPreset}
-                      onChange={() => handleTogglePreset(skill)}
-                      title={enabledInPreset ? t("mySkills.enabledButton") : t("mySkills.enable")}
                     />
                   </div>
                 )}
