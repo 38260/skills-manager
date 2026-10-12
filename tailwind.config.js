@@ -40,24 +40,33 @@ export default {
         faint: 'var(--color-text-faint)',
       },
       fontFamily: {
+        // Windows 优先 Segoe UI（实测：原栈首位 SF Pro Text 在 Windows 不存在，
+        // 英文会穿透落到 Noto Sans SC 的拉丁字形，观感发虚；Segoe UI 是 Windows
+        // 原生 UI 字体，拉丁字形清晰，中文经字体链接回落到 Microsoft YaHei UI）。
+        // macOS 侧 system-ui 自动映射 SF，不影响。
         sans: [
+          '"Segoe UI"',
+          'system-ui',
           '"SF Pro Text"',
+          '-apple-system',
+          'BlinkMacSystemFont',
           '"PingFang SC"',
           '"Hiragino Sans GB"',
           '"Noto Sans SC"',
           '"Microsoft YaHei"',
-          '-apple-system',
-          'BlinkMacSystemFont',
-          '"Segoe UI"',
-          'system-ui',
           'sans-serif',
         ],
+        // 原栈末位 generic monospace 在中文 Windows 上解析为 NSimSun（新宋体），
+        // 路径/语言标签等 font-mono 文本发虚；显式列出 Cascadia Code → Consolas，
+        // 均为实测可用的代码字体，末位才交给 generic monospace。
         mono: [
+          '"Cascadia Code"',
+          '"Cascadia Mono"',
+          'Consolas',
           '"SF Mono"',
-          '"Fira Code"',
-          '"JetBrains Mono"',
           'Menlo',
           'Monaco',
+          'ui-monospace',
           'monospace',
         ],
       },

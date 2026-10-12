@@ -13,6 +13,22 @@
 
 ## 已完成
 
+### ✅ 小功能：英文展示字体切换为 Segoe UI / Cascadia Code（2026-10-12）
+
+**背景**：用户反馈应用内英文展示（技能名、英文技能文档、来源路径、代码）字体难看。
+CDP 实测（`CSS.getPlatformFontsForNode`）定位：原 sans 栈首位 `"SF Pro Text"` 在 Windows 不存在，
+英文一路穿透落到 **Noto Sans SC** 的拉丁字形；原 mono 栈末位 generic `monospace` 在中文 Windows 上
+解析为 **NSimSun（新宋体）**，`font-mono` 类文本（路径、代码块语言标签）发虚。
+
+- [x] `tailwind.config.js`：sans 栈 `"Segoe UI"` 优先（Windows 原生 UI 字体；macOS 经
+      `system-ui` 自动映射 SF；中文经字体链接回落 Microsoft YaHei UI）；mono 栈显式列出
+      `"Cascadia Code" / "Cascadia Mono" / Consolas`，末位才交 generic monospace
+- [x] `src/index.css`：行内代码、代码块两处等宽声明对齐同一栈（原 `ui-monospace` 起头保留在末位）
+- [x] 验证：`npm run build`（含 tsc）✓ / `npm run lint` ✓ / 无头 CDP 同基准 fixture 前后对比——
+      正文 Noto Sans SC → **Segoe UI**、font-mono NSimSun → **Cascadia Code**、行内代码 Consolas → Cascadia Code，
+      浅色/深色截图与 report.json 见 `output/font-verify/evidence/`
+- [x] 提交 Git
+
 ### ✅ 小功能：清理 Preset「应用 / 活动」死代码（2026-10-12）
 
 **背景**：v1.16+ 起点击侧边栏 Preset 不再触发应用（`tauri.ts` 曾标 `@deprecated`），

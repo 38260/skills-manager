@@ -1,0 +1,41 @@
+{
+  "label": "after",
+  "results": [
+    {
+      "name": "body 计算字体栈",
+      "value": "\"Segoe UI\", system-ui, \"SF Pro Text\", -apple-system, BlinkMacSystemFont, \"PingFang SC\", \"Hiragino Sans GB\", \"Noto Sans SC\", \"Microsoft YaHei\", sans-serif"
+    },
+    {
+      "name": "列表卡片标题字体（英文技能名）",
+      "value": "Segoe UI Semibold ×20"
+    },
+    {
+      "name": "详情页已打开",
+      "value": true
+    },
+    {
+      "name": "详情标题字体（英文）",
+      "value": "Segoe UI Semibold ×20"
+    },
+    {
+      "name": "正文段落字体（英文散文）",
+      "value": "Segoe UI ×193"
+    },
+    {
+      "name": "行内代码字体",
+      "value": "Cascadia Code ×31"
+    },
+    {
+      "name": "代码块语言标签字体（font-mono 类）",
+      "value": "Cascadia Code ×3"
+    },
+    {
+      "name": "来源路径字体（font-mono 类）",
+      "value": "Cascadia Code ×5"
+    },
+    {
+      "name": "深色正文段落字体",
+      "value": "Segoe UI ×193"
+    }
+  ]
+}
