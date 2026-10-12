@@ -7,18 +7,51 @@ const canonical = filename => {
   try { filename = fs.realpathSync(filename); } catch { /* 未部署或已卸载路径仍可用于精确匹配。 */ }
   return filename.replace(/\\/g, "/").replace(/\/$/, "").toLowerCase();
 };
-export function matchManagedSkill(event, skills, tools = []) {
+
+// 匹配索引：把每个技能的 canonical 路径在一次请求内只算一遍。
+// 旧实现按「每条事件 × 每个技能」调用 canonical()（realpathSync），
+// 调用记录一多就形成数万次文件系统调用的风暴
+// （实测 174 条记录 × 53 个技能 ≈ 750ms，且随记录数线性恶化）。
+// 索引按请求构建，不做跨请求缓存：路径可能被重链/卸载，每次请求现算最稳。
+function buildSkillIndex(skills) {
+  return skills.map(skill => ({
+    id: skill.id,
+    name: skill.name,
+    display_name: skill.display_name,
+    basename: path.basename(skill.central_path),
+    central: canonical(skill.central_path),
+    targets: skill.targets.map(target => ({ tool: target.tool, path: canonical(target.target_path) })),
+  }));
+}
+
+// 与旧 matchManagedSkill 语义逐条等价，只是路径比较全部走预计算索引。
+function matchEvent(event, index, tools) {
   const scope = event.project ? canonical(event.project) : null;
   const exact = event.skillPath ? canonical(event.skillPath).replace(/\/skill\.md$/i, "") : null;
-  const candidates = skills.filter(skill => {
+  const candidates = index.filter(skill => {
     const targets = skill.targets.filter(target => target.tool === event.tool);
-    if (exact) return canonical(skill.central_path) === exact || targets.some(target => canonical(target.target_path) === exact);
-    if (skill.name !== event.skillName && path.basename(skill.central_path) !== event.skillName) return false;
+    if (exact) return skill.central === exact || targets.some(target => target.path === exact);
+    if (skill.name !== event.skillName && skill.basename !== event.skillName) return false;
     const globalRoot = tools.find(tool => tool.key === event.tool)?.skills_dir;
-    return targets.some(target => (scope && canonical(target.target_path).startsWith(`${scope}/`))
-      || (globalRoot && canonical(target.target_path).startsWith(`${canonical(globalRoot)}/`)));
+    const globalRootPath = globalRoot ? canonical(globalRoot) : null;
+    return targets.some(target => (scope && target.path.startsWith(`${scope}/`))
+      || (globalRootPath && target.path.startsWith(`${globalRootPath}/`)));
   });
   return candidates.length === 1 ? candidates[0].id : null;
+}
+
+// 与 matchEvent 相同，但附带「统计口径」的名称兜底（唯一名称时接受名称匹配）。
+function matchUsageEvent(event, index, tools) {
+  const strict = matchEvent(event, index, tools);
+  if (strict) return strict;
+  const name = String(event.skillName ?? "").trim();
+  if (!name) return null;
+  const candidates = index.filter(skill => skill.name === name || skill.display_name === name || skill.basename === name);
+  return candidates.length === 1 ? candidates[0].id : null;
+}
+
+export function matchManagedSkill(event, skills, tools = []) {
+  return matchEvent(event, buildSkillIndex(skills), tools);
 }
 
 /**
@@ -29,14 +62,7 @@ export function matchManagedSkill(event, skills, tools = []) {
  * 因此在名称唯一时接受名称匹配，避免大量记录因为日志里没有技能路径而全部算成"从未使用"。
  */
 export function matchUsageSkill(event, skills, tools = []) {
-  const strict = matchManagedSkill(event, skills, tools);
-  if (strict) return strict;
-  const name = String(event.skillName ?? "").trim();
-  if (!name) return null;
-  const candidates = skills.filter(skill => skill.name === name
-    || skill.display_name === name
-    || path.basename(skill.central_path) === name);
-  return candidates.length === 1 ? candidates[0].id : null;
+  return matchUsageEvent(event, buildSkillIndex(skills), tools);
 }
 
 export class ActivityService {
@@ -48,18 +74,21 @@ export class ActivityService {
     this.commands = {
       get_skill_activity: { call: args => {
         const result = this.store.query(args);
-        const skills = this.skills();
+        // 索引只建一次：旧实现对每条事件都全量重算 canonical，接口耗时随记录数线性恶化。
+        const index = buildSkillIndex(this.skills());
         const tools = this.tools();
-        return { ...result, items: result.items.map(event => ({ ...event, managedSkillId: matchManagedSkill(event, skills, tools) })) };
+        return { ...result, items: result.items.map(event => ({ ...event, managedSkillId: matchEvent(event, index, tools) })) };
       } },
       get_skill_activity_sources: { call: () => ({ sources: this.store.sources(), running: !!this.worker }) },
       // 每个已纳管技能的调用统计：总次数与最后使用时间；仅请求（未确认使用）不计入。
       get_skill_usage: { call: () => {
-        const skills = this.skills(), tools = this.tools();
+        // 索引只建一次：旧实现逐行全量重算 canonical，174 条记录就要 750ms。
+        const index = buildSkillIndex(this.skills());
+        const tools = this.tools();
         const rows = this.store.db.prepare("SELECT tool,skillName,skillPath,project,timestamp FROM events WHERE kind<>'request'").all();
         const usage = {};
         for (const row of rows) {
-          const id = matchUsageSkill(row, skills, tools);
+          const id = matchUsageEvent(row, index, tools);
           if (!id) continue;
           const entry = usage[id] ?? (usage[id] = { count: 0, lastUsedAt: null });
           entry.count += 1;
