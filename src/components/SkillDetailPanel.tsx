@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import {
   ChevronDown, ChevronUp, Github, HardDrive, Globe, ArrowLeft,
-  ListTree, Boxes, Link2, Info, PanelRightOpen, RefreshCw, History,
+  ListTree, Boxes, Link2, Info, PanelRightOpen, RefreshCw, History, Layers, FileDiff,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../utils";
@@ -113,12 +113,16 @@ function SkillDetailPanelContent({
   const [sourceDoc, setSourceDoc] = useState<SourceSkillDocument | null>(null);
   const [sourceDiff, setSourceDiff] = useState<SkillSourceDiff | null>(null);
   const [sourceDiffFailed, setSourceDiffFailed] = useState(false);
+  const [sourceDocLoading, setSourceDocLoading] = useState(true);
+  const [sourceFocus, setSourceFocus] = useState<"source" | "diff">("diff");
   const [loading, setLoading] = useState(true);
   const [isSourceInfoExpanded, setIsSourceInfoExpanded] = useState(false);
   const [contentTab, setContentTab] = useState<ContentTab>("doc");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeHeading, setActiveHeading] = useState<string | null>(null);
   const mainScrollRef = useRef<HTMLDivElement>(null);
+  const sourceSectionRef = useRef<HTMLElement>(null);
+  const diffSectionRef = useRef<HTMLElement>(null);
   const localRequestIdRef = useRef(0);
   const sourceRequestIdRef = useRef(0);
   const diffRequestedRef = useRef(false);
@@ -178,6 +182,9 @@ function SkillDetailPanelContent({
         if (requestId === sourceRequestIdRef.current) {
           setSourceDoc(null);
         }
+      })
+      .finally(() => {
+        if (requestId === sourceRequestIdRef.current) setSourceDocLoading(false);
       });
   }, [skillId, supportsSourceDiff, sourceDocVersion]);
 
@@ -197,6 +204,19 @@ function SkillDetailPanelContent({
   const activeSourceDiff = sourceDiff?.skill_id === skill.id ? sourceDiff : null;
   const sourceDiffLoading =
     contentTab === "sourceDiff" && supportsSourceDiff && !activeSourceDiff && !sourceDiffFailed;
+
+  useEffect(() => {
+    if (contentTab !== "sourceDiff") return;
+    const section = sourceFocus === "source" ? sourceSectionRef.current : diffSectionRef.current;
+    section?.scrollIntoView({ block: "start" });
+  }, [contentTab, sourceFocus, activeSourceDoc, activeSourceDiff]);
+
+  function openComparison(target: "source" | "diff") {
+    setSourceFocus(target);
+    setContentTab("sourceDiff");
+    const section = target === "source" ? sourceSectionRef.current : diffSectionRef.current;
+    section?.scrollIntoView({ block: "start" });
+  }
   const toggleItems: AgentToggleItem[] = (toolToggles ?? []).map((toggle) => ({
     key: toggle.tool,
     displayName: toggle.display_name,
@@ -313,6 +333,7 @@ function SkillDetailPanelContent({
 
   const deploySection = toolToggles && onToggleTool ? (
     <SidebarSection icon={<Boxes className="h-3.5 w-3.5" />} title={t("mySkills.detail.deployToTools")}>
+      {tools && <div className="mb-2"><SyncDots skill={skill} tools={tools} size="sm" includeOrphan /></div>}
       <AgentToggleSection
         items={toggleItems}
         togglingKey={togglingTool}
@@ -377,61 +398,73 @@ function SkillDetailPanelContent({
         className="absolute inset-0 z-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="absolute inset-0 z-10 flex min-h-0 flex-col overflow-hidden border-l border-border-subtle bg-bg-secondary">
+      <div className="skill-detail-shell absolute inset-0 z-10 flex min-h-0 flex-col overflow-hidden border-l border-border-subtle bg-surface">
         {/* 页头：滚动时保持可访问 */}
-        <header className="shrink-0 border-b border-border-subtle bg-bg-secondary px-6 pb-3 pt-4">
-          <div className="flex min-w-0 items-start justify-between gap-4">
-            <div className="min-w-0">
-              <button
+        <header className="skill-detail-header shrink-0 bg-surface px-10 pt-6">
+          <button
                 type="button"
                 onClick={onClose}
-                className="inline-flex items-center gap-1.5 rounded-md text-[12.5px] text-muted transition-colors outline-none hover:text-secondary focus-visible:outline focus-visible:outline-accent"
+                className="inline-flex items-center gap-2 rounded-md text-[14px] leading-5 text-muted transition-colors outline-none hover:text-secondary focus-visible:outline focus-visible:outline-accent"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
                 {t("mySkills.detail.back")}
-              </button>
-              <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2">
-                <h2 className="min-w-0 truncate text-[24px] font-semibold leading-tight tracking-tight text-primary">
+          </button>
+          <div className="mt-5 flex min-w-0 items-start justify-between gap-6">
+            <div className="flex min-w-0 flex-1 items-start gap-5">
+              <Layers className="mt-1 h-11 w-11 shrink-0 text-accent" strokeWidth={1.7} aria-hidden="true" />
+              <div className="min-w-0">
+              <div className="flex min-w-0 flex-wrap items-center gap-3">
+                <h2 className="min-w-0 break-words text-[30px] font-semibold leading-9 tracking-tight text-primary">
                   {skill.name}
                 </h2>
                 {skill.update_status === "update_available" && (
-                  <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11.5px] font-medium text-amber-500">
+                  <span className="rounded-md bg-amber-500/10 px-2 py-1 text-[12px] font-medium text-amber-700 dark:text-amber-300">
                     {t("mySkills.detail.badgeUpdateAvailable")}
                   </span>
                 )}
               </div>
               {skill.description && (
-                <p className="mt-1 line-clamp-2 text-[13.5px] leading-6 text-secondary">{skill.description}</p>
+                <p className="mt-1 line-clamp-2 text-[15px] leading-6 text-secondary">{skill.description}</p>
               )}
-              <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[12.5px] text-muted">
+              <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[14px] leading-5 text-tertiary">
                 <span title={skill.author_source ?? undefined}>
                   {t("mySkills.author")}: {skill.author || t("mySkills.authorMissing")}
                 </span>
-                {tools && <SyncDots skill={skill} tools={tools} size="sm" includeOrphan />}
-                {skill.tags.map((tag) => (
+                {skill.tags.map((tag, index) => (
                   <span
                     key={tag}
-                    className="inline-flex items-center rounded-full bg-surface-hover px-2 py-0.5 text-[11px] font-medium text-secondary"
+                    className={cn("inline-flex items-center rounded-md px-2.5 py-0.5 text-[12px] font-medium", index === 0 ? "bg-accent-bg text-accent-dark dark:text-accent-light" : "bg-surface-hover text-secondary")}
                   >
                     {tag}
                   </span>
                 ))}
               </div>
+              </div>
             </div>
-            <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 pr-0 pt-6">
+            <div className="skill-detail-actions flex shrink-0 flex-wrap items-center justify-end gap-3 pt-4">
+              <button type="button" onClick={() => openComparison("source")} disabled={!supportsSourceDiff}
+                title={!supportsSourceDiff ? t("mySkills.detail.noSource") : undefined}
+                className="inline-flex h-10 items-center gap-2 rounded-md border border-border-subtle bg-surface px-3.5 text-[14px] text-secondary outline-none hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-40">
+                {sourceIcon(skill.source_type)}{t("mySkills.detail.viewSource")}
+              </button>
+              <button type="button" onClick={() => openComparison("diff")} disabled={!supportsSourceDiff}
+                title={!supportsSourceDiff ? t("mySkills.detail.noSource") : undefined}
+                className="inline-flex h-10 items-center gap-2 rounded-md border border-border-subtle bg-surface px-3.5 text-[14px] text-secondary outline-none hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-40">
+                <FileDiff className="h-4 w-4" />{t("mySkills.detail.viewDiff")}
+              </button>
               {hasUpdateSource && onUpdate ? (
                 <button
                   type="button"
                   onClick={runUpdate}
                   disabled={updateBusy || busyAction === `check:${skill.id}`}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-[12.5px] font-medium text-white transition-colors outline-none hover:bg-accent-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-10 items-center gap-2 rounded-md bg-emerald-700 px-4 text-[14px] font-medium text-white outline-none hover:bg-emerald-800 focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <RefreshCw className={cn("h-3.5 w-3.5", updateBusy && "animate-spin")} />
                   {updateBusy ? t("mySkills.detail.updating") : updateLabel}
                 </button>
               ) : (
                 <span
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-border-subtle px-3 py-2 text-[12.5px] text-faint"
+                  className="inline-flex h-10 items-center gap-2 rounded-md border border-border-subtle px-3 text-[13px] text-muted"
                   title={t("mySkills.detail.noSource")}
                 >
                   <RefreshCw className="h-3.5 w-3.5" />
@@ -441,7 +474,7 @@ function SkillDetailPanelContent({
               <button
                 type="button"
                 onClick={() => setDrawerOpen(true)}
-                className="rounded-lg border border-border-subtle p-2 text-muted transition-colors outline-none hover:bg-surface-hover hover:text-secondary focus-visible:outline focus-visible:outline-accent lg:hidden"
+                className="skill-detail-sidebar-toggle rounded-md border border-border-subtle p-2 text-muted outline-none hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-accent lg:hidden"
                 aria-label={t("mySkills.detail.sidebar")}
               >
                 <PanelRightOpen className="h-4 w-4" />
@@ -449,7 +482,7 @@ function SkillDetailPanelContent({
             </div>
           </div>
           {/* 页签层级：文档 / 来源与差异 / 调用记录 */}
-          <nav className="mt-3 flex items-center gap-1" aria-label={t("mySkills.detail.doc")}>
+          <nav className="mt-4 flex items-center gap-4 border-b border-border-subtle" aria-label={t("mySkills.detail.doc")}>
             {([
               ["doc", t("mySkills.detail.tabDoc")],
               ...(supportsSourceDiff ? [["sourceDiff", t("mySkills.detail.tabSourceDiff")] as [ContentTab, string]] : []),
@@ -460,13 +493,14 @@ function SkillDetailPanelContent({
                 type="button"
                 onClick={() => {
                   setContentTab(tab as ContentTab);
+                  if (tab === "sourceDiff") setSourceFocus("diff");
                   mainScrollRef.current?.scrollTo({ top: 0 });
                 }}
                 aria-current={contentTab === tab ? "page" : undefined}
                 className={cn(
-                  "rounded-t-lg border-b-2 px-3 py-1.5 text-[12.5px] font-medium transition-colors outline-none focus-visible:outline focus-visible:outline-accent",
+                  "-mb-px border-b-2 px-4 py-2.5 text-[15px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-accent",
                   contentTab === tab
-                    ? "border-accent text-primary"
+                    ? "border-accent text-accent-dark dark:text-accent-light"
                     : "border-transparent text-muted hover:text-secondary"
                 )}
               >
@@ -477,33 +511,26 @@ function SkillDetailPanelContent({
         </header>
 
         <div className="flex min-h-0 flex-1">
-          <main ref={mainScrollRef} className="min-h-0 min-w-0 flex-1 overflow-y-auto px-6 py-5 scrollbar-hide">
+          <main ref={mainScrollRef} className="skill-detail-main min-h-0 min-w-0 flex-1 overflow-y-auto px-10 py-6 scrollbar-hide">
             {loading ? (
               <div className="mt-12 text-center text-[13px] text-muted">{t("common.loading")}</div>
             ) : contentTab === "sourceDiff" ? (
               <div className="flex flex-col gap-6">
-                {activeSourceDiff ? (
-                  <section aria-label={t("mySkills.detail.viewDiff")}>
+                <section ref={diffSectionRef} aria-label={t("mySkills.detail.viewDiff")}>
                     <h3 className="mb-2 text-[14px] font-semibold text-primary">{t("mySkills.detail.viewDiff")}</h3>
-                    <SkillSourceDiffViewer entries={activeSourceDiff.entries} />
-                  </section>
-                ) : sourceDiffLoading ? (
+                {activeSourceDiff ? <SkillSourceDiffViewer entries={activeSourceDiff.entries} /> : sourceDiffLoading ? (
                   <div className="mt-6 text-center text-[13px] text-muted">{t("common.loading")}</div>
-                ) : sourceDiffFailed || !supportsSourceDiff ? null : (
-                  <div className="mt-6 text-center text-[13px] text-muted">{t("common.loading")}</div>
-                )}
-                {activeSourceDoc && (
-                  <section aria-label={t("mySkills.detail.viewSource")}>
+                ) : <p className="text-sm text-muted">{t("mySkills.sourceDiffUnavailable")}</p>}
+                </section>
+                <section ref={sourceSectionRef} aria-label={t("mySkills.detail.viewSource")}>
                     <h3 className="mb-2 text-[14px] font-semibold text-primary">{t("mySkills.detail.viewSource")}</h3>
+                    {activeSourceDoc ? <>
                     <p className="mb-3 text-[12.5px] text-muted">
                       {activeSourceDoc.source_label} · {activeSourceDoc.revision.slice(0, 7)}
                     </p>
                     <SkillMarkdown content={activeSourceDoc.content} hideFirstHeading />
-                  </section>
-                )}
-                {!activeSourceDiff && !activeSourceDoc && !sourceDiffLoading && (
-                  <div className="mt-12 text-center text-[13px] text-muted">{t("mySkills.sourceDiffUnavailable")}</div>
-                )}
+                    </> : <p className="text-sm text-muted">{t(sourceDocLoading ? "common.loading" : "mySkills.sourceDiffUnavailable")}</p>}
+                </section>
               </div>
             ) : contentTab === "activity" ? (
               <div className="mx-auto max-w-[860px] py-10 text-center">
@@ -511,7 +538,7 @@ function SkillDetailPanelContent({
                 <p className="mt-3 text-[13.5px] text-secondary">{t("mySkills.detail.activityHint")}</p>
                 <button
                   type="button"
-                  onClick={() => navigate(`/skill-activity?skill=${encodeURIComponent(skill.name)}`)}
+                  onClick={() => { onClose(); navigate(`/skill-activity?skill=${encodeURIComponent(skill.name)}`); }}
                   className="mt-4 inline-flex items-center gap-2 rounded-lg bg-accent px-3.5 py-2 text-[12.5px] font-medium text-white transition-colors outline-none hover:bg-accent-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
                 >
                   {t("mySkills.detail.activityOpen")}

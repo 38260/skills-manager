@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { StatusBanner } from "./StatusBanner";
 import { CommandPalette } from "./CommandPalette";
@@ -9,9 +9,11 @@ import { useDragWindow } from "../hooks/useDragWindow";
 
 export function Layout() {
   const { t } = useTranslation();
-  const { appError, refreshAppData } = useApp();
+  const { appError, refreshAppData, detailSkillId, managedSkills } = useApp();
   const onDrag = useDragWindow();
   const navigate = useNavigate();
+  const location = useLocation();
+  const detailSkill = location.pathname === "/my-skills" ? managedSkills.find(skill => skill.id === detailSkillId) : null;
 
   // Cmd+, to open Settings
   useEffect(() => {
@@ -39,7 +41,11 @@ export function Layout() {
       <div
         onMouseDown={onDrag}
         className="absolute inset-x-0 top-0 z-50 h-[28px] border-b border-border-subtle bg-bg-secondary"
-      />
+      >
+        {detailSkill && <div className="ml-[260px] flex h-full min-w-0 items-center gap-2 pr-8 text-[12px] text-muted">
+          <span>{t("mySkills.title")}</span><span aria-hidden="true">/</span><span className="truncate">{detailSkill.name}</span>
+        </div>}
+      </div>
       <Sidebar />
       <div className="relative flex min-w-[600px] flex-1 flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto px-5 pb-5 pt-[calc(28px+20px)] scrollbar-hide">
