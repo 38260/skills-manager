@@ -1,0 +1,35 @@
+{
+  "at": "2026-10-12T13:40:26.958Z",
+  "results": [
+    {
+      "label": "A 记录类型带底色徽章（indigo/teal/amber）",
+      "ok": true,
+      "detail": "{\"total\":307,\"kindColored\":true,\"triggerColored\":true,\"auto\":51,\"manual\":0,\"unknown\":0,\"bodyHasRows\":true}"
+    },
+    {
+      "label": "A 触发方式带底色徽章",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "B 列表里出现「自动触发」徽章",
+      "ok": true,
+      "detail": "自动触发 51 / 手动触发 0 / 来源未知 0"
+    },
+    {
+      "label": "C 市场卡片显示下载量图标",
+      "ok": true,
+      "detail": "25 个"
+    },
+    {
+      "label": "C 显示下载量数字",
+      "ok": true,
+      "detail": "6 6 26 26 3.8M 1.3M"
+    },
+    {
+      "label": "D 技能详情「来源信息」显示上游 GitHub 仓库",
+      "ok": true,
+      "detail": "打开卡片=clicked 右栏=true"
+    }
+  ]
+}

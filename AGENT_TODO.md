@@ -33,6 +33,8 @@
 | 2026-10-12 | B | 触发判定改为「本轮是否出现过用户消息」，新增 `@skill:` 识别，补 `agent_choice` 文案 | `backend/activity/context.mjs`、`backend/activity/scanner.mjs`、`src/i18n/{zh,en,zh-TW}.json` | 全量重扫对照，unknown 177 → 0 |
 | 2026-10-12 | C | 榜单解析改走 RSC 载荷（`initialSkills`），卡片在三个页签都显示下载量，热门榜另显示较昨日增量 | `backend/skillssh.mjs`、`src/views/InstallSkills.tsx`、`src/lib/tauri.ts`、`src/i18n/{zh,en,zh-TW}.json` | 三个榜单实测，installs 由全 0 → 600/600 有值 |
 | 2026-10-12 | D | 新增 `lib/skillRepo.ts`：技能来源 → GitHub 仓库（技能自身来源优先，其次逐个核对过的映射）；技能详情「来源信息」与市场卡片接入 | `src/lib/skillRepo.ts`、`src/components/SkillDetailPanel.tsx`、`src/views/InstallSkills.tsx`、`src/i18n/{zh,en,zh-TW}.json` | 53 个技能逐内容核对，确证 14 个、排除 5 个同名不同物 |
+| 2026-10-12 | 整体测试 | 触发方式断言按新契约更新，并补「无用户消息仍为来源未知」边界用例 | `tests/backend/activity-{parsers,dsh,qoder,workbuddy}.test.mjs` | 后端 47/51，无新增回归 |
+| 2026-10-12 | 整体测试 | 界面级验收脚本；对照脚本改为从固定基线取旧解析器（原先写 HEAD，提交后会基线漂移） | `output/final-check/verify-ui.mjs`、`output/activity-fix/compare-trigger.mjs`、`.gitignore` | 6/6 通过 |
 
 **批次 A 验证**（`output/activity-fix/check-chip-contrast.mjs`；色值不手抄 —— tailwind 内置色取自 `node_modules`，项目 token 取自 `src/index.css`）
 
@@ -98,6 +100,41 @@
 
 市场页的来源串另有站点型（`smithery.ai/apple-design`、`skills.volces.com/find-skills`、
 `open.feishu.cn/lark-doc`），`marketRepoUrl()` 按「两段都不得含点」过滤掉，不给打不开的地址。
+
+---
+
+### 整体测试记录（2026-10-12 晚）
+
+| 校验门 | 结果 |
+| --- | --- |
+| `npx tsc -b` | ✓ |
+| `npm run lint` | ✓ |
+| `npm run test:ui` | 6/6 ✓ |
+| `npm run build` | ✓ |
+| 后端 `node --test tests/backend/*.test.mjs` | **47/51**（其中 +1 为本次新增的边界用例） |
+
+后端 4 项失败为**改动前既有**、与本次无关：`two-device sync` / `git-source update regression`
+（本沙箱 git EBUSY）、`preset apply` / `设置读写、活动预设持久`（引用用户已删除的 Preset「应用」链路）。
+
+**测试中发现并修的回归**：B 有意收窄了触发判定契约，4 个 activity 解析用例断言的正是旧契约
+（「非点名即 unknown」）。已按新契约更新断言（`unknown` → `automatic`）并在代码里注明原因，
+而不是删掉断言；同时新增 1 条边界用例，守住 `unknown` 仍只属于「本轮完全没有用户消息」
+（归档片段那类日志），避免这次改动把 `unknown` 一并改没。
+
+**界面级验收**（`output/final-check/verify-ui.mjs`：真实库起服务 + 无头 Chrome + CDP 直接读 DOM，**6/6 ✓**）
+
+| # | 断言 | 实测读数 |
+| --- | --- | --- |
+| A | 记录类型 / 触发方式徽章带底色 | 列表徽章带 `bg-indigo-500/10` / `bg-teal-500/10` / `bg-amber-500/10` ✓ |
+| B | 列表不再出现「来源未知」 | 自动触发 **51** · 手动触发 0 · **来源未知 0** |
+| C | 市场卡片显示下载量 | 25 个下载量图标；数字 3.8M · 1.3M · 26 · 6 … |
+| D | 技能详情「来源信息」显示上游仓库 | 打开 apple-design → 右栏出现 `emilkowalski/skills` |
+
+截图写在 `output/final-check/shots/`（含真实技能名与本机路径，已 gitignore，不入库）。
+
+> 踩坑备忘：`svg.lucide-download-cloud` 这种写死图标类名的断言会永远为红 ——
+> lucide 已把 `DownloadCloud` 改名为 `CloudDownload`，生成的类名是 `lucide-cloud-download`。
+> 断言改成 `svg[class*="download"]`。
 
 ---
 

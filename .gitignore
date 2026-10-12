@@ -56,3 +56,6 @@ output/skill-category-backup
 output/activity-fix/_old
 output/activity-fix/_commit-*.txt
 
+# 界面级验收脚本跑在用户真实技能库上，截图里会出现真实技能名与本机路径，不入库
+output/final-check/shots
+
