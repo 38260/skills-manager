@@ -3,11 +3,20 @@ import path from "node:path";
 import os from "node:os";
 import { spawn } from "node:child_process";
 import { zipSync } from "fflate";
-import { redact } from "./files.mjs";
+import { redact, inside } from "./files.mjs";
+
+// 判断路径是否位于允许的根目录之内（含根目录本身）；用于限制"打开文件"的作用范围。
+export function pathWithinRoots(target, roots) {
+  const resolved = path.resolve(target);
+  return roots.filter(Boolean).some(root => {
+    const relative = path.relative(path.resolve(root), resolved);
+    return relative === "" || (!relative.startsWith(".." + path.sep) && relative !== ".." && !path.isAbsolute(relative));
+  });
+}
 
 // 桌面外壳与诊断命令（APP-05）：浏览器/桌面模式下替代 Tauri 外壳能力。
 // 应用内更新检查采用保守策略：仅当配置了 update_manifest_url 时联网检查，否则报告当前版本无更新。
-export function shellCommands(store, { packageVersion, exit, restart }) {
+export function shellCommands(store, { packageVersion, exit, restart, extraRoots = () => [] }) {
   const logsDir = () => path.join(store.directory, "logs");
   const panicFile = () => path.join(logsDir(), "panic.json");
 
@@ -15,6 +24,42 @@ export function shellCommands(store, { packageVersion, exit, restart }) {
     try {
       return JSON.parse(fs.readFileSync(new URL("../package.json", import.meta.url), "utf8")).version ?? "unknown";
     } catch { return "unknown"; }
+  }
+
+  // 打开路径的允许范围：技能库目录、已纳管技能的中心库与本地来源目录，以及调用记录来源目录。
+  function allowedRoots() {
+    const roots = [store.directory];
+    for (const skill of store.skills()) {
+      roots.push(skill.central_path);
+      const source = skill.source_ref_resolved || skill.source_ref;
+      if (source && !/^[a-z][a-z0-9+.-]*:\/\//i.test(source)) roots.push(source);
+    }
+    roots.push(...(extraRoots() ?? []));
+    return roots.filter(root => typeof root === "string" && root && fs.existsSync(root));
+  }
+
+  // 仅允许打开白名单目录内的路径，避免渲染进程用任意路径调用系统程序。
+  function resolveOpenTarget(target) {
+    const resolved = path.resolve(String(target ?? ""));
+    if (!target || !fs.existsSync(resolved)) throw new Error("目标文件不存在或已被移动");
+    if (!pathWithinRoots(resolved, allowedRoots())) throw new Error("该路径不在允许打开的目录内");
+    return resolved;
+  }
+
+  function launch(target, reveal) {
+    const options = { detached: true, stdio: "ignore" };
+    let child;
+    if (process.platform === "win32") {
+      child = reveal
+        ? spawn("explorer.exe", [`/select,${target}`], options)
+        : spawn("rundll32.exe", ["url.dll,FileProtocolHandler", target], { ...options, windowsHide: true });
+    } else if (process.platform === "darwin") {
+      child = reveal ? spawn("open", ["-R", target], options) : spawn("open", [target], options);
+    } else {
+      child = spawn("xdg-open", [reveal ? path.dirname(target) : target], options);
+    }
+    child.on("error", () => { /* 系统没有对应打开方式时静默失败，前端保留路径可手动复制。 */ });
+    child.unref();
   }
 
   return {
@@ -71,6 +116,18 @@ export function shellCommands(store, { packageVersion, exit, restart }) {
       try { return JSON.parse(fs.readFileSync(panicFile(), "utf8")); } catch { return null; }
     } },
     clear_last_panic: { call: () => { try { fs.unlinkSync(panicFile()); } catch {} } },
+
+    // 用系统默认程序打开文件/目录；reveal 为 true 时在文件管理器中定位该文件。
+    // 传入 skillId 时按技能中心库副本内的相对路径解析，避免前端拼接绝对路径。
+    open_path: { call: args => {
+      const target = args.skillId
+        ? inside(store.skill(String(args.skillId)).central_path, String(args.relative ?? ""))
+        : resolveOpenTarget(args.path);
+      if (!fs.existsSync(target)) throw new Error("目标文件不存在或已被移动");
+      const reveal = Boolean(args.reveal);
+      launch(target, reveal);
+      return { path: target, reveal };
+    } },
   };
 }
 

@@ -2,6 +2,8 @@
 
 日期：2026-10-12。结论：验收执行完成，**整体未全部通过**。核心业务与所列 GUI 场景通过；完整桌面交付和五客户端新触发链路仍有未通过或未验证项。
 
+> 2026-10-12 第二轮（详情页与调用记录返工）见文末「第二轮：详情页与调用记录返工」。该轮修复 DSH／WorkBuddy 读取问题、行内代码可读性、目录、项目结构、来源直接打开、部署默认折叠、调用记录内嵌与样式重构，并给出真实浏览器验收证据。
+
 视觉复核补充：详情页样式与项目归档参考图未对齐，视觉还原不通过。现有截图中的分栏与交互检查不能证明参考图样式已实现；返工拆分见 `TODO.md` 第 16 节，本次复核只更新方案和验收口径，未改功能代码。
 
 ## 范围与环境
@@ -96,3 +98,58 @@
 | `a5878f3` | Preset 启用数量口径 |
 
 最终证据与报告提交通过 `git log -- ACCEPTANCE.md TODO.md output/playwright/evidence` 查询。交付报告不代表上方未通过项完成。
+
+## 第二轮：详情页与调用记录返工（2026-10-12）
+
+范围：技能详情页可读性与信息组织、调用记录内嵌与样式、以及真实日志的读取缺陷。使用隔离数据 `output/ui-rework/data`，不接触用户真实技能库；真实日志仅只读复扫。
+
+### 1. 读取缺陷修复（后端）
+
+| 问题 | 根因 | 修复与复核 |
+| --- | --- | --- |
+| DSH「8 个读取问题」 | `parseDsh` 只接受日志版本 1–4，本机 24 份会话中 8 份为 `version: 0`，整份文件被拒 | 版本白名单加入 0（v0 的 `data.name`／`data.callId`／`tool/result` 结构与 v4 一致，已解压核对）；未知版本仍报错，`version: 999` 断言保留 |
+| WorkBuddy「2 个读取问题」 | Skill 工具参数键随版本变化，2 条历史记录使用 `{"command":"skill-creator"}`，只读 `arguments.skill` 时名称缺失并被计为解析问题 | 名称解析改为 `skill ?? command`；名称确实缺失时仍按解析问题上报，不伪造技能名 |
+
+真实日志只读复扫结果（修复前 → 修复后）：
+
+- DSH：24 个来源文件，问题文件 8 → 0，读取问题 8 → 0。
+- WorkBuddy：440 个来源文件，问题文件 2 → 0，读取问题 2 → 0。
+
+新增单测：`tests/backend/activity-dsh.test.mjs`（版本 0 解析）、`tests/backend/activity-workbuddy.test.mjs`（command 键且 `ctx.errors` 为 0）。
+
+### 2. 新增后端能力
+
+- `get_skill_files`：返回技能中心库副本的目录结构（相对路径、是否目录、字节数），不返回文件内容；忽略项与 `files()` 一致。
+- `open_path`：用系统默认程序打开文件／目录，`reveal` 时在文件管理器中定位。路径限定在技能库目录、已纳管技能的中心库与本地来源目录、调用记录来源目录之内；传入 `skillId` 时按技能目录相对路径解析。白名单外的路径被拒绝（`tests/backend/shell.test.mjs` 覆盖拒绝与不存在两种情况）。
+
+### 3. 前端改动与真实浏览器验收
+
+验收方式：单进程脚本自行拉起本地服务与 headless Chrome（`output/ui-rework/verify.mjs`），跑完一并结束；脚本与截图保留在 `output/ui-rework/`。
+
+| 需求 | 验收断言 | 结果 |
+| --- | --- | --- |
+| 行内代码看得清 | 浅色：文字 `rgb(4,120,87)` / 底 `rgba(5,150,105,0.08)` / 边 `rgba(5,150,105,0.25)`；深色：文字 `rgb(52,211,153)` | 通过 |
+| 无语言标记代码块 | `pre` 内不再出现绿色行内标签（`inlineChipInsidePre: false`） | 通过 |
+| 目录优化 | 8 个条目；超长中文标题折行为 2 行（`line-clamp: 2`），不再截断 | 通过 |
+| 项目结构 | 详情右栏出现「项目结构」，列出 `LICENSE`、`SKILL.md`、`references/`、`scripts/` 及子文件与体积 | 通过 |
+| 查看来源直接打开文件 | 点击结构中的 `SKILL.md` 发出 `open_path { skillId, relative: "SKILL.md" }`；点击目录行不发出请求（反向断言） | 通过 |
+| 来源位置 | 「打开来源目录」发出 `open_path { path: <上游目录>, reveal: false }` | 通过 |
+| 部署默认折叠 | 初始 `aria-expanded=false`，折叠时开关数为 0；展开后只出现已安装工具（Codex／Qoder／ZCode／WorkBuddy／DeepSeek Harness），未安装工具与「N 个不可用」入口均不展示 | 通过 |
+| 调用记录内嵌 | 切到「调用记录」页签后 `location.pathname` 仍为 `/my-skills`；内嵌 6 条记录；展开后展示识别依据／行号／会话 ID／调用 ID／项目／技能文件／来源文件 | 通过 |
+| 调用记录页样式 | 记录区无大圆角卡片（`rounded-xl` 计数 0）；统计为扁平数字行；6 条记录 | 通过 |
+
+截图证据：`output/ui-rework/evidence/`（`01_detail_light`、`01b_detail_sidebar_bottom`、`02_activity_inline`、`03_activity_detail`、`04_detail_dark`、`05_activity_page_light`、`06_activity_deeplink`）；结构化断言见同目录 `report.json`。
+
+### 4. 测试与静态检查
+
+- 后端：`node --test tests/backend/*.test.mjs` 45 项，通过 43，失败 2。
+- UI：`node --experimental-strip-types --test tests/ui/*.test.mjs` 6/6 通过。
+- `npm run lint`、`tsc -b`、`vite build` 通过。
+
+### 5. 未通过项与限制
+
+- 失败 2 项为 `tests/backend/backup.test.mjs`、`tests/backend/update-regression.test.mjs`，错误均为 `spawnSync git EBUSY`。独立复核确认这是本机环境限制：`spawnSync` 派生任何进程（含 `where`、绝对路径 `git.exe`）均报 EBUSY，而异步 `spawn('git')` 正常返回版本号；本轮未修改任何 Git 相关代码，与本次改动无关。这两项仍需在可同步派生进程的环境复跑。
+- 「调用记录」页签内嵌列表按技能名匹配，同名不同来源的技能会同时命中；未关联到纳管技能的记录在该页签不展示，需到调用记录页查看。
+- 详情页右栏在「目录 + 项目结构 + 部署（展开）+ 来源信息」同时存在时内容高度约 1163px、可视区约 688px，需要滚动；默认折叠部署后显著变短，但未做进一步的折叠策略。
+- 未重新执行桌面原生窗口、便携版启动与五客户端新触发链路验收，结论沿用上一轮未通过项。
+

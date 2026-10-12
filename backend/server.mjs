@@ -152,6 +152,7 @@ const commands = {
 
   // ── 文档与来源比较 ──
   get_skill_document: { call: args => library.skillDocument(args.skillId) },
+  get_skill_files: { call: args => library.skillFiles(args.skillId) },
   get_source_skill_document: { call: args => library.sourceSkillDocument(args.skillId) },
   get_skill_source_diff: { call: args => library.skillSourceDiff(args.skillId) },
 
@@ -241,6 +242,8 @@ Object.assign(commands, activity.commands);
 const diagnostics = attachDiagnostics(store);
 Object.assign(commands, shellCommands(store, {
   exit: () => { server?.close(); store.close(); process.exit(0); },
+  // 调用记录来源目录同样允许"在文件夹中显示"，便于从记录定位原始日志。
+  extraRoots: () => activity.store.sources().map(source => source.path),
   restart: () => {
     if (process.env.SKILLS_MANAGER_ROLE === "electron-backend") { process.exit(0); return; }
     const child = spawn(process.execPath, process.argv.slice(1), { detached: true, stdio: "ignore", windowsHide: true });

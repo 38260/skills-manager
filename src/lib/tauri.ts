@@ -246,8 +246,33 @@ export const getSkillsForPreset = (presetId: string) =>
     presetId,
   });
 
+export interface SkillFileEntry {
+  /** 相对技能目录的路径，使用 "/" 分隔。 */
+  relative: string;
+  is_dir: boolean;
+  size: number;
+}
+
+export interface SkillFiles {
+  skill_id: string;
+  root: string;
+  filename: string | null;
+  entries: SkillFileEntry[];
+}
+
 export const getSkillDocument = (skillId: string) =>
   invoke<SkillDocument>("get_skill_document", { skillId });
+
+export const getSkillFiles = (skillId: string) =>
+  invoke<SkillFiles>("get_skill_files", { skillId });
+
+/** 用系统默认程序打开文件/目录；reveal 为 true 时在文件管理器中定位。 */
+export const openPath = (path: string, reveal = false) =>
+  invoke<{ path: string; reveal: boolean }>("open_path", { path, reveal });
+
+/** 打开技能中心库副本内的文件/目录：relative 相对技能目录，"" 表示技能根目录。 */
+export const openSkillPath = (skillId: string, relative = "", reveal = false) =>
+  invoke<{ path: string; reveal: boolean }>("open_path", { skillId, relative, reveal });
 
 export const getSourceSkillDocument = (skillId: string) =>
   invoke<SourceSkillDocument>("get_source_skill_document", { skillId });

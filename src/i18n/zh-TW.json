@@ -447,11 +447,24 @@
       "activityOpen": "開啟呼叫記錄頁",
       "activityUnavailable": "呼叫記錄模組未載入",
       "sidebar": "資訊欄",
+      "closeSidebar": "關閉資訊欄",
       "doc": "文件",
       "copyCode": "複製",
       "copiedCode": "已複製",
       "copyFailed": "複製失敗",
-      "plainText": "純文字"
+      "plainText": "純文字",
+      "structure": "專案結構",
+      "structureSummary": "共 {{count}} 個檔案",
+      "structureEmpty": "此技能沒有可顯示的檔案",
+      "structureUnavailable": "讀取專案結構失敗",
+      "revealInFolder": "在資料夾中顯示",
+      "deployNone": "目前沒有可部署的工具",
+      "openSourceFolder": "開啟來源目錄",
+      "openSourceLink": "開啟來源網頁",
+      "openSourceFile": "開啟檔案",
+      "activityEmpty": "此技能尚無呼叫記錄",
+      "activityError": "呼叫記錄讀取失敗",
+      "activityOpenPage": "在呼叫記錄頁檢視"
     }
   },
   "install": {

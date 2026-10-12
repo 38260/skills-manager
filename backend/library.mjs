@@ -3,7 +3,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { spawn } from "node:child_process";
 import { unzipSync } from "fflate";
-import { inside, skillName, metadata, files, hashDirectory, copySkill, skillDirectories, canonical, readJson, writeJson, redact } from "./files.mjs";
+import { inside, skillName, metadata, files, tree, hashDirectory, copySkill, skillDirectories, canonical, readJson, writeJson, redact } from "./files.mjs";
 
 // 安装／更新取消登记：key → { cancelled, child }。requestCancel 中止进行中的 git 进程。
 const cancels = new Map();
@@ -410,6 +410,12 @@ export class Library {
   skillDocument(id) {
     const skill=this.store.skill(id),doc=this.document(skill.central_path);
     return {skill_id:id,filename:doc.filename,content:doc.content,central_path:skill.central_path};
+  }
+  // 技能的项目结构：只列出中心库副本内的相对路径与大小，不返回文件内容。
+  skillFiles(id) {
+    const skill=this.store.skill(id);
+    const entries=tree(skill.central_path);
+    return {skill_id:id,root:skill.central_path,filename:["SKILL.md","skill.md"].find(name=>fs.existsSync(path.join(skill.central_path,name)))??null,entries};
   }
   async sourceSkillDocument(id) {
     const skill=this.store.skill(id);

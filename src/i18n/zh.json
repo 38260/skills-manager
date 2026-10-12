@@ -490,11 +490,24 @@
       "activityOpen": "打开调用记录页",
       "activityUnavailable": "调用记录模块未加载",
       "sidebar": "信息栏",
+      "closeSidebar": "关闭信息栏",
       "doc": "文档",
       "copyCode": "复制",
       "copiedCode": "已复制",
       "copyFailed": "复制失败",
-      "plainText": "纯文本"
+      "plainText": "纯文本",
+      "structure": "项目结构",
+      "structureSummary": "共 {{count}} 个文件",
+      "structureEmpty": "该技能没有可显示的文件",
+      "structureUnavailable": "读取项目结构失败",
+      "revealInFolder": "在文件夹中显示",
+      "deployNone": "当前没有可部署的工具",
+      "openSourceFolder": "打开来源目录",
+      "openSourceLink": "打开来源网页",
+      "openSourceFile": "打开文件",
+      "activityEmpty": "该技能还没有调用记录",
+      "activityError": "调用记录读取失败",
+      "activityOpenPage": "在调用记录页查看"
     }
   },
   "install": {

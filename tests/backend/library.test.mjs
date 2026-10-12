@@ -47,3 +47,15 @@ test("archive paths cannot escape the extraction directory",async t=>{
   fs.writeFileSync(archive,zipSync({"../escape.txt":strToU8("bad"),"SKILL.md":strToU8("---\nname: example\n---\n")}));
   await assert.rejects(library.installLocal(archive));assert.equal(fs.existsSync(path.join(root,"escape.txt")),false);
 });
+
+test("skill files list returns the project structure with directories and sizes",async t=>{
+  const {source,library}=fixture(t),skill=await library.installLocal(source);
+  fs.mkdirSync(path.join(source,"references"));
+  fs.writeFileSync(path.join(source,"references","guide.md"),"guide");
+  await library.reimport(skill.id);
+  const listed=library.skillFiles(skill.id);
+  assert.equal(listed.skill_id,skill.id);
+  assert.equal(listed.filename,"SKILL.md");
+  assert.deepEqual(listed.entries.map(entry=>[entry.relative,entry.is_dir]),[["SKILL.md",false],["references",true],["references/guide.md",false]]);
+  assert.ok(listed.entries.find(entry=>entry.relative==="references/guide.md").size>0);
+});

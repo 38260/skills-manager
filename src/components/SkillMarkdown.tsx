@@ -1,11 +1,22 @@
 import ReactMarkdown from "react-markdown";
-import { Children, isValidElement, useEffect, useRef, useState, type ReactNode } from "react";
+import { Children, cloneElement, isValidElement, useEffect, useRef, useState, type ReactElement, type ReactNode } from "react";
 import { Copy, Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import remarkGfm from "remark-gfm";
 import { cn } from "../utils";
 import { stripMarkdownFrontmatter, headingMatchesTitle } from "../lib/skillMarkdownText";
 import { extractHeadings } from "../lib/markdownOutline";
+
+// 无语言标记的围栏代码块没有 language-* 类名；由 pre 给内部 code 打上块级标记，
+// 避免它被当成行内代码渲染成绿色小标签。
+function markBlockCode(children: ReactNode): ReactNode {
+  return Children.map(children, child => {
+    if (!isValidElement(child)) return child;
+    const element = child as ReactElement<{ className?: string }>;
+    const className = cn("skill-md-block-code", element.props.className);
+    return cloneElement(element, { className });
+  });
+}
 
 interface SkillMarkdownProps {
   content: string;
@@ -90,7 +101,9 @@ export function SkillMarkdown({ content, className, headingIdPrefix, hideFirstHe
             <hr className={cn("my-6 border-border-subtle", className)} {...props} />
           ),
           code: ({ className, children, ...props }) => {
-            const isBlock = String(className || "").includes("language-");
+            // 块级代码：有语言标记（```ts）或被 pre 标记为块级（无语言标记的围栏代码块）。
+            const isBlock = String(className || "").includes("language-")
+              || String(className || "").includes("skill-md-block-code");
             if (isBlock) {
               return (
                 <code className={cn("block text-[13px] leading-6 text-secondary", className)} {...props}>
@@ -100,13 +113,7 @@ export function SkillMarkdown({ content, className, headingIdPrefix, hideFirstHe
             }
 
             return (
-              <code
-                className={cn(
-                  "rounded bg-surface-hover px-1.5 py-0.5 font-mono text-[13px] text-accent-light",
-                  className
-                )}
-                {...props}
-              >
+              <code className={cn("skill-md-inline-code", className)} {...props}>
                 {children}
               </code>
             );
@@ -118,7 +125,7 @@ export function SkillMarkdown({ content, className, headingIdPrefix, hideFirstHe
                 className
               )}
               {...props}
-            >{children}</pre>
+            >{markBlockCode(children)}</pre>
           ),
           table: ({ className, ...props }) => (
             <div className="mb-4 overflow-x-auto rounded-xl border border-border-subtle">

@@ -1,0 +1,148 @@
+[
+  {
+    "name": "技能卡片可见",
+    "value": true
+  },
+  {
+    "name": "详情页已打开",
+    "value": true
+  },
+  {
+    "name": "行内代码样式",
+    "value": {
+      "text": "~/.codex/skills/ui-guide/SKILL.md",
+      "color": "rgb(4, 120, 87)",
+      "background": "rgba(5, 150, 105, 0.08)",
+      "border": "rgba(5, 150, 105, 0.25)"
+    }
+  },
+  {
+    "name": "目录条目",
+    "value": {
+      "count": 8,
+      "longLines": 2,
+      "longClamped": "2"
+    }
+  },
+  {
+    "name": "项目结构",
+    "value": {
+      "names": [
+        "LICENSE",
+        "SKILL.md",
+        "references",
+        "checklist.md",
+        "tokens.md",
+        "scripts",
+        "build.sh"
+      ]
+    }
+  },
+  {
+    "name": "部署默认折叠",
+    "value": {
+      "expanded": "false",
+      "switchesWhileCollapsed": 0
+    }
+  },
+  {
+    "name": "展开后的工具行",
+    "value": {
+      "expanded": "true",
+      "names": [
+        "Codex",
+        "ZCode",
+        "Qoder",
+        "WorkBuddy"
+      ],
+      "hiddenUnavailable": true
+    }
+  },
+  {
+    "name": "右栏区块",
+    "value": {
+      "scrollHeight": 1163,
+      "clientHeight": 688,
+      "sections": [
+        "目录8",
+        "项目结构",
+        "部署到工具已启用 5 / 5",
+        "来源信息"
+      ]
+    }
+  },
+  {
+    "name": "点击结构文件调用 open_path",
+    "value": [
+      {
+        "skillId": "4b40ffdc-69e1-4417-a537-38966f16958a",
+        "relative": "SKILL.md",
+        "reveal": false
+      }
+    ]
+  },
+  {
+    "name": "点击目录行不打开文件",
+    "value": {
+      "clicked": true,
+      "calls": 0
+    }
+  },
+  {
+    "name": "无语言代码块渲染",
+    "value": {
+      "hasPlainBlock": true,
+      "inlineChipInsidePre": false
+    }
+  },
+  {
+    "name": "打开来源目录调用",
+    "value": [
+      {
+        "path": "D:\\AIWorkSpace\\Codex\\SkillManager\\skills-manager\\output\\ui-rework\\data\\upstream\\ui-guide",
+        "reveal": false
+      }
+    ]
+  },
+  {
+    "name": "调用记录内嵌",
+    "value": {
+      "pathBefore": "/my-skills",
+      "pathAfter": "/my-skills",
+      "rows": 6,
+      "firstSkill": "ui-guide"
+    }
+  },
+  {
+    "name": "记录详情字段",
+    "value": [
+      "识别依据",
+      "行号／记录位置",
+      "会话 ID",
+      "调用 ID",
+      "项目",
+      "技能文件",
+      "来源文件"
+    ]
+  },
+  {
+    "name": "深色行内代码样式",
+    "value": {
+      "color": "rgb(52, 211, 153)",
+      "background": "rgba(16, 185, 129, 0.08)"
+    }
+  },
+  {
+    "name": "调用记录页",
+    "value": {
+      "rows": 6,
+      "hasCardFrames": 0,
+      "summary": [
+        "5",
+        "1",
+        "0",
+        "6"
+      ]
+    }
+  }
+]

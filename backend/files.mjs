@@ -65,6 +65,24 @@ export function files(directory, prefix = "") {
   return result.sort((a, b) => Buffer.compare(Buffer.from(a.relative), Buffer.from(b.relative)));
 }
 
+// 目录结构：文件与（含空目录的）目录，供详情页"项目结构"展示；不读取内容，忽略项与 files() 保持一致。
+export function tree(directory, prefix = "") {
+  if (!fs.existsSync(directory)) return [];
+  const result = [];
+  for (const item of fs.readdirSync(directory, { withFileTypes: true })) {
+    if (ignored.has(item.name) || item.name.endsWith(".pyc") || item.isSymbolicLink()) continue;
+    const relative = prefix ? `${prefix}/${item.name}` : item.name;
+    const full = path.join(directory, item.name);
+    if (item.isDirectory()) {
+      result.push({ relative, is_dir: true, size: 0 });
+      result.push(...tree(full, relative));
+    } else if (item.isFile()) {
+      result.push({ relative, is_dir: false, size: fs.statSync(full).size });
+    }
+  }
+  return result.sort((a, b) => Buffer.compare(Buffer.from(a.relative), Buffer.from(b.relative)));
+}
+
 export function hashDirectory(directory) {
   const hash = crypto.createHash("sha256");
   for (const file of files(directory)) {

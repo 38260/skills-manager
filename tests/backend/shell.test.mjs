@@ -91,3 +91,21 @@ test("desktop shell commands: diagnostics, log excerpt, panic, update blocker", 
   assert.ok(fs.existsSync(exported.zip_path));
   assert.equal(fs.statSync(exported.zip_path).size > 0, true);
 });
+
+test("open_path 只允许打开已登记目录内的路径", async t => {
+  const { invoke, directory } = await startServer(t);
+  const inside = path.join(directory, "repo", "logs", "server.log");
+  assert.ok(fs.existsSync(inside), "技能库日志应已生成");
+
+  // 白名单外的路径（系统临时目录）必须被拒绝，且不触发任何系统程序。
+  const outside = path.join(os.tmpdir(), "skills-manager-outside.txt");
+  fs.writeFileSync(outside, "not allowed");
+  t.after(() => { try { fs.unlinkSync(outside); } catch {} });
+  const denied = await invoke("open_path", { path: outside });
+  assert.equal(denied.body.ok, false);
+  assert.match(String(denied.body.message), /允许打开/);
+
+  const missing = await invoke("open_path", { path: path.join(directory, "repo", "logs", "nope.log") });
+  assert.equal(missing.body.ok, false);
+  assert.match(String(missing.body.message), /不存在/);
+});

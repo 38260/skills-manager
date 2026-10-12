@@ -490,11 +490,24 @@
       "activityOpen": "Open Skill Activity",
       "activityUnavailable": "Activity module unavailable",
       "sidebar": "Info panel",
+      "closeSidebar": "Close info panel",
       "doc": "Document",
       "copyCode": "Copy",
       "copiedCode": "Copied",
       "copyFailed": "Copy failed",
-      "plainText": "Plain text"
+      "plainText": "Plain text",
+      "structure": "Project structure",
+      "structureSummary": "{{count}} files",
+      "structureEmpty": "No files to show for this skill",
+      "structureUnavailable": "Failed to read the project structure",
+      "revealInFolder": "Show in folder",
+      "deployNone": "No deployable tools right now",
+      "openSourceFolder": "Open source folder",
+      "openSourceLink": "Open source page",
+      "openSourceFile": "Open file",
+      "activityEmpty": "No activity recorded for this skill yet",
+      "activityError": "Failed to load activity records",
+      "activityOpenPage": "Open in Activity page"
     }
   },
   "install": {
