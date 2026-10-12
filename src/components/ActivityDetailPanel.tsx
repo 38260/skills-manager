@@ -41,6 +41,11 @@ export function ActivityDetailPanel({ record, compact = false, onOpenSkill, clas
     [t("activity.sourceFile"), record.sourcePath],
   ];
 
+  // 归属：优先「技能路径可验证」的严格匹配；严格匹配没有时退回「技能名在库里唯一」的兜底，
+  // 并在按钮旁标注，避免把弱关联说成确定的关联。
+  const skillId = record.managedSkillId ?? record.usageSkillId ?? null;
+  const matchedByName = !record.managedSkillId && Boolean(record.usageSkillId);
+
   return (
     <div className={cn("min-w-0", className)}>
       {/* 记录头部：技能名 + Agent + 触发方式 + 时间 */}
@@ -117,14 +122,21 @@ export function ActivityDetailPanel({ record, compact = false, onOpenSkill, clas
 
       <p className="mt-3 text-[12px] leading-5 text-tertiary">{t("activity.statusNote")}</p>
 
-      {!compact && (record.managedSkillId && onOpenSkill ? (
-        <button
-          type="button"
-          onClick={() => onOpenSkill(record.managedSkillId!)}
-          className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-accent-border bg-accent-dark px-3 py-1.5 text-[12.5px] font-medium text-white outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-accent"
-        >
-          <FileSearch className="h-3.5 w-3.5" />{t("activity.openSkill")}
-        </button>
+      {!compact && (skillId && onOpenSkill ? (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => { if (skillId) onOpenSkill(skillId); }}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-accent-border bg-accent-dark px-3 py-1.5 text-[12.5px] font-medium text-white outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <FileSearch className="h-3.5 w-3.5" />{t("activity.openSkill")}
+          </button>
+          {matchedByName && (
+            <span className="text-[11.5px] text-tertiary" title={t("activity.openSkillByNameHint")}>
+              {t("activity.openSkillByName")}
+            </span>
+          )}
+        </div>
       ) : (
         <p className="mt-3 text-[12px] text-tertiary">{t("activity.unlinked")}</p>
       ))}

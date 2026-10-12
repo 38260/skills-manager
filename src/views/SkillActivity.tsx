@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { History, RefreshCw, Square, ChevronLeft, ChevronRight, Search, Settings2, AlertTriangle } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { listen } from "../lib/transport";
@@ -56,7 +56,6 @@ function SourceEditor({ source, running, onSaved }: { source: api.ActivitySource
 export function SkillActivity() {
   const { t } = useTranslation();
   const { openSkillDetailById } = useApp();
-  const navigate = useNavigate();
   // 详情页"调用记录"页签通过 /skill-activity?skill=名称 深链进入并预填筛选。
   const [searchParams] = useSearchParams();
   const deepLinkSkill = searchParams.get("skill") ?? "";
@@ -356,7 +355,8 @@ export function SkillActivity() {
           ? <ActivityDetailPanel
             record={selected}
             className="pt-3"
-            onOpenSkill={id => { openSkillDetailById(id); navigate("/my-skills"); }}
+            // 技能详情是全局弹层：只打开它、不换页，关掉就回到这条调用记录上
+            onOpenSkill={openSkillDetailById}
           />
           : <p className="py-6 text-center text-[13px] text-tertiary">{t("activity.noSelection")}</p>}
       </aside>

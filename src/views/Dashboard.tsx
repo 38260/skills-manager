@@ -6,6 +6,7 @@ import { useApp } from "../context/AppContext";
 import { AgentControlSetupCard } from "../components/AgentControlSetupCard";
 import { AgentIcon } from "../components/AgentIcon";
 import { getActivity, toolNames, type ActivityEvent } from "../lib/activity";
+import { TRIGGER_TONE } from "../lib/activityTone";
 import { cn } from "../utils";
 import type { ManagedSkill } from "../lib/tauri";
 
@@ -15,12 +16,6 @@ const AGENT_ICON_LIMIT = 6;
 type FeedEntry =
   | { type: "activity"; key: string; timestamp: number; record: ActivityEvent }
   | { type: "skill"; key: string; timestamp: number; skill: ManagedSkill };
-
-const TRIGGER_TONE: Record<ActivityEvent["trigger"], string> = {
-  manual: "border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-300",
-  automatic: "border-accent-border bg-accent-bg text-accent-dark dark:text-accent-light",
-  unknown: "border-border-subtle bg-surface-hover text-tertiary",
-};
 
 export function Dashboard() {
   const { t, i18n } = useTranslation();
@@ -88,8 +83,11 @@ export function Dashboard() {
     : t("activity.unknownTime");
 
   function openEntry(entry: FeedEntry) {
-    if (entry.type === "skill") { openSkillDetailById(entry.skill.id); navigate("/my-skills"); return; }
-    if (entry.record.managedSkillId) { openSkillDetailById(entry.record.managedSkillId); navigate("/my-skills"); return; }
+    // 详情是全局弹层：打开它不换页，关掉就回到工作台原处。
+    // 归属优先「路径可验证」的严格匹配，其次「技能名唯一」的兜底（与调用记录页同一口径）。
+    if (entry.type === "skill") { openSkillDetailById(entry.skill.id); return; }
+    const skillId = entry.record.managedSkillId ?? entry.record.usageSkillId;
+    if (skillId) { openSkillDetailById(skillId); return; }
     navigate(`/skill-activity?skill=${encodeURIComponent(entry.record.skillName)}`);
   }
 

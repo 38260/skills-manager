@@ -467,6 +467,7 @@
     },
     "detail": {
       "back": "返回技能庫",
+      "backGeneric": "返回",
       "viewSource": "檢視來源",
       "viewDiff": "檢視差異",
       "updateSkill": "更新 Skill",
@@ -1211,6 +1212,8 @@
     "call": "呼叫 ID",
     "skillPath": "技能檔案",
     "openSkill": "開啟技能詳情",
+    "openSkillByName": "依技能名比對",
+    "openSkillByNameHint": "沒有可驗證的技能路徑，依「技能名在技能庫中唯一」歸屬，可能不是同一個技能。",
     "unlinked": "未關聯技能庫；原始呼叫記錄仍然保留。",
     "statusNote": "「已返回」表示工具已返回結果，不代表整個任務成功。",
     "kinds": {

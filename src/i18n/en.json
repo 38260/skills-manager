@@ -510,6 +510,7 @@
     },
     "detail": {
       "back": "Back to Skills",
+      "backGeneric": "Back",
       "viewSource": "View Source",
       "viewDiff": "View Diff",
       "updateSkill": "Update Skill",
@@ -1296,6 +1297,8 @@
     "call": "Call ID",
     "skillPath": "Skill file",
     "openSkill": "Open skill details",
+    "openSkillByName": "matched by name",
+    "openSkillByNameHint": "No verifiable skill path — matched because the name is unique in the library, so it may not be the same skill.",
     "unlinked": "Not linked to the library. The original activity is retained.",
     "statusNote": "Returned means the tool returned a result, not that the overall task succeeded.",
     "kinds": {

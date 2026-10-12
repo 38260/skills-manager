@@ -1,6 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   ChevronDown, Github, HardDrive, Globe, ArrowLeft,
   ListTree, Boxes, Link2, Info, PanelRightOpen, RefreshCw, History, Layers, FileDiff,
@@ -122,6 +122,7 @@ function SkillDetailPanelContent({
 }: ContentProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const [doc, setDoc] = useState<SkillDocument | null>(null);
   const [sourceDoc, setSourceDoc] = useState<SourceSkillDocument | null>(null);
   const [sourceDiff, setSourceDiff] = useState<SkillSourceDiff | null>(null);
@@ -630,7 +631,9 @@ function SkillDetailPanelContent({
                 className="flex w-fit items-center gap-1.5 rounded-md text-[12.5px] leading-5 text-muted transition-colors outline-none hover:text-secondary focus-visible:outline focus-visible:outline-accent"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
-                {t("mySkills.detail.back")}
+                {/* 详情是全局弹层，从哪打开就关回哪：在技能库页叫「返回技能库」，
+                    从调用记录 / 工作台打开时只是个关闭动作，写「返回技能库」会让人以为会跳走。 */}
+                {location.pathname === "/my-skills" ? t("mySkills.detail.back") : t("mySkills.detail.backGeneric")}
           </button>
           <div className={cn("skill-detail-heading-row flex min-w-0 items-start justify-between gap-6 transition-all duration-200", scrolled ? "mt-1" : "mt-2.5")}>
             <div className="flex min-w-0 flex-1 items-start gap-3.5">

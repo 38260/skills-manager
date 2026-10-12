@@ -510,6 +510,7 @@
     },
     "detail": {
       "back": "返回技能库",
+      "backGeneric": "返回",
       "viewSource": "查看来源",
       "viewDiff": "查看差异",
       "updateSkill": "更新 Skill",
@@ -1296,6 +1297,8 @@
     "call": "调用 ID",
     "skillPath": "技能文件",
     "openSkill": "打开技能详情",
+    "openSkillByName": "按技能名匹配",
+    "openSkillByNameHint": "没有可验证的技能路径，按「技能名在技能库中唯一」归属，可能不是同一个技能。",
     "unlinked": "未关联技能库；原始调用记录仍然保留。",
     "statusNote": "“已返回”表示工具已返回结果，不代表整个任务成功。",
     "kinds": {

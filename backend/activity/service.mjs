@@ -77,7 +77,14 @@ export class ActivityService {
         // 索引只建一次：旧实现对每条事件都全量重算 canonical，接口耗时随记录数线性恶化。
         const index = buildSkillIndex(this.skills());
         const tools = this.tools();
-        return { ...result, items: result.items.map(event => ({ ...event, managedSkillId: matchEvent(event, index, tools) })) };
+        return { ...result, items: result.items.map(event => ({
+          ...event,
+          managedSkillId: matchEvent(event, index, tools),
+          // 严格匹配（技能路径 / 部署位置）对不上时的弱兜底：按「技能名在库里唯一」再认一次，
+          // 与调用统计同一口径。界面据此仍能跳到技能详情，但会注明是「按技能名匹配」，
+          // 不改变 managedSkillId 可逐条追溯的语义。
+          usageSkillId: matchUsageEvent(event, index, tools),
+        })) };
       } },
       get_skill_activity_sources: { call: () => ({ sources: this.store.sources(), running: !!this.worker }) },
       // 每个已纳管技能的调用统计：总次数与最后使用时间；仅请求（未确认使用）不计入。

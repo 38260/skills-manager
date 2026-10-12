@@ -15,6 +15,8 @@ export interface ActivityEvent {
   timestamp: number | null; sessionId: string | null; project: string | null; callId: string | null;
   kind: ActivityKind; trigger: ActivityTrigger; status: ActivityStatus;
   evidence: string; sourcePath: string; sourceLine: string; managedSkillId: string | null;
+  /** 严格匹配失败、但技能名在技能库中唯一时的兜底归属（界面会标注「按技能名匹配」）。 */
+  usageSkillId?: string | null;
 }
 export interface ActivityQuery {
   page?: number; pageSize?: number; tool?: ActivityTool | ""; kind?: ActivityKind | "";

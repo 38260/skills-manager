@@ -168,6 +168,44 @@
 
 ---
 
+### 第八轮：调用记录 → 技能详情 → 回来（2026-10-12 晚）
+
+**背景**：用户要求「调用记录加一个转到这个 skill 详情里去，然后还能从 skill 详情里回来」。
+
+**核实后发现三处问题**（都不是"加个按钮"那么简单）：
+
+1. 入口本来就存在（`ActivityDetailPanel` 的「打开技能详情」），但**只在 `managedSkillId`
+   严格匹配（技能路径可验证）时才显示** —— 实测 20 条里 **0 条**可用，全走「未关联技能库」
+2. 那个按钮点了会 `navigate("/my-skills")`，**把人带去技能库页**，关掉弹层就停在技能库，
+   回不到调用记录 —— 这正是「还能回来」要解决的
+3. 更根本的：`SkillDetailPanel` 只在 `MySkills.tsx` 里渲染，`Layout` 又把它限死在
+   `/my-skills` 路由 —— **其它页面根本没有这个弹层**，所以不跳页就弹不出来
+
+- [x] `service.mjs`：`get_skill_activity` 增加 `usageSkillId` —— 严格匹配对不上时按
+      「技能名在库里唯一」再认一次（与调用统计同一口径），**不改 `managedSkillId` 可逐条追溯的语义**
+- [x] `ActivityDetailPanel`：入口改用 `managedSkillId ?? usageSkillId`；弱匹配时按钮旁标注
+      「按技能名匹配」（悬停解释），不把弱关联说成确定关联
+- [x] `Layout`：为**非技能库页**挂一份全局 `SkillDetailPanel`（技能库页保留自己那份带部署开关的），
+      弹层从此可跨页弹出
+- [x] `SkillActivity` / `Dashboard`：打开详情不再 `navigate`，关掉就回到原处
+- [x] `SkillDetailPanel`：返回按钮文案随来源页变化（技能库页「返回技能库」，其它页「返回」）
+- [x] i18n：`activity.openSkillByName` / `openSkillByNameHint`、`mySkills.detail.backGeneric` 中英繁
+
+**验证**（`output/activity-layout/verify-open-skill.mjs`，真实库 + 无头 Chrome，**6/6 ✓**）
+
+| 断言 | 实测 |
+| --- | --- |
+| 右栏给出「打开技能详情」入口 | 20 条中 **10 条**可跳（其中 4 条按名称兜底）／未关联 10 条（**改动前 0 条**） |
+| 点开后技能详情弹层打开 | ✓ |
+| 打开详情后当前路由不变 | `pathname=/skill-activity` ✓ |
+| 返回按钮写「返回」而非「返回技能库」 | ✓ |
+| 关掉详情后回到调用记录页 | ✓ 列表 20 行 + 右栏仍在 |
+
+剩下 10 条「未关联」是真的不在技能库里的技能（或名字不唯一），仍保持原提示。
+`tsc` / `lint` / `build` 全绿。
+
+---
+
 ## 已完成
 
 ### ✅ README 重写 + 截图改为虚构演示数据（2026-10-12 第四轮）
