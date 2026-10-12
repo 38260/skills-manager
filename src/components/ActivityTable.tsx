@@ -1,27 +1,15 @@
 import { useTranslation } from "react-i18next";
 import { History, RefreshCw } from "lucide-react";
 import { cn } from "../utils";
-import { toolIconKeys, toolNames, type ActivityEvent, type ActivityStatus } from "../lib/activity";
+import { toolIconKeys, toolNames, type ActivityEvent } from "../lib/activity";
+import { KIND_TONE, STATUS_TONE, TRIGGER_TONE } from "../lib/activityTone";
 import { AgentIcon } from "./AgentIcon";
 
 // 列模板：窄窗口只留「技能/项目 + 结果」，≥1024px 展开为五列。
 // 表头与数据行共用同一模板，保证逐列对齐（与技能库列表同一约定）。
 const GRID = "grid grid-cols-[minmax(0,1fr)_72px] gap-3 lg:grid-cols-[minmax(0,1fr)_84px_100px_76px_96px]";
 
-/** 触发方式徽章：浅色用深色文字、深色用浅色文字，避免只在单一主题下可读。 */
-const TRIGGER_TONE: Record<ActivityEvent["trigger"], string> = {
-  manual: "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300",
-  automatic: "border-accent-border bg-accent-bg text-accent-dark dark:text-accent-light",
-  unknown: "border-border-subtle bg-surface-hover text-tertiary",
-};
-
-/** 结果徽章：已返回 ≠ 任务成功，用中性绿；失败用红；等待/未知用中性。 */
-const STATUS_TONE: Record<ActivityStatus, string> = {
-  returned: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-  pending: "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
-  failed: "border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-300",
-  unknown: "border-border-subtle bg-surface-hover text-tertiary",
-};
+// 徽章底色见 lib/activityTone.ts（记录类型 / 触发方式 / 结果三类各自的色系）。
 
 interface Props {
   items: ActivityEvent[];
@@ -111,10 +99,13 @@ export function ActivityTable({ items, selectedId, onSelect, loading, error, emp
               <span className="truncate text-[12px] text-secondary">{toolNames[record.tool]}</span>
             </span>
 
-            {/* 类型 / 触发 */}
-            <span className="hidden min-w-0 lg:block">
-              <span className="block truncate text-[12px] leading-4 text-secondary">{t(`activity.kinds.${record.kind}`)}</span>
-              <span className={cn("mt-0.5 inline-block rounded border px-1.5 py-px text-[10px] leading-4", TRIGGER_TONE[record.trigger])}>
+            {/* 类型 / 触发：两个彩色徽章，扫一眼就能区分「明确调用 / 已确认加载 / 仅请求」
+                与「用户点名 / Agent 自选」 */}
+            <span className="hidden min-w-0 lg:flex lg:flex-col lg:items-start lg:gap-0.5">
+              <span className={cn("inline-block rounded border px-1.5 py-px text-[10px] leading-4", KIND_TONE[record.kind])}>
+                {t(`activity.kinds.${record.kind}`)}
+              </span>
+              <span className={cn("inline-block rounded border px-1.5 py-px text-[10px] leading-4", TRIGGER_TONE[record.trigger])}>
                 {t(`activity.triggers.${record.trigger}`)}
               </span>
             </span>

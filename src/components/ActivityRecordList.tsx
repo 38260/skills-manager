@@ -3,15 +3,9 @@ import { useTranslation } from "react-i18next";
 import { ChevronDown, History, RefreshCw } from "lucide-react";
 import { cn } from "../utils";
 import { toolIconKeys, toolNames, type ActivityEvent } from "../lib/activity";
+import { KIND_TONE, TRIGGER_TONE } from "../lib/activityTone";
 import { AgentIcon } from "./AgentIcon";
 import { ActivityDetailPanel } from "./ActivityDetailPanel";
-
-// 触发方式徽章：浅色用深色文字，深色用浅色文字，避免只在单一主题下可读。
-const TRIGGER_TONE: Record<ActivityEvent["trigger"], string> = {
-  manual: "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300",
-  automatic: "border-accent-border bg-accent-bg text-accent-dark dark:text-accent-light",
-  unknown: "border-border-subtle bg-surface-hover text-tertiary",
-};
 
 interface Props {
   items: ActivityEvent[];
@@ -80,13 +74,12 @@ export function ActivityRecordList({ items, loading, error, compact = false, emp
                 <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                   <span className="min-w-0 truncate text-[14px] font-medium leading-5 text-primary" title={record.skillName}>{record.skillName}</span>
                   <span className="rounded border border-border-subtle bg-surface px-1.5 py-px text-[10px] leading-4 text-tertiary">{toolNames[record.tool]}</span>
+                  <span className={cn("rounded border px-1.5 py-px text-[10px] leading-4", KIND_TONE[record.kind])}>{t(`activity.kinds.${record.kind}`)}</span>
                   <span className={cn("rounded border px-1.5 py-px text-[10px] leading-4", TRIGGER_TONE[record.trigger])}>{t(`activity.triggers.${record.trigger}`)}</span>
                   {record.status === "failed" && <span className="text-[10px] leading-4 text-danger">{t("activity.statuses.failed")}</span>}
                 </div>
                 <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 text-[12px] leading-4 text-tertiary">
                   <span className="truncate" title={record.project || ""}>{record.project || t("activity.noProject")}</span>
-                  <span className="text-faint">·</span>
-                  <span>{t(`activity.kinds.${record.kind}`)}</span>
                   {!compact && <><span className="text-faint">·</span><span>{t(`activity.evidenceCodes.${record.evidence}`, { defaultValue: record.evidence })}</span></>}
                 </div>
               </div>
