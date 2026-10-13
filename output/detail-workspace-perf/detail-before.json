@@ -1,0 +1,8 @@
+{
+  "counts": {
+    "get_settings": 1,
+    "get_skill_files": 1,
+    "get_skill_document": 1,
+    "get_source_skill_document": 1
+  }
+}

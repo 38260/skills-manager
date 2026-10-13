@@ -158,6 +158,7 @@ function SkillDetailPanelContent({
   const diffSectionRef = useRef<HTMLElement>(null);
   const localRequestIdRef = useRef(0);
   const sourceRequestIdRef = useRef(0);
+  const sourceRequestedVersionRef = useRef<string | null>(null);
   const diffRequestedRef = useRef(false);
   const skillId = skill.id;
   const tocPrefix = `skill-${skill.id}`;
@@ -248,10 +249,12 @@ function SkillDetailPanelContent({
   }, [skillId, localDocVersion]);
 
   useEffect(() => {
-    if (!supportsSourceDiff) {
+    // 远程来源会克隆仓库：只在查看来源时读取，同一版本重复切页复用结果。
+    if (contentTab !== "sourceDiff" || !supportsSourceDiff || sourceRequestedVersionRef.current === sourceDocVersion) {
       return;
     }
 
+    sourceRequestedVersionRef.current = sourceDocVersion;
     sourceRequestIdRef.current += 1;
     const requestId = sourceRequestIdRef.current;
 
@@ -269,7 +272,7 @@ function SkillDetailPanelContent({
       .finally(() => {
         if (requestId === sourceRequestIdRef.current) setSourceDocLoading(false);
       });
-  }, [skillId, supportsSourceDiff, sourceDocVersion]);
+  }, [contentTab, skillId, supportsSourceDiff, sourceDocVersion]);
 
   // 差异按需加载：git/skills.sh 需要克隆仓库，仅在打开"来源与差异"页签时付出成本。
   useEffect(() => {

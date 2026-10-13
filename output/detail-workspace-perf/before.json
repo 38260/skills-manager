@@ -1,0 +1,29 @@
+{
+  "measuredAt": "2026-10-13T03:13:47.427Z",
+  "results": [
+    {
+      "agent": "codex",
+      "skillCount": 7,
+      "medianMs": {
+        "get_global_local_skill_document": 99.1,
+        "get_project_skill_document": 87.4
+      }
+    },
+    {
+      "agent": "workbuddy",
+      "skillCount": 27,
+      "medianMs": {
+        "get_global_local_skill_document": 109.4,
+        "get_project_skill_document": 119.1
+      }
+    },
+    {
+      "agent": "claude_code",
+      "skillCount": 23,
+      "medianMs": {
+        "get_global_local_skill_document": 240.8,
+        "get_project_skill_document": 235.3
+      }
+    }
+  ]
+}
