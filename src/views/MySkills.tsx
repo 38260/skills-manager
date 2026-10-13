@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import "../styles/skillLibrary.css";
 import {
   Search,
   LayoutGrid,
@@ -1144,7 +1145,7 @@ export function MySkills() {
   };
 
   return (
-    <div className="app-page">
+    <div className="app-page skill-library">
       <div className="app-page-header pr-2 pb-1 flex items-center justify-between gap-3">
         <h1 className="app-page-title flex items-center gap-2">
           {t("mySkills.title")}
@@ -1315,6 +1316,7 @@ export function MySkills() {
               return (
                 <button
                   key={tag}
+                  aria-pressed={isActive}
                   onClick={() => applyTagFilter(tag)}
                   onContextMenu={(e) => {
                     e.preventDefault();
@@ -1326,7 +1328,7 @@ export function MySkills() {
                   }}
                   title={t("mySkills.tags.manageHint")}
                   className={cn(
-                    "rounded-full px-2.5 py-0.5 text-[12px] font-medium transition-colors",
+                    "skill-library-filter rounded-full px-2.5 py-0.5 text-[12px] font-medium transition-colors",
                     isActive ? getTagActiveColor(tag, allTags) : getTagColor(tag, allTags)
                   )}
                 >
@@ -1479,7 +1481,8 @@ export function MySkills() {
 
                   <div className="flex items-center gap-2.5 px-3.5 pt-3 pb-1.5">
                     {/* Fixed-width slot: status dot / drag handle on hover / checkbox in multi-select */}
-                    <div className="relative flex h-4 w-4 shrink-0 items-center justify-center">
+                    <div className={cn("relative flex h-4 w-4 shrink-0 items-center justify-center", !isMultiSelect && "skill-library-marker")}>
+                      {!isMultiSelect && <Layers aria-hidden="true" className={cn("h-4 w-4", canDrag && "group-hover:opacity-0")} />}
                       {isMultiSelect ? (
                         selectedIds.has(skill.id)
                           ? <SquareCheck className="h-3.5 w-3.5 text-accent" />
@@ -1488,7 +1491,7 @@ export function MySkills() {
                         <>
                           <span
                             className={cn(
-                              "h-2 w-2 rounded-full transition-opacity",
+                              "skill-library-presence h-2 w-2 rounded-full transition-opacity",
                               canDrag && "group-hover:opacity-0",
                               enabledInPreset
                                 ? "bg-accent-light shadow-[0_0_0_3px_var(--color-accent-bg)]"
@@ -1764,7 +1767,8 @@ export function MySkills() {
                   </div>
                 )}
                 {/* Same fixed slot as the grid card: status dot / drag handle / checkbox */}
-                <div className="relative flex h-4 w-4 shrink-0 items-center justify-center">
+                <div className={cn("relative flex h-4 w-4 shrink-0 items-center justify-center", !isMultiSelect && "skill-library-marker")}>
+                  {!isMultiSelect && <Layers aria-hidden="true" className={cn("h-4 w-4", canDrag && "group-hover:opacity-0")} />}
                   {isMultiSelect ? (
                     selectedIds.has(skill.id)
                       ? <SquareCheck className="h-3.5 w-3.5 text-accent" />
@@ -1773,7 +1777,7 @@ export function MySkills() {
                     <>
                       <span
                         className={cn(
-                          "h-2 w-2 rounded-full transition-opacity",
+                          "skill-library-presence h-2 w-2 rounded-full transition-opacity",
                           canDrag && "group-hover:opacity-0",
                           enabledInPreset
                             ? "bg-accent-light shadow-[0_0_0_3px_var(--color-accent-bg)]"

@@ -1,0 +1,65 @@
+/* 技能库使用品牌色组织层级；不改全局主题及部署状态。 */
+.skill-library {
+  --color-text-muted: #3D4A5D;
+  --color-text-faint: #526176;
+  --color-accent-light: #047857;
+  --color-surface-hover: #EDF7F2;
+  --color-surface-active: #DCEEE4;
+  --skill-card-border: #CFDED6;
+  --skill-footer-bg: #F7FBF9;
+}
+
+.dark .skill-library {
+  --color-text-muted: #B1BDCD;
+  --color-text-faint: #99A7BB;
+  --color-accent-light: #34D399;
+  --color-surface-hover: #1C3028;
+  --color-surface-active: #244335;
+  --skill-card-border: #315344;
+  --skill-footer-bg: #121F1A;
+}
+
+.skill-library .app-panel.group {
+  border-color: var(--skill-card-border);
+}
+
+.skill-library .app-panel.group:hover,
+.skill-library .app-panel.group:focus-within {
+  border-color: var(--color-accent-dark);
+}
+
+.skill-library .app-panel.group > .border-t {
+  background: var(--skill-footer-bg);
+  border-color: var(--skill-card-border);
+  border-radius: 0 0 11px 11px;
+}
+
+.skill-library .skill-library-marker {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 6px;
+  background: var(--color-accent-bg);
+  color: var(--color-accent-light);
+}
+
+.skill-library-marker > .skill-library-presence {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  box-shadow: 0 0 0 2px var(--color-surface);
+}
+
+.skill-library button.bg-accent,
+.skill-library .skill-library-filter[aria-pressed="true"] {
+  background-color: #047857;
+  color: #FFFFFF;
+}
+
+.skill-library-filter[aria-pressed="true"] > span {
+  opacity: 1;
+}
+
+/* 可部署图标保持较淡的状态区别，同时避免整排图标发白。 */
+.skill-library .skill-target-available {
+  opacity: 0.68;
+}

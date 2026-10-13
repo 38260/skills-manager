@@ -88,7 +88,7 @@ export function SyncDots({
 
   const iconStateClass: Record<DotState, string> = {
     synced: "bg-surface",
-    available: "bg-surface opacity-45",
+    available: "skill-target-available bg-surface opacity-45",
     orphan: "ring-1 ring-inset ring-amber-500/60 bg-surface",
   };
 
