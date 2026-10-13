@@ -1207,6 +1207,7 @@
     "batchRemoved": "{{count}} skills removed",
     "batchRemoveFailed": "{{count}} skills failed to remove",
     "localSkills": {
+      "refreshing": "Refreshing list…",
       "searchPlaceholder": "Search agent skills...",
       "empty": "No local skills found",
       "summary": "{{total}} / {{managed}} managed / {{synced}} in sync",
@@ -1249,6 +1250,7 @@
     "refresh": "Scan now",
     "stop": "Stop scan",
     "retry": "Retry",
+    "updating": "Updating results…",
     "loading": "Loading activity…",
     "unavailable": "Activity is unavailable",
     "scanning": "Scanning in the background…",

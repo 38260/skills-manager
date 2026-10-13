@@ -209,6 +209,45 @@ function WorkspaceSkillCard({
   );
 }
 
+/**
+ * 首屏骨架：按 grid／list 两种真实形态占位，让「正在读盘」有形状可看。
+ * 只做形状占位，不参与选中／多选的无障碍语义，所以整块 aria-hidden，
+ * 由外层容器用 aria-busy + 文案播报进度。
+ */
+function WorkspaceSkillSkeleton({ viewMode }: { viewMode: "grid" | "list" }) {
+  const slots = Array.from({ length: viewMode === "grid" ? 6 : 5 }, (_, index) => index);
+  return (
+    <div
+      aria-hidden="true"
+      className={cn(
+        "animate-pulse pb-8",
+        viewMode === "grid" ? "grid grid-cols-2 gap-3 lg:grid-cols-3" : "flex flex-col gap-0.5"
+      )}
+    >
+      {slots.map((index) =>
+        viewMode === "grid" ? (
+          <div key={index} className="app-panel flex h-[132px] flex-col gap-2.5 rounded-xl px-3.5 py-3">
+            <div className="flex items-center gap-2.5">
+              <span className="h-2 w-2 shrink-0 rounded-full bg-surface-active" />
+              <span className="h-3.5 w-2/3 rounded bg-surface-active" />
+            </div>
+            <span className="h-3 w-full rounded bg-surface-active" />
+            <span className="h-3 w-1/2 rounded bg-surface-active" />
+            <span className="mt-auto h-5 w-16 rounded-full bg-surface-active" />
+          </div>
+        ) : (
+          <div key={index} className="flex items-center gap-3.5 rounded-xl px-3.5 py-3">
+            <span className="h-2 w-2 shrink-0 rounded-full bg-surface-active" />
+            <span className="h-3.5 w-[180px] shrink-0 rounded bg-surface-active" />
+            <span className="h-3 min-w-0 flex-1 rounded bg-surface-active" />
+            <span className="h-5 w-[68px] shrink-0 rounded-full bg-surface-active" />
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+
 function getLocalStatusMeta(t: (key: string) => string, status: ProjectSkill["sync_status"]) {
   switch (status) {
     case "in_sync":
@@ -252,6 +291,8 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
   const [removingLocalSkillId, setRemovingLocalSkillId] = useState<string | null>(null);
   const [localSkills, setLocalSkills] = useState<ProjectSkill[]>([]);
   const [localSkillsLoading, setLocalSkillsLoading] = useState(false);
+  /** 当前 localSkills 属于哪个 Agent：换 Agent 时视为首次加载（出骨架），同 Agent 刷新保留内容。 */
+  const [localSkillsAgentKey, setLocalSkillsAgentKey] = useState<string | null>(null);
   const [localActionKey, setLocalActionKey] = useState<string | null>(null);
   const [localDetailSkill, setLocalDetailSkill] = useState<ProjectSkill | null>(null);
   const [localDocContent, setLocalDocContent] = useState<string | null>(null);
@@ -328,16 +369,21 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
     const requestId = ++localSkillsRequestRef.current;
     if (!currentToolKey) {
       setLocalSkills([]);
+      setLocalSkillsAgentKey(null);
       return;
     }
     setLocalSkillsLoading(true);
     try {
       const skills = await api.getGlobalLocalSkills(currentToolKey);
-      if (localSkillsRequestRef.current === requestId) setLocalSkills(skills);
+      if (localSkillsRequestRef.current === requestId) {
+        setLocalSkills(skills);
+        setLocalSkillsAgentKey(currentToolKey);
+      }
     } catch (error: unknown) {
       if (localSkillsRequestRef.current === requestId) {
         toast.error(getErrorMessage(error, t("common.error")));
         setLocalSkills([]);
+        setLocalSkillsAgentKey(null);
       }
     } finally {
       if (localSkillsRequestRef.current === requestId) setLocalSkillsLoading(false);
@@ -1060,11 +1106,8 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
         )}
       </div>
 
-      {localSkillsLoading ? (
-        <div className="flex items-center gap-2 py-4 text-[13px] text-muted">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          {t("common.loading")}
-        </div>
+      {localSkillsLoading && localSkillsAgentKey !== currentToolKey ? (
+        <WorkspaceSkillSkeleton viewMode={viewMode} />
       ) : visibleLocalSkills.length === 0 ? (
         <div className="flex min-h-[260px] flex-col items-center justify-center px-4 text-center">
           <Globe className="mb-4 h-12 w-12 text-faint" />
@@ -1085,6 +1128,12 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
         </div>
       ) : (
         <>
+        {localSkillsLoading && (
+          <p aria-live="polite" className="mb-2 inline-flex items-center gap-1.5 text-[12px] text-tertiary">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            {t("globalWorkspace.localSkills.refreshing")}
+          </p>
+        )}
         {isMultiSelect && (
           <MultiSelectToolbar
             selectedCount={selectedIds.size}
@@ -1123,6 +1172,7 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
           />
         )}
         <div
+          aria-busy={localSkillsLoading || undefined}
           className={cn(
             "pb-8",
             viewMode === "grid"

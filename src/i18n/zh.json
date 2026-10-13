@@ -1207,6 +1207,7 @@
     "batchRemoved": "已移除 {{count}} 个 Skill",
     "batchRemoveFailed": "{{count}} 个 Skill 移除失败",
     "localSkills": {
+      "refreshing": "正在刷新列表…",
       "searchPlaceholder": "搜索 Agent Skills…",
       "empty": "未发现本地 Skills",
       "summary": "{{total}} / {{managed}} 个受管理 / {{synced}} 个已同步",
@@ -1249,6 +1250,7 @@
     "refresh": "扫描更新",
     "stop": "停止扫描",
     "retry": "重试",
+    "updating": "正在更新结果…",
     "loading": "正在读取记录…",
     "unavailable": "暂时无法读取记录",
     "scanning": "正在后台扫描…",

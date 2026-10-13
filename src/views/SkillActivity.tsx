@@ -306,7 +306,7 @@ export function SkillActivity() {
 
     {/* 主区：左列表 + 右详情 */}
     <div className="grid min-w-0 grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
-      <section aria-label={t("activity.records")} className="app-panel min-w-0 overflow-hidden">
+      <section aria-label={t("activity.records")} aria-busy={loading || undefined} className="app-panel min-w-0 overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-border-subtle px-3 py-2.5">
           <div className="flex flex-wrap items-center gap-1" role="tablist" aria-label={t("activity.kind")}>
             {kindTabs.map(tab => (
@@ -330,6 +330,14 @@ export function SkillActivity() {
             {(["manual", "automatic", "unknown"] as const).map(trigger => `${t(`activity.triggers.${trigger}`)} ${result?.counts[trigger] ?? 0}`).join(" · ")}
           </span>
         </div>
+
+        {/* 已有结果时再查询：旧结果留在原地，另给一行进度，避免「点了没反应」。 */}
+        {loading && result && (
+          <p aria-live="polite" className="flex items-center gap-1.5 border-b border-border-subtle px-3 py-1.5 text-[12px] text-tertiary">
+            <RefreshCw className="h-3 w-3 animate-spin" />
+            {t("activity.updating")}
+          </p>
+        )}
 
         <ActivityTable
           items={result?.items ?? []}

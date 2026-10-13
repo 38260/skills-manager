@@ -20,7 +20,7 @@
 | F1 | 确认框执行中锁住关闭入口 | 执行中点「取消」只关窗、任务继续，用户以为已取消 | [x] |
 | F2 | 调用记录详情跟随最新数据 | 刷新后右栏保留旧对象，状态/触发方式/识别依据可能与列表不一致 | [x] |
 | F3 | 来源读取失败可重试 | 读取失败后切页签不重试、无重试入口、也看不到原因 | [x] |
-| F4 | 工作区列表骨架屏与静默刷新 | 刷新时整列消失、筛选时旧结果无任何「正在查询」提示 | [ ] |
+| F4 | 列表加载改为首屏骨架 + 原地进度 | 刷新时整列消失、筛选时旧结果无任何「正在查询」提示 | [x] |
 | F5 | 工作区卡片键盘可达与操作兜底 | 卡片是 `div onClick`，键盘打不开；行内操作只在悬停时显形 | [ ] |
 | F6 | DetailSheet 焦点管理与 Esc | 缺 Esc 关闭、焦点管理、关闭按钮无可读名称，Tab 会跑到被遮挡内容上 | [ ] |
 | F7 | 详情徽章复用列表配色 | 表格触发徽章分三色，详情里全用绿色，同一状态两处含义不一致 | [ ] |
@@ -41,6 +41,7 @@
 | 2026-10-13 | F1 | 确认框在执行期一律锁住关闭入口：`lockWhileRunning` 开关删掉（原先默认关，18 个调用点里只有 1 个传了 `true`，其余「取消」按钮点下去只是关窗、后端任务照跑）；执行期取消／X／遮罩点击／Esc 全部失效，确认按钮文案改「执行中...」，底部补 `role="status"` 说明；X 按钮补可读名称 | `src/components/ConfirmDialog.tsx`、`src/hooks/useSetAsideOffer.tsx`、`src/i18n/{zh,en,zh-TW}.json` | `tsc -b` ✓ `eslint` ✓ `vite build` ✓ |
 | 2026-10-13 | F2 | 调用记录右栏改为「按 id 保留选中、内容取最新返回的那条」：原先刷新后详情仍拿着旧对象，扫描把 pending 改成 returned 或重新判定触发方式后，右栏与同一行的列表读数不一致 | `src/views/SkillActivity.tsx` | `tsc -b` ✓ `eslint` ✓ `vite build` ✓ |
 | 2026-10-13 | F3 | 来源页签读取失败改为「可见 + 可恢复」：显示后端返回的真实原因；**只有成功**才登记版本复用标记（`sourceLoadedVersionRef`），失败不再留标记 → 切走再切回本页签自动重读；两处失败各给「重试」入口（共享 `sourceReloadToken`）。加载中/失败态改由「尝试 key（来源版本#重试次数）」派生，避免在 effect 里同步 setState（`react-hooks/set-state-in-effect` 报 error，仓库其余部分 lint 全绿） | `src/components/SkillDetailPanel.tsx`、`src/i18n/{zh,en,zh-TW}.json` | `tsc -b` ✓ `eslint src/` ✓ `vite build` ✓ |
+| 2026-10-13 | F4 | 加载反馈改成「不破坏已有内容」：工作区按 Agent 记录数据归属（`localSkillsAgentKey`），首屏／换 Agent 出 6 张骨架卡，同 Agent 刷新保留列表并在列表上方给「正在刷新列表…」；调用记录再查询时旧结果留在原地，表格上方补「正在更新结果…」（原先 `loading && !result` 让第二次查询完全没有反馈）。两处容器补 `aria-busy`，进度文案 `aria-live="polite"` | `src/views/WorkspaceView.tsx`、`src/views/SkillActivity.tsx`、`src/i18n/{zh,en,zh-TW}.json` | `tsc -b` ✓ `eslint src/` ✓ `vite build` ✓ |
 
 ---
 
