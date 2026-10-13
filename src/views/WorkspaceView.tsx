@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { useParams, useNavigate, Navigate } from "react-router-dom";
 import {
   ChevronRight,
@@ -91,14 +91,31 @@ function WorkspaceSkillCard({
         )}
       />
     );
+  // 键盘可达：多选态整卡就是勾选目标（此时没有行内操作按钮，可以安全地当 checkbox）；
+  // 普通态把打开详情的可聚焦目标放在标题上，避免出现「按钮里套按钮」的无效嵌套。
+  const selectKeyProps = selectable
+    ? {
+        role: "checkbox" as const,
+        "aria-checked": selected,
+        tabIndex: 0,
+        onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          onClick();
+        },
+      }
+    : {};
+
   if (viewMode === "list") {
     return (
       <div
         className={cn(
           "app-panel group relative flex cursor-pointer items-center gap-3.5 rounded-xl border-transparent px-3.5 py-3 transition-all hover:border-border hover:bg-surface-hover",
-          selectable && selected && "ring-1 ring-accent border-accent/40"
+          selectable && selected && "ring-1 ring-accent border-accent/40",
+          selectable && "outline-none focus-visible:ring-2 focus-visible:ring-accent"
         )}
         onClick={onClick}
+        {...selectKeyProps}
       >
         <div className="flex h-4 w-4 shrink-0 items-center justify-center">
           {leadingSlot}
@@ -107,7 +124,18 @@ function WorkspaceSkillCard({
           className="w-[180px] shrink-0 truncate text-[14px] font-semibold text-secondary group-hover:text-primary"
           title={title}
         >
-          {title}
+          {selectable ? title : (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onClick();
+              }}
+              className="block w-full truncate rounded text-left outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              {title}
+            </button>
+          )}
         </h3>
         <p className="min-w-0 flex-1 truncate text-[13px] text-muted">
           {description || "-"}
@@ -143,7 +171,9 @@ function WorkspaceSkillCard({
           <div
             className={cn(
               "flex shrink-0 items-center gap-1",
-              actionsHover && "opacity-0 transition-opacity group-hover:opacity-100"
+              // 悬停显形要有键盘兜底（卡片内任一操作获得焦点就露出）；
+              // 触屏没有 hover，否则这些按钮永远看不见。
+              actionsHover && "opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
             )}
           >
             {actions}
@@ -157,9 +187,11 @@ function WorkspaceSkillCard({
     <div
       className={cn(
         "app-panel group relative flex h-full cursor-pointer flex-col overflow-hidden shadow-card transition-all hover:-translate-y-px hover:border-border hover:shadow-card-hover",
-        selectable && selected && "ring-1 ring-accent border-accent/40"
+        selectable && selected && "ring-1 ring-accent border-accent/40",
+        selectable && "outline-none focus-visible:ring-2 focus-visible:ring-accent"
       )}
       onClick={onClick}
+      {...selectKeyProps}
     >
       <div className="flex items-center gap-2.5 px-3.5 pt-3 pb-1.5">
         <div className="flex h-4 w-4 shrink-0 items-center justify-center">
@@ -169,7 +201,18 @@ function WorkspaceSkillCard({
           className="flex-1 truncate text-[14px] font-semibold text-primary group-hover:text-accent-light"
           title={title}
         >
-          {title}
+          {selectable ? title : (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onClick();
+              }}
+              className="block w-full truncate rounded text-left outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              {title}
+            </button>
+          )}
         </h3>
         {fileCount > 0 && (
           <span className="flex shrink-0 items-center gap-1 text-[12px] text-faint">
