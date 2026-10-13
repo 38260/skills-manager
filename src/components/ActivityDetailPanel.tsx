@@ -4,6 +4,7 @@ import { FileSearch, FolderSearch, FileText, FolderOpen } from "lucide-react";
 import { cn } from "../utils";
 import { openPath } from "../lib/tauri";
 import { toolIconKeys, toolNames, type ActivityEvent } from "../lib/activity";
+import { TRIGGER_TONE } from "../lib/activityTone";
 import { AgentIcon } from "./AgentIcon";
 
 interface Props {
@@ -60,7 +61,7 @@ export function ActivityDetailPanel({ record, compact = false, onOpenSkill, clas
               <AgentIcon agentKey={toolIconKeys[record.tool] ?? record.tool} displayName={toolNames[record.tool]} className="h-3.5 w-3.5" />
               {toolNames[record.tool]}
             </span>
-            <span className="rounded border border-accent-border bg-accent-bg px-1.5 py-px text-[10px] leading-4 text-accent-dark dark:text-accent-light">
+            <span className={cn("rounded border px-1.5 py-px text-[10px] leading-4", TRIGGER_TONE[record.trigger])}>
               {t(`activity.triggers.${record.trigger}`)}
             </span>
             <span className="text-[12px] tabular-nums text-tertiary">

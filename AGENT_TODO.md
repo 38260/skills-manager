@@ -23,7 +23,7 @@
 | F4 | 列表加载改为首屏骨架 + 原地进度 | 刷新时整列消失、筛选时旧结果无任何「正在查询」提示 | [x] |
 | F5 | 工作区卡片键盘可达与操作兜底 | 卡片是 `div onClick`，键盘打不开；行内操作只在悬停时显形 | [x] |
 | F6 | DetailSheet 焦点管理与 Esc | 缺 Esc 关闭、焦点管理、关闭按钮无可读名称，Tab 会跑到被遮挡内容上 | [x] |
-| F7 | 详情徽章复用列表配色 | 表格触发徽章分三色，详情里全用绿色，同一状态两处含义不一致 | [ ] |
+| F7 | 详情徽章复用列表配色 | 表格触发徽章分三色，详情里全用绿色，同一状态两处含义不一致 | [x] |
 | F8 | 整体测试与交付验收 | 构建 / lint / 单测 / 无头界面断言 + 截图 | [ ] |
 
 **本轮不做**
@@ -46,6 +46,8 @@
 | 2026-10-13 | F5 | 卡片键盘可达：多选态整卡变 `role=checkbox` + `aria-checked` + Enter/Space；普通态把「打开详情」的可聚焦目标放在标题按钮上（避免按钮套按钮），鼠标点整卡照旧。悬停显形的行内操作补 `group-focus-within:opacity-100` 与 `[@media(hover:none)]:opacity-100`（触屏没有 hover），构建后确认两条规则都落在 `.opacity-0` 之后 | `src/views/WorkspaceView.tsx` | `tsc -b` ✓ `eslint` ✓ `vite build` ✓ + 生成 CSS 规则顺序核对 |
 
 | 2026-10-13 | F6 | DetailSheet 补弹层语义与焦点：`role=dialog` + `aria-modal` + `aria-labelledby`（标题走 `useId`）、Esc 关闭、打开时焦点移入面板、Tab 圈在面板内、关闭后焦点还给打开它的入口、关闭按钮加可读名称。`onClose` 存进 ref，effect 只跟 `open` 走 —— 否则父组件每次重渲染都会「还原焦点再抢回来」。不用 `inert`（见上「本轮不做」） | `src/components/DetailSheet.tsx` | `tsc -b` ✓ `eslint` ✓ `vite build` ✓ |
+
+| 2026-10-13 | F7 | 详情栏触发方式徽章改用 `TRIGGER_TONE`，与表格／内嵌记录列表同一套配色（此前详情里三种触发一律绿底，同一状态在两个位置含义不同） | `src/components/ActivityDetailPanel.tsx` | `tsc -b` ✓ `eslint` ✓ `vite build` ✓ |
 
 ---
 
