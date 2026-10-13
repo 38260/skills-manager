@@ -1,0 +1,150 @@
+{
+  "A1": {
+    "busyCard": true,
+    "confirmationButtons": [],
+    "confirmationVisible": false,
+    "status": "failed"
+  },
+  "A2before": {
+    "detail": "记录详情\nA\naudit-demo\nCodex\n手动触发\n10/13 10:00\n识别依据\n\n验收依据：刷新前\n\n记录信息\n记录类型\n明确调用\n行号／记录位置\n1\n会话 ID\nsession-demo\n调用 ID\ne1\n项目\n验收项目\n来源文件\n\n技能文件\n\nfixture/SKILL.md\n\n在文件夹中显示\n\n来源文件\n\nfixture/session.jsonl\n\n在文件夹中显示\n\n“已返回”表示工具已返回结果，不代表整个任务成功。\n\n打开技能详情",
+    "selected": "A\naudit-demo\n验收项目\n等待结果"
+  },
+  "A2": {
+    "detail": "记录详情\nA\naudit-demo\nCodex\n自动触发\n10/13 10:00\n识别依据\n\n验收依据：刷新后\n\n记录信息\n记录类型\n明确调用\n行号／记录位置\n1\n会话 ID\nsession-demo\n调用 ID\ne1\n项目\n验收项目\n来源文件\n\n技能文件\n\nfixture/SKILL.md\n\n在文件夹中显示\n\n来源文件\n\nfixture/session.jsonl\n\n在文件夹中显示\n\n“已返回”表示工具已返回结果，不代表整个任务成功。\n\n打开技能详情",
+    "selected": "A\naudit-demo\n验收项目\n已返回",
+    "status": "passed"
+  },
+  "A4activity": {
+    "busy": [
+      "true"
+    ],
+    "queryStatus": [],
+    "rows": 3,
+    "live": [
+      "1 个来源已启用",
+      "手动触发 1 · 自动触发 1 · 来源未知 1",
+      "正在更新结果…",
+      "共 3 条记录",
+      "",
+      "",
+      ""
+    ],
+    "status": "passed"
+  },
+  "A7": [
+    {
+      "detail": {
+        "background": "rgba(14, 165, 233, 0.1)",
+        "border": "rgba(14, 165, 233, 0.3)",
+        "color": "rgb(3, 105, 161)"
+      },
+      "label": "自动触发",
+      "list": {
+        "background": "rgba(14, 165, 233, 0.1)",
+        "border": "rgba(14, 165, 233, 0.3)",
+        "color": "rgb(3, 105, 161)"
+      },
+      "status": "passed"
+    },
+    {
+      "detail": {
+        "background": "rgba(5, 150, 105, 0.09)",
+        "border": "rgba(5, 150, 105, 0.28)",
+        "color": "rgb(4, 120, 87)"
+      },
+      "label": "手动触发",
+      "list": {
+        "background": "rgba(5, 150, 105, 0.09)",
+        "border": "rgba(5, 150, 105, 0.28)",
+        "color": "rgb(4, 120, 87)"
+      },
+      "status": "passed"
+    },
+    {
+      "detail": {
+        "background": "rgb(237, 241, 249)",
+        "border": "rgb(210, 218, 234)",
+        "color": "rgb(61, 74, 99)"
+      },
+      "label": "来源未知",
+      "list": {
+        "background": "rgb(237, 241, 249)",
+        "border": "rgb(210, 218, 234)",
+        "color": "rgb(61, 74, 99)"
+      },
+      "status": "passed"
+    }
+  ],
+  "A3explicit": {
+    "status": "passed",
+    "sourceVisible": true
+  },
+  "A3automatic": {
+    "status": "passed",
+    "sourceVisible": true
+  },
+  "A4first": {
+    "cards": 0,
+    "skeleton": 1
+  },
+  "A4refresh": {
+    "busy": [
+      "true"
+    ],
+    "cards": 1,
+    "live": [
+      "正在刷新列表…",
+      "",
+      "",
+      ""
+    ],
+    "skeleton": 0,
+    "status": "passed"
+  },
+  "A5enter": true,
+  "A6initial": {
+    "activeRole": "dialog",
+    "activeTag": "DIV",
+    "inside": true
+  },
+  "A6shift": {
+    "activeTag": "BUTTON",
+    "activeText": "",
+    "activeTitle": "删除本地 Skill",
+    "inside": false,
+    "status": "failed"
+  },
+  "A6escape": {
+    "activeText": "workspace-demo",
+    "dialog": false
+  },
+  "A5space": true,
+  "A6tab": {
+    "inside": true,
+    "label": "关闭"
+  },
+  "A6wrap": {
+    "activeText": "",
+    "inside": true
+  },
+  "A5focus": {
+    "activeText": "",
+    "activeTitle": "上传",
+    "focusWithin": true,
+    "opacity": "0.694997",
+    "status": "failed"
+  },
+  "A5focusInitial": {
+    "activeText": "",
+    "activeTitle": "上传",
+    "focusWithin": true,
+    "opacity": "0.694997",
+    "status": "failed"
+  },
+  "A5focusStable": {
+    "activeTitle": "上传",
+    "focusWithin": true,
+    "opacity": "1",
+    "status": "passed"
+  }
+}

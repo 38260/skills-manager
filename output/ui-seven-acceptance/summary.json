@@ -1,0 +1,16 @@
+{
+  "passed": 5,
+  "failed": 2,
+  "results": {
+    "A1": "failed",
+    "A2": "passed",
+    "A3": "passed",
+    "A4": "passed",
+    "A5": "passed",
+    "A6": "failed",
+    "A7": "passed"
+  },
+  "baseCommit": "d41487d207562ede5872927ad8781af7d34249a0",
+  "frontendFile": "dist/assets/index-PbOmMip3.js",
+  "frontendSha256": "DE820FF82F7EB111C9483822216BDE1B96B89CBA9D6E8A05812FA091FF17E7A6"
+}

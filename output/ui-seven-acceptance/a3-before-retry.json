@@ -1,0 +1,42 @@
+{
+  "state": {
+    "phase": 1,
+    "holdDelete": false,
+    "holdActivity": false,
+    "holdWorkspace": false,
+    "sourceFailures": 0,
+    "diffFailures": 0,
+    "deleted": false
+  },
+  "counts": {
+    "get_settings": 14,
+    "log_startup_event": 12,
+    "git_backup_pending_conflicts": 6,
+    "get_skill_categories": 6,
+    "get_skill_usage": 6,
+    "get_presets": 3,
+    "get_tool_status": 3,
+    "get_managed_skills": 5,
+    "get_projects": 6,
+    "git_backup_status": 6,
+    "get_preset_skill_order": 4,
+    "check_app_update": 2,
+    "check_all_skill_updates": 2,
+    "set_settings": 2,
+    "delete_managed_skill": 1,
+    "get_skill_files": 4,
+    "get_skill_document": 4,
+    "get_skill_tool_toggles": 3,
+    "get_source_skill_document": 3,
+    "get_skill_source_diff": 3,
+    "get_skill_activity": 87,
+    "get_skill_activity_sources": 87,
+    "fetch_leaderboard": 2,
+    "scan_skill_activity": 1
+  },
+  "held": [],
+  "unexpected": [
+    "git_backup_pending_conflicts",
+    "fetch_leaderboard"
+  ]
+}
