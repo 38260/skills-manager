@@ -43,7 +43,6 @@ export function useSetAsideOffer() {
       details={offer?.names}
       tone="warning"
       confirmLabel={t("settings.gitSetAsideConfirm")}
-      lockWhileRunning
       onClose={() => {
         // The dialog that started the clone has closed; say nothing happened.
         if (!confirmed.current) toast.info(t("settings.gitSetAsideCancelled"));

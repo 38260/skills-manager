@@ -9,9 +9,6 @@ interface Props {
   details?: string[];
   confirmLabel?: string;
   tone?: "danger" | "warning";
-  /** Keep the dialog up while the confirmed action runs (closing would not
-   *  stop it). Only for actions that always finish, like a clone. */
-  lockWhileRunning?: boolean;
   onClose: () => void;
   onConfirm: () => Promise<void>;
 }
@@ -23,7 +20,6 @@ export function ConfirmDialog({
   details,
   confirmLabel,
   tone = "danger",
-  lockWhileRunning = false,
   onClose,
   onConfirm,
 }: Props) {
@@ -42,7 +38,9 @@ export function ConfirmDialog({
 
   if (!open) return null;
 
-  const locked = lockWhileRunning && loading;
+  // 确认后的动作没有取消通道（上传／拉取／删除／批量都是后端一次性请求），关掉对话框只会
+  // 悄悄丢掉进度。执行中把取消、关闭按钮和遮罩点击一并锁住，让用户看到它还在跑。
+  const locked = loading;
   const close = () => {
     if (!locked) onClose();
   };
@@ -70,7 +68,7 @@ export function ConfirmDialog({
             <AlertTriangle className="w-4 h-4 text-amber-400" />
             {title || t("common.confirm")}
           </h2>
-          <button onClick={close} disabled={locked} className="text-muted hover:text-secondary p-1 rounded transition-colors outline-none disabled:opacity-50">
+          <button onClick={close} disabled={locked} aria-label={t("common.close")} className="text-muted hover:text-secondary p-1 rounded transition-colors outline-none disabled:opacity-50">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -106,9 +104,14 @@ export function ConfirmDialog({
                 : "px-3 py-1.5 rounded-lg bg-red-600/90 hover:bg-red-500 text-white text-[13px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-red-500/50 outline-none"
             }
           >
-            {loading ? t("common.loading") : confirmLabel || t("common.delete")}
+            {loading ? t("common.running") : confirmLabel || t("common.delete")}
           </button>
         </div>
+        {locked ? (
+          <p role="status" className="mt-3 text-right text-[12px] text-tertiary">
+            {t("common.runningLocked")}
+          </p>
+        ) : null}
       </div>
     </div>
   );
