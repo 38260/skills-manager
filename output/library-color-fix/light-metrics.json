@@ -1,0 +1,30 @@
+{
+  "cardCount": 2,
+  "selected": {
+    "background": "rgb(4, 120, 87)",
+    "color": "rgb(255, 255, 255)",
+    "contrast": 5.48
+  },
+  "texts": [
+    {
+      "background": "rgb(255, 255, 255)",
+      "color": "rgb(21, 26, 39)",
+      "contrast": 17.37
+    },
+    {
+      "background": "rgb(255, 255, 255)",
+      "color": "rgb(61, 74, 93)",
+      "contrast": 8.99
+    },
+    {
+      "background": "rgb(255, 255, 255)",
+      "color": "rgb(82, 97, 118)",
+      "contrast": 6.31
+    },
+    {
+      "background": "rgb(255, 255, 255)",
+      "color": "rgb(82, 97, 118)",
+      "contrast": 6.31
+    }
+  ]
+}

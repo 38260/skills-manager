@@ -1,0 +1,27 @@
+{
+  "selection": {
+    "markers": 0,
+    "overflow": false,
+    "selected": 1
+  },
+  "icons": {
+    "available": [
+      "0.68",
+      "0.68",
+      "0.68",
+      "0.68",
+      "0.68",
+      "0.68",
+      "0.68",
+      "0.68",
+      "0.68"
+    ],
+    "markers": 5
+  },
+  "detailReturn": {
+    "cards": 5,
+    "dark": true,
+    "markers": 5,
+    "overflow": false
+  }
+}

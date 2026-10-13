@@ -1,0 +1,31 @@
+{
+  "cardCount": 2,
+  "dark": true,
+  "selected": {
+    "background": "rgb(4, 120, 87)",
+    "color": "rgb(255, 255, 255)",
+    "contrast": 5.483924052498799
+  },
+  "texts": [
+    {
+      "background": "rgb(23, 26, 35)",
+      "color": "rgb(243, 245, 249)",
+      "contrast": 15.920942390269271
+    },
+    {
+      "background": "rgb(23, 26, 35)",
+      "color": "rgb(177, 189, 205)",
+      "contrast": 9.127337789332316
+    },
+    {
+      "background": "rgb(23, 26, 35)",
+      "color": "rgb(153, 167, 187)",
+      "contrast": 7.116101220740749
+    },
+    {
+      "background": "rgb(23, 26, 35)",
+      "color": "rgb(153, 167, 187)",
+      "contrast": 7.116101220740749
+    }
+  ]
+}
