@@ -27,15 +27,15 @@ export function agentSkillConfigs(store) {
 function linkedAgentKey(record) { return record.linked_agent_key || slugify(record.name); }
 function linkedAgentName(record) { return record.linked_agent_name || record.name; }
 
-function readWorkspaceSkills(record, store) {
+function readWorkspaceSkills(record, store, includeSyncState = true) {
   if (record.workspace_type === "linked") {
-    return readSkillsRoot(record.path, { enabled: true, agent: linkedAgentKey(record), agent_display_name: linkedAgentName(record) })
-      .concat(record.disabled_path ? readSkillsRoot(record.disabled_path, { enabled: false, agent: linkedAgentKey(record), agent_display_name: linkedAgentName(record) }) : []);
+    return readSkillsRoot(record.path, { enabled: true, agent: linkedAgentKey(record), agent_display_name: linkedAgentName(record), includeSyncState })
+      .concat(record.disabled_path ? readSkillsRoot(record.disabled_path, { enabled: false, agent: linkedAgentKey(record), agent_display_name: linkedAgentName(record), includeSyncState }) : []);
   }
   const skills = [];
   for (const config of agentSkillConfigs(store)) {
-    skills.push(...readSkillsRoot(path.join(record.path, config.relative_skills_dir), { enabled: true, agent: config.key, agent_display_name: config.display_name }));
-    skills.push(...readSkillsRoot(path.join(record.path, `${config.relative_skills_dir}-disabled`), { enabled: false, agent: config.key, agent_display_name: config.display_name }));
+    skills.push(...readSkillsRoot(path.join(record.path, config.relative_skills_dir), { enabled: true, agent: config.key, agent_display_name: config.display_name, includeSyncState }));
+    skills.push(...readSkillsRoot(path.join(record.path, `${config.relative_skills_dir}-disabled`), { enabled: false, agent: config.key, agent_display_name: config.display_name, includeSyncState }));
   }
   return skills;
 }
@@ -147,8 +147,8 @@ function setEnabledState(skillsRoot, disabledRoot, relativePath, enabled) {
 
 export function projectCommands(store, library) {
   const requireProject = id => store.project(id);
-  const requireSkillInfo = (record, relativePath, agent) => {
-    const info = readWorkspaceSkills(record, store).find(skill => skill.relative_path === relativePath && skill.agent === agent);
+  const requireSkillInfo = (record, relativePath, agent, includeSyncState = true) => {
+    const info = readWorkspaceSkills(record, store, includeSyncState).find(skill => skill.relative_path === relativePath && skill.agent === agent);
     if (!info) throw new Error("工作区中未找到该技能");
     return info;
   };
@@ -203,7 +203,7 @@ export function projectCommands(store, library) {
     get_project_agent_targets: { call: args => agentTargets(requireProject(args.projectId), store) },
     get_project_skills: { call: args => withCenterState(readWorkspaceSkills(requireProject(args.projectId), store), store) },
     get_project_skill_document: { call: args => {
-      const info = requireSkillInfo(requireProject(args.projectId), args.skillRelativePath, args.agent);
+      const info = requireSkillInfo(requireProject(args.projectId), args.skillRelativePath, args.agent, false);
       const filename = ["SKILL.md", "skill.md"].find(name => fs.existsSync(path.join(info.path, name)));
       if (!filename) throw new Error("该目录没有 SKILL.md");
       return { skill_name: info.name, filename, content: fs.readFileSync(path.join(info.path, filename), "utf8") };

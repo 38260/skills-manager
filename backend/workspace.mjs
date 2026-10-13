@@ -26,7 +26,7 @@ function latestModifiedMs(directory) {
 }
 
 // 递归读取一个技能根目录：识别含 SKILL.md 的目录，跳过隐藏目录与嵌入的 bundle skills 子树。
-export function readSkillsRoot(root, { enabled, agent, agentDisplayName, recursive = true }) {
+export function readSkillsRoot(root, { enabled, agent, agentDisplayName, recursive = true, includeSyncState = true }) {
   const skills = [];
   if (!fs.existsSync(root)) return skills;
   const visited = new Set();
@@ -49,7 +49,8 @@ export function readSkillsRoot(root, { enabled, agent, agentDisplayName, recursi
           description: info.description, author: info.author, author_source: info.author_source,
           path: full, files: listTopLevelFiles(full), enabled, agent, agent_display_name: agentDisplayName,
           tags: [], in_center: false, sync_status: "project_only", center_skill_id: null,
-          content_hash: hashDirectory(full), last_modified_at: latestModifiedMs(full),
+          content_hash: includeSyncState ? hashDirectory(full) : null,
+          last_modified_at: includeSyncState ? latestModifiedMs(full) : null,
         });
         continue;
       }
@@ -164,9 +165,14 @@ export function workspaceCommands(store, library) {
       const tool = findTool(args.agent);
       return withCenterState(readSkillsRoot(tool.skills_dir, { enabled: true, agent: tool.key, agent_display_name: tool.display_name }), store);
     } },
+    // 总览只需要数量；读取正文只需要身份与路径，均不计算同步指纹。
+    get_global_local_skill_count: { call: args => {
+      const tool = findTool(args.agent);
+      return readSkillsRoot(tool.skills_dir, { enabled: true, agent: tool.key, includeSyncState: false }).length;
+    } },
     get_global_local_skill_document: { call: args => {
       const tool = findTool(args.agent);
-      const info = findSkill(readSkillsRoot(tool.skills_dir, { enabled: true, agent: tool.key, agent_display_name: tool.display_name }), args.skillRelativePath, args.agent);
+      const info = findSkill(readSkillsRoot(tool.skills_dir, { enabled: true, agent: tool.key, agent_display_name: tool.display_name, includeSyncState: false }), args.skillRelativePath, args.agent);
       const filename = ["SKILL.md", "skill.md"].find(name => fs.existsSync(path.join(info.path, name)));
       if (!filename) throw new Error("该目录没有 SKILL.md");
       return { skill_name: info.name, filename, content: fs.readFileSync(path.join(info.path, filename), "utf8") };

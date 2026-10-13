@@ -887,6 +887,9 @@ export const slugifySkillNames = (names: string[]) =>
 export const getGlobalLocalSkills = (agent: string) =>
   invoke<ProjectSkill[]>("get_global_local_skills", { agent });
 
+export const getGlobalLocalSkillCount = (agent: string) =>
+  invoke<number>("get_global_local_skill_count", { agent });
+
 export const getGlobalLocalSkillDocument = (agent: string, skillRelativePath: string) =>
   invoke<ProjectSkillDocument>("get_global_local_skill_document", { agent, skillRelativePath });
 

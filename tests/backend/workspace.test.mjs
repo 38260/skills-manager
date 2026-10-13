@@ -73,6 +73,9 @@ test("global workspace: read, import to center, update from center with protecti
 
   let locals = (await invoke("get_global_local_skills", { agent: "codex" })).body.data;
   assert.equal(locals.length, 2, "应发现两个工作区技能");
+  const count = await invoke("get_global_local_skill_count", { agent: "codex" });
+  assert.equal(count.body.ok, true);
+  assert.equal(count.body.data, locals.length, "总览数量应与真实工作区列表一致");
   assert.ok(locals.every(skill => skill.sync_status === "project_only" && skill.in_center === false));
 
   // 文档读取

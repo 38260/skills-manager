@@ -374,8 +374,8 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
       const entries = await Promise.all(
         installedTools.map(async (tool) => {
           try {
-            const skills = await api.getGlobalLocalSkills(tool.key);
-            return [tool.key, skills.length] as const;
+            const count = await api.getGlobalLocalSkillCount(tool.key);
+            return [tool.key, count] as const;
           } catch {
             // Keep the managed-count fallback for an agent that fails to scan.
             return [tool.key, null] as const;
