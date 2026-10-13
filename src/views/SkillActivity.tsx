@@ -116,12 +116,15 @@ export function SkillActivity() {
     };
   }, []);
 
-  // 右侧详情跟随列表：换页/换筛选后若选中项已不在本页，自动落到第一条。
+  // 右侧详情跟随列表：选中项按 id 保留，但内容换成最新一次返回的那条记录；
+  // 本页找不到它了（换页／换筛选）才落到第一条。
+  // 保留旧对象会让详情停在刷新前的状态上——扫描把 pending 改成 returned、
+  // 或重新判定触发方式之后，右栏仍显示旧值，与同一行的列表不一致。
   useEffect(() => {
     setSelected(current => {
       const items = result?.items ?? [];
-      if (current && items.some(item => item.id === current.id)) return current;
-      return items[0] ?? null;
+      const fresh = current ? items.find(item => item.id === current.id) : undefined;
+      return fresh ?? items[0] ?? null;
     });
   }, [result]);
 
