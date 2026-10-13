@@ -24,7 +24,7 @@
 | F5 | 工作区卡片键盘可达与操作兜底 | 卡片是 `div onClick`，键盘打不开；行内操作只在悬停时显形 | [x] |
 | F6 | DetailSheet 焦点管理与 Esc | 缺 Esc 关闭、焦点管理、关闭按钮无可读名称，Tab 会跑到被遮挡内容上 | [x] |
 | F7 | 详情徽章复用列表配色 | 表格触发徽章分三色，详情里全用绿色，同一状态两处含义不一致 | [x] |
-| F8 | 整体测试与交付验收 | 构建 / lint / 单测 / 无头界面断言 + 截图 | [ ] |
+| F8 | 整体测试与交付验收 | 构建 / lint / 单测 / 无头界面断言 + 截图 | [x] |
 
 **本轮不做**
 
@@ -48,6 +48,48 @@
 | 2026-10-13 | F6 | DetailSheet 补弹层语义与焦点：`role=dialog` + `aria-modal` + `aria-labelledby`（标题走 `useId`）、Esc 关闭、打开时焦点移入面板、Tab 圈在面板内、关闭后焦点还给打开它的入口、关闭按钮加可读名称。`onClose` 存进 ref，effect 只跟 `open` 走 —— 否则父组件每次重渲染都会「还原焦点再抢回来」。不用 `inert`（见上「本轮不做」） | `src/components/DetailSheet.tsx` | `tsc -b` ✓ `eslint` ✓ `vite build` ✓ |
 
 | 2026-10-13 | F7 | 详情栏触发方式徽章改用 `TRIGGER_TONE`，与表格／内嵌记录列表同一套配色（此前详情里三种触发一律绿底，同一状态在两个位置含义不同） | `src/components/ActivityDetailPanel.tsx` | `tsc -b` ✓ `eslint` ✓ `vite build` ✓ |
+| 2026-10-13 | F8 | 整体测试：静态检查 + 单测 + 无头界面断言脚本（写操作在页面层被拦截） | `output/ui-polish/verify.mjs`、`output/ui-polish/result.json`、`.gitignore` | 见下方「验收结论」 |
+
+**验收结论（2026-10-13）**
+
+静态与单测
+
+| 项 | 结果 |
+| --- | --- |
+| `npx tsc -b` | 0 error |
+| `npx eslint src/` | 0 error（仓库基线也是 0；本轮没有加任何 disable 注释 —— F3 曾撞 `react-hooks/set-state-in-effect`，改用派生态解决） |
+| `npm run build` | 通过 |
+| `npm run test:ui` | 6 / 6 通过 |
+| `node --test tests/backend/*.test.mjs` | 56 / 58 通过。**2 个失败与本轮无关**：`apply_preset_to_default` 尚未接入本地服务、设置／活动预设持久化用例。两者都落在工作区里未提交的用户 WIP（`backend/server.mjs`、`backend/store.mjs`）上，本轮一行没改 |
+
+界面级断言：`node output/ui-polish/verify.mjs` → **23 通过 / 0 失败 / 1 跳过**，逐条对应走查表
+
+| # | 断言（全部在真实 DOM 上读，不靠截图目测） | 结果 |
+| --- | --- | --- |
+| F1 | 执行中「取消」禁用 / 关闭(X)禁用 / `role=status` 说明 / 确认按钮改读「执行中」 | ✓（同一轮内） |
+| F1 | 执行中点遮罩不关窗 | 跳过，见「未复现项」 |
+| F2 | 把最新返回的第一条改成「手动触发」，等自动刷新后详情徽章跟着变；选中项 `aria-pressed` 没跳走 | ✓ ✓ |
+| F3 | 来源原文与来源差异都失败时：2 条 `role=alert` 带后端原因 + 2 个「重试」；切走再切回自动重读（请求数 1 → 2）；点重试后失败态清空 | ✓ ✓ ✓ ✓ |
+| F4 | 首屏 `.animate-pulse` 骨架且卡片数为 0；刷新时卡片数 27 → 27 且「正在刷新列表…」+ `aria-busy`，且不回退成骨架屏 | ✓ ×5 |
+| F4 | 调用记录再查询：旧结果 20 行仍在 + 「正在更新结果…」+ `aria-busy` | ✓ ✓ |
+| F5 | 卡片标题是可聚焦 `BUTTON`；CDP 送真实 Enter 键（`isTrusted=true`）后弹层打开；行内操作在聚焦后 opacity 0 → 1（等过 150ms 过渡再量）；`@media(hover:none)` 规则确实命中该元素 | ✓ ×4 |
+| F6 | 打开后焦点落在弹层本体；`aria-labelledby` 指向标题；关闭按钮有可读名称；Tab 到末尾不出弹层；Esc 关闭且焦点回到那张卡片 | ✓ ×5 |
+| F7 | 同一条记录：详情徽章的计算背景色与列表徽章逐个相等（`来源未知` 两边都是 `rgb(237, 241, 249)`） | ✓ ✓ |
+
+安全边界
+
+- 写操作命令在页面层被 fetch 拦截器直接拒绝（先拖 2.6s 再返回失败，正好用来观察「执行中」）；拦截记录里这些命令都是 `DENIED:`，**整轮验收没有一次真实删除／上传／拉取到达后端**。
+- 但验收仍会让应用跑它自己的只读检查，其中 `check_all_skill_updates` 会写「远端版本号」一类库内字段。实测迹象：本轮后期几个 Agent 的「拉取」按钮不再出现，怀疑就是它刷新了远端 revision 导致同步态变化 —— 需要你知道这一点。
+- 截图在 `output/ui-polish/shots/`（已加进 `.gitignore`；里面有真实技能名和本机路径，不要提交）。
+
+未复现项（如实说明）
+
+- **F1「执行中点遮罩不关窗」**：最后一轮跳过，原因是本机前 10 个 Agent 工作区都没有可安全触发的确认框入口（技能都已同步，只剩「移除」）。在本次之前的一轮里，F1 的取消禁用、X 禁用、`role=status` 说明、「执行中」文案四项都实测通过；遮罩与它们走的是同一个 `close()` 守卫，属同一条代码路径，只是没单独跑到绿。
+
+已知遗留（不在本轮范围）
+
+- 技能库 `MySkills.tsx` 的同形卡片，以及 `Sidebar` / `Settings` / `ProjectDetail` 里另外 5 处「悬停才显形」的操作按钮，本轮没动（`MySkills.tsx` 正被用户 WIP 修改）；F5 的模式可原样复用。
+- `zh-TW` 语言包比 `zh` 少 69 个 key（预先存在）。本轮新增的 7 个 key（`common.close`／`running`／`runningLocked`、`mySkills.sourceDocLoadFailed`／`sourceDiffLoadFailed`、`globalWorkspace.localSkills.refreshing`、`activity.updating`）三份都补齐了。
 
 ---
 

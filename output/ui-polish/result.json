@@ -1,0 +1,135 @@
+{
+  "at": "2026-10-13T05:54:48.290Z",
+  "results": [
+    {
+      "label": "F1 确认框执行期锁住取消／关闭／遮罩",
+      "ok": null,
+      "detail": "前 10 个 Agent 工作区都没有「删除本地 Skill／拉取／上传」操作，无法在不动真实数据的前提下打开确认框"
+    },
+    {
+      "label": "F4 首屏是骨架屏（不是一行“加载中”，也不是空白）",
+      "ok": true,
+      "detail": "{\"pulse\":1,\"titles\":0}"
+    },
+    {
+      "label": "F4 刷新时列表内容没有被清空",
+      "ok": true,
+      "detail": "{\"settled\":27,\"titles\":27,\"hint\":true,\"busy\":true,\"skeleton\":0}"
+    },
+    {
+      "label": "F4 刷新时给局部进度文案",
+      "ok": true,
+      "detail": "{\"titles\":27,\"hint\":true,\"busy\":true,\"skeleton\":0}"
+    },
+    {
+      "label": "F4 刷新容器标 aria-busy",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F4 同 Agent 刷新不回退成骨架屏",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F5 卡片标题是可键盘聚焦的按钮（不再是裸 div）",
+      "ok": true,
+      "detail": "{\"focused\":true,\"tag\":\"BUTTON\",\"name\":\"ai-rereseach\",\"hasFocus\":true}"
+    },
+    {
+      "label": "F5 回车即可打开技能详情",
+      "ok": true,
+      "detail": "{\"focused\":true,\"tag\":\"BUTTON\",\"name\":\"ai-rereseach\",\"hasFocus\":true}"
+    },
+    {
+      "label": "F6 打开弹层后焦点移入弹层本身",
+      "ok": true,
+      "detail": "{\"onSheet\":true,\"labelledBy\":true,\"closeNamed\":true}"
+    },
+    {
+      "label": "F6 弹层用 aria-labelledby 指向标题",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F6 关闭按钮有可读名称",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F6 Tab 到末尾不会跑进被弹层遮住的内容",
+      "ok": true,
+      "detail": "{\"count\":2}"
+    },
+    {
+      "label": "F6 Esc 关闭弹层",
+      "ok": true,
+      "detail": "{\"gone\":true,\"backOnCard\":true}"
+    },
+    {
+      "label": "F6 关闭后焦点回到打开它的卡片标题",
+      "ok": true,
+      "detail": "{\"gone\":true,\"backOnCard\":true}"
+    },
+    {
+      "label": "F5 行内操作在键盘聚焦时显形",
+      "ok": true,
+      "detail": "{\"before\":0,\"focused\":true,\"label\":\"从 Agent 移除\",\"after\":1}"
+    },
+    {
+      "label": "F5 触屏（无 hover 能力）下操作直接可见",
+      "ok": true,
+      "detail": "{\"hit\":true,\"hits\":[\".\\\\[\\\\@media\\\\(hover\\\\:none\\\\)\\\\]\\\\:opacity-100\"],\"cls\":\"flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100\"}"
+    },
+    {
+      "label": "F7 详情徽章与列表徽章同色（复用 activityTone）",
+      "ok": true,
+      "detail": "[{\"text\":\"仅请求／待确认\",\"rowBg\":\"rgba(245, 158, 11, 0.1)\",\"badgeBg\":null,\"badgeClass\":null},{\"text\":\"来源未知\",\"rowBg\":\"rgb(237, 241, 249)\",\"badgeBg\":\"rgb(237, 241, 249)\",\"badgeClass\":\"rounded border px-1.5 py-px text-[10px] leading-4 border-border-subtle bg-surface-hover text-tertiary\"},{\"text\":\"结果未知\",\"rowBg\":\"rgb(237, 241, 249)\",\"badgeBg\":null,\"badgeClass\":null}]"
+    },
+    {
+      "label": "F7 详情徽章不再统一绿底",
+      "ok": true,
+      "detail": "[{\"text\":\"来源未知\",\"rowBg\":\"rgb(237, 241, 249)\",\"badgeBg\":\"rgb(237, 241, 249)\",\"badgeClass\":\"rounded border px-1.5 py-px text-[10px] leading-4 border-border-subtle bg-surface-hover text-tertiary\"}]"
+    },
+    {
+      "label": "F2 刷新后详情显示最新内容（不再抱着旧对象）",
+      "ok": true,
+      "detail": "{\"before\":{\"pressed\":\"查看 ponytail 的记录详情\",\"trigger\":\"来源未知\"},\"flipped\":\"手动触发\"}"
+    },
+    {
+      "label": "F2 刷新后选中项没有跳走",
+      "ok": true,
+      "detail": "{\"before\":\"查看 ponytail 的记录详情\",\"now\":\"查看 ponytail 的记录详情\"}"
+    },
+    {
+      "label": "F4 再查询时旧结果没有被抹掉",
+      "ok": true,
+      "detail": "{\"rows\":20,\"hint\":true,\"busy\":true}"
+    },
+    {
+      "label": "F4 再查询时给出「正在更新结果」反馈",
+      "ok": true,
+      "detail": "{\"rows\":20,\"hint\":true,\"busy\":true}"
+    },
+    {
+      "label": "F3 来源读取失败显示后端原因",
+      "ok": true,
+      "detail": "{\"alerts\":2,\"retries\":2,\"sample\":\"simulated failure (verify only)\",\"allAlerts\":[\"simulated failure (verify only)\",\"simulated failure (verify only)\"],\"mainText\":\"查看差异 |  | simulated failure (verify only) |  | 重试 | 查看来源 |  | simulated failure (verify only) |  | 重试\",\"calls\":{\"get_settings\":4,\"log_startup_event\":4,\"git_backup_pending_conflicts\":4,\"get_skill_categories\":4,\"get_skill_usage\":4,\"get_prese"
+    },
+    {
+      "label": "F3 失败处有「重试」入口",
+      "ok": true,
+      "detail": "{\"alerts\":2,\"retries\":2,\"sample\":\"simulated failure (verify only)\",\"allAlerts\":[\"simulated failure (verify only)\",\"simulated failure (verify only)\"],\"mainText\":\"查看差异 |  | simulated failure (verify only) |  | 重试 | 查看来源 |  | simulated failure (verify only) |  | 重试\",\"calls\":{\"get_settings\":4,\"log_startup_event\":4,\"git_backup_pending_conflicts\":4,\"get_skill_categories\":4,\"get_skill_usage\":4,\"get_prese"
+    },
+    {
+      "label": "F3 失败后切走再切回本页签会自动重读",
+      "ok": true,
+      "detail": "1 → 2"
+    },
+    {
+      "label": "F3 点重试后重新读取（失败态被清掉）",
+      "ok": true,
+      "detail": "{\"alerts\":2,\"retries\":2,\"sample\":\"simulated failure (verify only)\",\"allAlerts\":[\"simulated failure (verify only)\",\"simulated failure (verify only)\"],\"mainText\":\"查看差异 |  | simulated failure (verify only) |  | 重试 | 查看来源 |  | simulated failure (verify only) |  | 重试\",\"calls\":{\"get_settings\":4,\"log_startup_event\":4,\"git_backup_pending_conflicts\":4,\"get_skill_categories\":4,\"get_skill_usage\":4,\"get_prese"
+    }
+  ]
+}
