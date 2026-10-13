@@ -380,6 +380,8 @@
       "diff": "Diff",
       "source": "Source"
     },
+    "sourceDocLoadFailed": "Failed to read the source document",
+    "sourceDiffLoadFailed": "Failed to compute the source diff",
     "sourceDiffUnavailable": "Source content is unavailable right now",
     "sourceDiff": {
       "noChanges": "No changes — the source matches the central library",

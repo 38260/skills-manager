@@ -380,6 +380,8 @@
       "diff": "差异",
       "source": "来源"
     },
+    "sourceDocLoadFailed": "读取来源原文失败",
+    "sourceDiffLoadFailed": "计算来源差异失败",
     "sourceDiffUnavailable": "暂时无法读取来源版本内容",
     "sourceDiff": {
       "noChanges": "无差异 —— 来源与中心库内容一致",

@@ -254,6 +254,8 @@
     "hint": "之後隨時可以在側邊欄的「備份」頁連線或還原備份。"
   },
   "mySkills": {
+    "sourceDocLoadFailed": "讀取來源原文失敗",
+    "sourceDiffLoadFailed": "計算來源差異失敗",
     "author": "作者",
     "authorMissing": "作者未提供",
     "profile": {
