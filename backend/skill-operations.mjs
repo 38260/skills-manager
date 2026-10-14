@@ -4,6 +4,7 @@ import { redact } from "./files.mjs";
 export function skillOperationCommands(library) {
   return {
     retry_skill_deployments: { call: args => library.retryDeployments(args.skillId, args.tools), mutating: true },
+    get_skill_source_preview: { call: args => library.skillSourcePreview(args.skillId, args.forceRefresh === true) },
     batch_update_skills: { call: async args => {
       const items=[];let refreshed=0,unchanged=0;const failed=[],held_back=[];
       for(const id of [...new Set(Array.isArray(args.skillIds)?args.skillIds:[])]) {

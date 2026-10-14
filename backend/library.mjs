@@ -58,7 +58,7 @@ const isExecutable = file => !!(fs.statSync(file.full).mode & 0o111);
 const diffKind = (before, after, size) => size > TEXT_LIMIT ? "too_large" : before.includes(0) || after.includes(0) ? "binary" : "text";
 
 export class Library {
-  constructor(store, changed = () => {}) { this.store=store; this.changed=changed; this.previews=new Map(); this.updates=new Map(); }
+  constructor(store, changed = () => {}) { this.store=store; this.changed=changed; this.previews=new Map(); this.updates=new Map(); this.sourcePreviewCache=new Map(); this.sourcePreviewPending=new Map(); }
   temporary() { const root=path.join(this.store.directory,"cache"); fs.mkdirSync(root,{recursive:true}); return fs.mkdtempSync(path.join(root,"operation-")); }
   target(skill, tool) { return inside(tool.skills_dir, path.basename(skill.central_path)); }
   tool(key) { const tool=this.store.tools().find(item=>item.key===key); if(!tool) throw new Error("工具不存在"); return tool; }
@@ -453,29 +453,38 @@ export class Library {
     return {skill_id:id,root:skill.central_path,filename:["SKILL.md","skill.md"].find(name=>fs.existsSync(path.join(skill.central_path,name)))??null,entries};
   }
   async sourceSkillDocument(id) {
-    const skill=this.store.skill(id);
-    if(["local","import"].includes(skill.source_type)) {
-      if(!skill.source_ref||!fs.existsSync(skill.source_ref)) throw new Error("原始来源路径不存在");
-      if(!fs.statSync(skill.source_ref).isDirectory()) throw new Error("压缩包来源暂不支持来源文档预览");
-      const doc=this.document(skill.source_ref);
-      return {skill_id:id,filename:doc.filename,content:doc.content,source_label:this.sourceLabel(skill),revision:"workspace"};
-    }
-    if(!["git","skillssh"].includes(skill.source_type)) throw new Error("该技能不支持来源文档预览");
-    const source=await this.source(skill);
-    try {const doc=this.document(source.directory);return {skill_id:id,filename:doc.filename,content:doc.content,source_label:this.sourceLabel(skill),revision:source.revision};}
-    finally {source.cleanup();}
+    return (await this.skillSourcePreview(id)).document;
   }
   async skillSourceDiff(id) {
+    return (await this.skillSourcePreview(id)).diff;
+  }
+  sourcePreviewKey(skill) {
+    return JSON.stringify([skill.id,hashDirectory(skill.central_path),skill.source_type,skill.source_ref,skill.source_ref_resolved,skill.source_branch,skill.source_subpath,skill.source_revision,skill.name]);
+  }
+  async skillSourcePreview(id,forceRefresh=false) {
     const skill=this.store.skill(id);
-    let sourceDirectory,revision,cleanup=()=>{};
-    if(["local","import"].includes(skill.source_type)) {
-      if(!skill.source_ref||!fs.existsSync(skill.source_ref)||!fs.statSync(skill.source_ref).isDirectory()) throw new Error("来源目录不存在，无法比较差异");
-      sourceDirectory=skill.source_ref;revision="workspace";
-    } else if(["git","skillssh"].includes(skill.source_type)) {
+    if(!["local","import","git","skillssh"].includes(skill.source_type)) throw new Error("该技能不支持来源预览");
+    const key=this.sourcePreviewKey(skill),pending=this.sourcePreviewPending.get(key);
+    if(pending) return pending;
+    const cached=this.sourcePreviewCache.get(id);
+    if(!forceRefresh&&cached?.key===key&&cached.preview.expires_at>Date.now()) return cached.preview;
+    const request=(async()=> {
       const source=await this.source(skill);
-      sourceDirectory=source.directory;revision=source.revision;cleanup=source.cleanup;
-    } else throw new Error("该技能不支持来源差异比较");
-    try {
+      try {
+        const doc=this.document(source.directory);
+        const document={skill_id:id,filename:doc.filename,content:doc.content,source_label:this.sourceLabel(skill),revision:source.revision};
+        const diff=this.compareSourceFiles(skill,source.directory,source.revision);
+        // 获取期间发生重新关联或中心库编辑时不缓存旧请求，避免把两个版本混在一起。
+        if(this.sourcePreviewKey(this.store.skill(id))!==key) throw new Error("技能或来源已改变，请刷新来源预览");
+        const cachedAt=Date.now(),preview={skill_id:id,document,diff,cached_at:cachedAt,expires_at:cachedAt+60000};
+        this.sourcePreviewCache.set(id,{key,preview});
+        return preview;
+      } finally {source.cleanup();}
+    })();
+    this.sourcePreviewPending.set(key,request);
+    try {return await request;} finally {this.sourcePreviewPending.delete(key);}
+  }
+  compareSourceFiles(skill,sourceDirectory,revision) {
       const centralFiles=files(skill.central_path),remoteFiles=files(sourceDirectory);
       const remoteMap=new Map(remoteFiles.map(file=>[file.relative,file]));
       const centralSet=new Set(centralFiles.map(file=>file.relative));
@@ -497,8 +506,7 @@ export class Library {
         const before=fs.readFileSync(file.full);
         entries.push({relative_path:file.relative,status:"added",content_kind:diffKind(before,before,file.size),original_text:null,updated_text:diffKind(before,before,file.size)==="text"?before.toString("utf8"):null,executable_before:false,executable_after:isExecutable(file)});
       }
-      return {skill_id:id,source_label:this.sourceLabel(skill),revision,entries:entries.sort((a,b)=>a.relative_path.localeCompare(b.relative_path))};
-    } finally {cleanup();}
+      return {skill_id:skill.id,source_label:this.sourceLabel(skill),revision,entries:entries.sort((a,b)=>a.relative_path.localeCompare(b.relative_path))};
   }
   inventory(root,tool) {
     return skillDirectories(root).map(directory=> {

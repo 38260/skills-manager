@@ -526,7 +526,9 @@
       "sourceSummaryEmpty": "尚無來源資訊"
     },
     "gridView": "網格檢視",
-    "listView": "列表檢視"
+    "listView": "列表檢視",
+    "sourcePreviewCachedAt": "讀取時間：{{time}}",
+    "sourcePreviewRefresh": "重新整理來源"
   },
   "install": {
     "title": "安裝 Skills",

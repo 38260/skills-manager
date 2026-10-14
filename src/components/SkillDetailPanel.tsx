@@ -10,14 +10,12 @@ import { useTranslation } from "react-i18next";
 import { cn } from "../utils";
 import {
   getSkillDocument,
-  getSourceSkillDocument,
-  getSkillSourceDiff,
+  getSkillSourcePreview,
   openPath,
   type ManagedSkill,
   type Project,
   type SkillDocument,
-  type SourceSkillDocument,
-  type SkillSourceDiff,
+  type SkillSourcePreview,
   type SkillToolToggle,
   type ToolInfo,
 } from "../lib/tauri";
@@ -144,14 +142,13 @@ function SkillDetailPanelContent({
   busyAction,
   onEditProfile,
 }: ContentProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [doc, setDoc] = useState<SkillDocument | null>(null);
-  const [sourceDoc, setSourceDoc] = useState<SourceSkillDocument | null>(null);
-  const [sourceDiff, setSourceDiff] = useState<SkillSourceDiff | null>(null);
-  const [sourceDocFailure, setSourceDocFailure] = useState<SourceFailure | null>(null);
-  const [sourceDiffFailure, setSourceDiffFailure] = useState<SourceFailure | null>(null);
+  const [sourcePreview, setSourcePreview] = useState<SkillSourcePreview | null>(null);
+  const [sourceFailure, setSourceFailure] = useState<SourceFailure | null>(null);
+  const [sourceRefreshing, setSourceRefreshing] = useState(false);
   const [sourceReloadToken, setSourceReloadToken] = useState(0);
   const [sourceFocus, setSourceFocus] = useState<"source" | "diff">("diff");
   const [loading, setLoading] = useState(true);
@@ -183,10 +180,7 @@ function SkillDetailPanelContent({
   const diffSectionRef = useRef<HTMLElement>(null);
   const localRequestIdRef = useRef(0);
   const sourceRequestIdRef = useRef(0);
-  /** 已成功读取过来源原文的版本：只有成功才登记，失败的版本下次进入本页签会重读。 */
-  const sourceLoadedVersionRef = useRef<string | null>(null);
-  const sourcePendingVersionRef = useRef<string | null>(null);
-  const diffRequestedRef = useRef(false);
+  const forceSourceRefreshRef = useRef(false);
   const skillId = skill.id;
   const tocPrefix = `skill-${skill.id}`;
   const supportsSourceDiff =
@@ -199,6 +193,8 @@ function SkillDetailPanelContent({
     skill.source_type,
     skill.source_ref ?? "",
     skill.source_ref_resolved ?? "",
+    skill.source_branch ?? "",
+    skill.source_subpath ?? "",
     skill.source_revision ?? "",
     skill.remote_revision ?? "",
   ].join(":");
@@ -278,51 +274,32 @@ function SkillDetailPanelContent({
   }, [skillId, localDocVersion]);
 
   useEffect(() => {
-    // 远程来源会克隆仓库：只在查看来源时读取。同一版本**读取成功**过才复用；
-    // 失败不留复用标记，切走再切回本页签会自动重读（另有显式「重试」入口）。
+    // 原文与差异使用同一次来源读取；进入页签时由服务端检查缓存有效期。
     if (contentTab !== "sourceDiff" || !supportsSourceDiff) return;
-    if (sourceLoadedVersionRef.current === sourceDocVersion) return;
-    if (sourcePendingVersionRef.current === sourceDocVersion) return;
-
-    sourcePendingVersionRef.current = sourceDocVersion;
     sourceRequestIdRef.current += 1;
     const requestId = sourceRequestIdRef.current;
+    let current = true;
+    const forceRefresh = forceSourceRefreshRef.current;
+    forceSourceRefreshRef.current = false;
 
-    getSourceSkillDocument(skillId)
-      .then((nextDoc) => {
-        if (requestId !== sourceRequestIdRef.current) return;
-        setSourceDoc(nextDoc);
-        sourceLoadedVersionRef.current = sourceDocVersion;
+    getSkillSourcePreview(skillId, forceRefresh)
+      .then((nextPreview) => {
+        if (!current || requestId !== sourceRequestIdRef.current) return;
+        setSourcePreview(nextPreview);
+        setSourceFailure(null);
       })
       .catch((cause: unknown) => {
-        if (requestId !== sourceRequestIdRef.current) return;
-        setSourceDoc(null);
-        setSourceDocFailure({
-          key: sourceAttemptKey,
-          message: getErrorMessage(cause, t("mySkills.sourceDocLoadFailed")),
-        });
-      })
-      .finally(() => {
-        if (requestId === sourceRequestIdRef.current) sourcePendingVersionRef.current = null;
-      });
-  }, [contentTab, skillId, sourceAttemptKey, sourceDocVersion, supportsSourceDiff, t]);
-
-  // 差异按需加载：git/skills.sh 需要克隆仓库，仅在打开"来源与差异"页签时付出成本。
-  // 失败后放开请求标记，切页签或点「重试」会再算一次，而不是永久停在「暂时无法读取」。
-  useEffect(() => {
-    if (contentTab !== "sourceDiff" || !supportsSourceDiff) return;
-    if (diffRequestedRef.current) return;
-    diffRequestedRef.current = true;
-
-    getSkillSourceDiff(skillId)
-      .then(setSourceDiff)
-      .catch((cause: unknown) => {
-        diffRequestedRef.current = false;
-        setSourceDiffFailure({
+        if (!current || requestId !== sourceRequestIdRef.current) return;
+        // 刷新失败时保留上次成功预览，但本次错误始终可见。
+        setSourceFailure({
           key: sourceAttemptKey,
           message: getErrorMessage(cause, t("mySkills.sourceDiffLoadFailed")),
         });
+      })
+      .finally(() => {
+        if (current && requestId === sourceRequestIdRef.current) setSourceRefreshing(false);
       });
+    return () => { current = false; };
   }, [contentTab, skillId, sourceAttemptKey, supportsSourceDiff, t]);
 
   // 调用记录内嵌展示：打开页签时按技能名读取，不跳转到独立页面。
@@ -336,13 +313,13 @@ function SkillDetailPanelContent({
   }, [contentTab, skill.name, activityRevision]);
 
   const activeDoc = doc?.skill_id === skill.id ? doc : null;
-  const activeSourceDoc = sourceDoc?.skill_id === skill.id ? sourceDoc : null;
-  const activeSourceDiff = sourceDiff?.skill_id === skill.id ? sourceDiff : null;
+  const activeSourcePreview = sourcePreview?.skill_id === skill.id ? sourcePreview : null;
+  const activeSourceDoc = activeSourcePreview?.document ?? null;
+  const activeSourceDiff = activeSourcePreview?.diff ?? null;
   // 失败信息只在「本次尝试」上成立：换了版本或点了重试，旧的失败自动退回加载中。
-  const sourceDocError = sourceDocFailure?.key === sourceAttemptKey ? sourceDocFailure.message : "";
-  const sourceDiffError = sourceDiffFailure?.key === sourceAttemptKey ? sourceDiffFailure.message : "";
+  const sourceError = sourceFailure?.key === sourceAttemptKey ? sourceFailure.message : "";
   const sourceDiffLoading =
-    contentTab === "sourceDiff" && supportsSourceDiff && !activeSourceDiff && !sourceDiffError;
+    contentTab === "sourceDiff" && supportsSourceDiff && !activeSourceDiff && !sourceError;
 
   useEffect(() => {
     if (contentTab !== "sourceDiff") return;
@@ -352,13 +329,17 @@ function SkillDetailPanelContent({
 
   function openComparison(target: "source" | "diff") {
     setSourceFocus(target);
+    setSourceRefreshing(true);
+    setSourceReloadToken(value => value + 1);
     setContentTab("sourceDiff");
     const section = target === "source" ? sourceSectionRef.current : diffSectionRef.current;
     section?.scrollIntoView({ block: "start" });
   }
 
-  /** 来源原文与来源差异同页签读取，一次重试把两者都重跑一遍。 */
+  /** 显式刷新／重试绕过成功缓存，同时重新获取原文与差异。 */
   function retrySource() {
+    forceSourceRefreshRef.current = true;
+    setSourceRefreshing(true);
     setSourceReloadToken(value => value + 1);
   }
   const toggleItems = (toolToggles ?? []).map((toggle) => ({
@@ -792,7 +773,11 @@ function SkillDetailPanelContent({
                 type="button"
                 onClick={() => {
                   setContentTab(tab as ContentTab);
-                  if (tab === "sourceDiff") setSourceFocus("diff");
+                  if (tab === "sourceDiff") {
+                    setSourceFocus("diff");
+                    setSourceRefreshing(true);
+                    setSourceReloadToken(value => value + 1);
+                  }
                   // 重新进入调用记录页签时先清空上一次的结果，避免展示过期记录。
                   if (tab === "activity") { setActivityItems(null); setActivityError(""); }
                   mainScrollRef.current?.scrollTo({ top: 0 });
@@ -818,11 +803,28 @@ function SkillDetailPanelContent({
               <div className="mt-12 text-center text-[13px] text-muted">{t("common.loading")}</div>
             ) : contentTab === "sourceDiff" ? (
               <div className="flex flex-col gap-6">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-[12.5px] text-muted" aria-live="polite">
+                    {activeSourcePreview
+                      ? t("mySkills.sourcePreviewCachedAt", { defaultValue: "读取时间：{{time}}", time: new Date(activeSourcePreview.cached_at).toLocaleString(i18n.language) })
+                      : t("mySkills.detail.tabSourceDiff")}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={retrySource}
+                    disabled={sourceRefreshing}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border-subtle px-2.5 py-1 text-[12.5px] text-secondary outline-none hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-wait disabled:opacity-50"
+                  >
+                    <RefreshCw className={cn("h-3.5 w-3.5", sourceRefreshing && "animate-spin")} />
+                    {sourceRefreshing ? t("common.loading") : t("mySkills.sourcePreviewRefresh", { defaultValue: "刷新来源" })}
+                  </button>
+                </div>
+                {sourceError && <SourceLoadFailure message={sourceError} onRetry={retrySource} />}
                 <section ref={diffSectionRef} aria-label={t("mySkills.detail.viewDiff")}>
                     <h3 className="mb-2 text-[14px] font-semibold text-primary">{t("mySkills.detail.viewDiff")}</h3>
                 {activeSourceDiff ? <SkillSourceDiffViewer entries={activeSourceDiff.entries} /> : sourceDiffLoading ? (
                   <div className="mt-6 text-center text-[13px] text-muted">{t("common.loading")}</div>
-                ) : <SourceLoadFailure message={sourceDiffError || t("mySkills.sourceDiffUnavailable")} onRetry={retrySource} />}
+                ) : <p className="text-sm text-muted">{t("mySkills.sourceDiffUnavailable")}</p>}
                 </section>
                 <section ref={sourceSectionRef} aria-label={t("mySkills.detail.viewSource")}>
                     <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
@@ -843,9 +845,7 @@ function SkillDetailPanelContent({
                       {activeSourceDoc.source_label} · {activeSourceDoc.revision.slice(0, 7)}
                     </p>
                     <SkillMarkdown content={activeSourceDoc.content} hideFirstHeading repeatedTitle={skill.name} variant="detail" />
-                    </> : sourceDocError ? (
-                      <SourceLoadFailure message={sourceDocError} onRetry={retrySource} />
-                    ) : <p className="text-sm text-muted">{t("common.loading")}</p>}
+                    </> : <p className="text-sm text-muted">{sourceError ? t("mySkills.sourceDiffUnavailable") : t("common.loading")}</p>}
                 </section>
               </div>
             ) : contentTab === "activity" ? (

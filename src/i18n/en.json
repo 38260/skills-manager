@@ -569,7 +569,9 @@
       "sourceSummaryEmpty": "No source info"
     },
     "gridView": "Grid view",
-    "listView": "List view"
+    "listView": "List view",
+    "sourcePreviewCachedAt": "Read at: {{time}}",
+    "sourcePreviewRefresh": "Refresh source"
   },
   "install": {
     "title": "Install Skills",

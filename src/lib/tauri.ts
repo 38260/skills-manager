@@ -111,6 +111,14 @@ export interface SkillSourceDiff {
   entries: SkillSourceDiffEntry[];
 }
 
+export interface SkillSourcePreview {
+  skill_id: string;
+  document: SourceSkillDocument;
+  diff: SkillSourceDiff;
+  cached_at: number;
+  expires_at: number;
+}
+
 export interface Preset {
   id: string;
   name: string;
@@ -301,6 +309,10 @@ export const getSourceSkillDocument = (skillId: string) =>
 
 export const getSkillSourceDiff = (skillId: string) =>
   invoke<SkillSourceDiff>("get_skill_source_diff", { skillId });
+
+/** 同一次来源读取生成原文与差异；刷新绕过成功缓存。 */
+export const getSkillSourcePreview = (skillId: string, forceRefresh = false) =>
+  invoke<SkillSourcePreview>("get_skill_source_preview", { skillId, forceRefresh });
 
 export const deleteManagedSkill = (skillId: string) =>
   invoke<void>("delete_managed_skill", { skillId });
