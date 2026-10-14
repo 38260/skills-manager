@@ -277,8 +277,8 @@ export class Library {
         fs.rmSync(previous,{recursive:true});
       } else if(local) this.store.run("UPDATE skills SET update_status='local_only',last_checked_at=?,last_check_error=NULL WHERE id=?",Date.now(),id);
       else this.store.run("UPDATE skills SET update_status='up_to_date',remote_revision=?,last_checked_at=?,last_check_error=NULL WHERE id=?",source.revision,Date.now(),id);
-      for(const target of skill.targets.filter(target=>target.mode==="copy")) await this.deploy(id,target.tool,{force:true});
-      this.store.saveMetadata(id);this.changed();return {skill:this.store.skill(id),content_changed:changed,pending_removals:[],removal_approval:null};
+      const deployments=await this.syncUpdatedTargets(id,skill.targets);
+      this.store.saveMetadata(id);this.changed();return {skill:this.store.skill(id),content_changed:changed,pending_removals:[],removal_approval:null,deployments};
     } finally {if(fs.existsSync(staged))fs.rmSync(staged,{recursive:true,force:true});source.cleanup();}
   }
   async relink(id,sourcePath,approvedRemovals) {
@@ -306,8 +306,8 @@ export class Library {
         this.saveManifest(id,skill.central_path);
       } catch(error){fs.rmSync(skill.central_path,{recursive:true});fs.renameSync(previous,skill.central_path);throw error;}
       fs.rmSync(previous,{recursive:true});
-      for(const target of skill.targets.filter(target=>target.mode==="copy")) await this.deploy(id,target.tool,{force:true});
-      this.store.saveMetadata(id);this.changed();return {skill:this.store.skill(id),pending_removals:[],removal_approval:null};
+      const deployments=await this.syncUpdatedTargets(id,skill.targets);
+      this.store.saveMetadata(id);this.changed();return {skill:this.store.skill(id),pending_removals:[],removal_approval:null,deployments};
     } finally {if(fs.existsSync(staged))fs.rmSync(staged,{recursive:true,force:true});}
   }
   detach(id) {
@@ -338,6 +338,25 @@ export class Library {
     return this.store.skill(id);
   }
 
+  async syncUpdatedTargets(id,targets,{force=true}={}) {
+    const results=[];
+    for(const target of targets.filter(target=>target.mode==="copy")) {
+      try {
+        await this.deploy(id,target.tool,{force,destination:target.target_path});
+        results.push({tool:target.tool,status:"success",message:"已同步"});
+      } catch(error) {
+        this.store.run("UPDATE skill_targets SET status='error' WHERE skill_id=? AND tool=?",id,target.tool);
+        results.push({tool:target.tool,status:"failed",message:redact(error.message)});
+      }
+    }
+    this.changed();return results;
+  }
+  async retryDeployments(id,keys) {
+    const skill=this.store.skill(id),tools=[...new Set(Array.isArray(keys)?keys:[])];
+    if(tools.some(key=>!skill.targets.some(target=>target.tool===key&&target.mode==="copy"))) throw new Error("仅可重试已有复制部署目标");
+    // 重试期间可能产生新的本地编辑，重新执行保护检查，不能复用更新时的强制覆盖授权。
+    return this.syncUpdatedTargets(id,skill.targets.filter(target=>tools.includes(target.tool)),{force:false});
+  }
   async deploy(id,key,{force=false,destination}={}) {
     const skill=this.store.skill(id),tool=this.tool(key),target=destination||this.target(skill,tool);
     const old=this.store.get("SELECT * FROM skill_targets WHERE skill_id=? AND tool=?",id,key);
@@ -347,11 +366,24 @@ export class Library {
     if(fs.existsSync(target)&&old&&old.mode==="copy"&&!force&&hashDirectory(target)!==old.source_hash) throw new Error("目标副本包含本地修改，请先同步到技能库");
     const mode=this.store.getSetting("sync_mode")||"symlink";
     fs.mkdirSync(path.dirname(target),{recursive:true});
-    if(fs.existsSync(target)) {const stat=fs.lstatSync(target);if(stat.isSymbolicLink())fs.unlinkSync(target);else fs.rmSync(target,{recursive:true});}
-    if(mode==="copy") copySkill(skill.central_path,target);
-    else fs.symlinkSync(skill.central_path,target,process.platform==="win32"?"junction":"dir");
-    this.store.run("INSERT INTO skill_targets(id,skill_id,tool,target_path,mode,status,synced_at,source_hash) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(skill_id,tool) DO UPDATE SET target_path=excluded.target_path,mode=excluded.mode,status=excluded.status,synced_at=excluded.synced_at,source_hash=excluded.source_hash",
-      old?.id||crypto.randomUUID(),id,key,target,mode,"ok",Date.now(),hashDirectory(skill.central_path));this.changed();
+    const staged=path.join(path.dirname(target),".deploy-"+crypto.randomUUID()),previous=staged+"-previous";
+    let replaced=false;
+    try {
+      if(mode==="copy") copySkill(skill.central_path,staged);
+      else fs.symlinkSync(skill.central_path,staged,process.platform==="win32"?"junction":"dir");
+      try {fs.lstatSync(target);fs.renameSync(target,previous);replaced=true;} catch(error) {if(error.code!=="ENOENT")throw error;}
+      fs.renameSync(staged,target);
+      try {
+        this.store.run("INSERT INTO skill_targets(id,skill_id,tool,target_path,mode,status,synced_at,source_hash) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(skill_id,tool) DO UPDATE SET target_path=excluded.target_path,mode=excluded.mode,status=excluded.status,synced_at=excluded.synced_at,source_hash=excluded.source_hash",
+          old?.id||crypto.randomUUID(),id,key,target,mode,"ok",Date.now(),hashDirectory(skill.central_path));
+      } catch(error) {fs.rmSync(target,{recursive:true,force:true});throw error;}
+    } catch(error) {
+      if(replaced) fs.renameSync(previous,target);
+      throw error;
+    } finally {
+      fs.rmSync(staged,{recursive:true,force:true});
+    }
+    if(replaced)fs.rmSync(previous,{recursive:true,force:true});this.changed();
   }
   undeploy(id,key) {
     const target=this.store.get("SELECT * FROM skill_targets WHERE skill_id=? AND tool=?",id,key);if(!target)return;

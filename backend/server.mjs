@@ -16,6 +16,7 @@ import { repoSettingsCommands } from "./repo-settings.mjs";
 import { backupCommands } from "./backup.mjs";
 import { shellCommands, attachDiagnostics } from "./shell.mjs";
 import { redact } from "./files.mjs";
+import { skillOperationCommands } from "./skill-operations.mjs";
 
 function parseArgs(argv) {
   const args = {};
@@ -252,6 +253,7 @@ const activity = new ActivityService({
   skills: () => store.skills(), tools: () => store.tools(),
 });
 Object.assign(commands, activity.commands);
+Object.assign(commands, skillOperationCommands(library));
 
 // ── 桌面外壳与诊断：日志落盘、panic 记录、退出与重启 ──
 const diagnostics = attachDiagnostics(store);

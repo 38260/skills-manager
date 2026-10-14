@@ -363,6 +363,7 @@ export const checkAllSkillUpdates = (force?: boolean) =>
   });
 
 export interface UpdateSkillResult {
+  deployments?: DeploymentResult[];
   skill: ManagedSkill;
   /** False when a monorepo commit didn't touch this skill's subdirectory. */
   content_changed: boolean;
@@ -403,6 +404,7 @@ export const batchUpdateSkills = (skillIds: string[]) =>
   invoke<BatchUpdateSkillsResult>("batch_update_skills", { skillIds });
 
 export interface ReimportSkillResult {
+  deployments?: DeploymentResult[];
   skill: ManagedSkill;
   /** Non-empty means nothing was changed — see UpdateSkillResult. */
   pending_removals: PendingRemoval[];
@@ -429,6 +431,10 @@ export const relinkLocalSkillSource = (
 
 export const detachLocalSkillSource = (skillId: string) =>
   invoke<ManagedSkill>("detach_local_skill_source", { skillId });
+
+export interface DeploymentResult { tool: string; status: "success" | "failed"; message: string; }
+export const retrySkillDeployments = (skillId: string, tools: string[]) =>
+  invoke<DeploymentResult[]>("retry_skill_deployments", { skillId, tools });
 
 export interface BatchImportResult {
   imported: number;

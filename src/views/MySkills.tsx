@@ -30,6 +30,7 @@ import {
 import { openDirectory as dialogOpen } from "../lib/desktop";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { OperationResults, type OperationReport, type OperationItem } from "../components/OperationResults";
 import { toast } from "sonner";
 import { cn } from "../utils";
 import { useApp } from "../context/AppContext";
@@ -179,6 +180,8 @@ export function MySkills() {
   const [tagToDelete, setTagToDelete] = useState<string | null>(null);
   const [createCategoryOpen, setCreateCategoryOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [operationReport, updateOperationReport] = useState<(OperationReport & { version: number }) | null>(null);
+  function setOperationReport(report: OperationReport | null) { updateOperationReport(report ? { ...report, version: performance.now() } : null); }
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const refreshAfterDeleteRef = useRef<number | null>(null);
   const [batchDeleteConfirm, setBatchDeleteConfirm] = useState(false);
@@ -824,11 +827,25 @@ export function MySkills() {
     }
   };
 
+  function showDeployments(skill: ManagedSkill, deployments?: api.DeploymentResult[]) {
+    if (!deployments?.length) return;
+    const rows = (results: api.DeploymentResult[]): OperationItem[] => results.map(result => ({
+      id: result.tool, name: tools.find(tool => tool.key === result.tool)?.display_name ?? result.tool,
+      status: result.status, message: result.message,
+    }));
+    setOperationReport({ title: `${skill.display_name || skill.name}：中央库已更新 · Agent 同步结果`, items: rows(deployments),
+      retry: async keys => { const result = await api.retrySkillDeployments(skill.id, keys); await refreshManagedSkills(); return rows(result); },
+    });
+    const failed = deployments.filter(result => result.status === "failed");
+    if (failed.length) toast.warning(`中央库已更新，${failed.length} 个 Agent 同步失败`, { action: { label: "查看结果", onClick: closeSkillDetail } });
+  }
+
   const handleRefreshSkill = async (skill: ManagedSkill, approvedRemovals?: string) => {
     setUpdatingSkillId(skill.id);
     try {
       if (skill.source_type === "local" || skill.source_type === "import") {
         const result = await api.reimportLocalSkill(skill.id, approvedRemovals);
+        showDeployments(skill, result.deployments);
         if (result.pending_removals.length > 0) {
           setPendingRemoval({
             skill,
@@ -840,6 +857,7 @@ export function MySkills() {
         toast.success(t("mySkills.updateActions.reimported"));
       } else {
         const result = await api.updateSkill(skill.id, approvedRemovals);
+        showDeployments(skill, result.deployments);
         // Nothing was changed: the update would have taken away files the new
         // version does not have. Show them and let the user decide (#256).
         if (result.pending_removals.length > 0) {
@@ -881,6 +899,7 @@ export function MySkills() {
         selected,
         approvedRemovals,
       );
+      showDeployments(skill, result.deployments);
       if (result.pending_removals.length > 0) {
         setPendingRemoval({
           skill,
@@ -1146,6 +1165,7 @@ export function MySkills() {
 
   return (
     <div className="app-page skill-library">
+      {operationReport && <OperationResults key={operationReport.version} report={operationReport} onClose={() => setOperationReport(null)} />}
       <div className="app-page-header pr-2 pb-1 flex items-center justify-between gap-3">
         <h1 className="app-page-title flex items-center gap-2">
           {t("mySkills.title")}
