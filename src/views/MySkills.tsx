@@ -31,6 +31,7 @@ import { openDirectory as dialogOpen } from "../lib/desktop";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { OperationResults, type OperationReport, type OperationItem } from "../components/OperationResults";
+import { readLibraryViewState, writeLibraryViewState, restoreLibraryScroll } from "../lib/libraryViewState";
 import { toast } from "sonner";
 import { cn } from "../utils";
 import { useApp } from "../context/AppContext";
@@ -150,6 +151,26 @@ function formatUsageTime(value: number | null) {
 }
 
 export function MySkills() {
+  const { viewedPreset, loading } = useApp();
+  const { t } = useTranslation();
+  const [libraryPath, setLibraryPath] = useState<string | null>(null);
+  const [pathError, setPathError] = useState("");
+  const [pathRequest, setPathRequest] = useState(0);
+  useEffect(() => {
+    let current = true;
+    api.getCentralRepoPath().then(value => { if (current) setLibraryPath(value); })
+      .catch(cause => { if (current) setPathError(getErrorMessage(cause, t("common.error"))); });
+    return () => { current = false; };
+  }, [t, pathRequest]);
+  if (!libraryPath || (loading && !viewedPreset)) return <div>
+    <p role={pathError ? "alert" : "status"}>{pathError || t("common.loading")}</p>
+    {pathError && <button type="button" className="app-button-secondary" onClick={() => { setPathError(""); setPathRequest(value => value + 1); }}>{t("common.retry")}</button>}
+  </div>;
+  return <MySkillsContent key={libraryPath + ":" + (viewedPreset?.id || "library")} libraryPath={libraryPath} presetId={viewedPreset?.id ?? null} />;
+}
+
+function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; presetId: string | null }) {
+  const [initialView] = useState(() => readLibraryViewState(libraryPath, presetId));
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const {
@@ -165,11 +186,11 @@ export function MySkills() {
     projects,
     refreshProjects,
   } = useApp();
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "list">(initialView.viewMode);
   const [showCreatePreset, setShowCreatePreset] = useState(false);
-  const [filterMode, setFilterMode] = useState<"all" | "enabled" | "available">("all");
-  const [sourceFilters, setSourceFilters] = useState<Set<string>>(new Set());
-  const [tagFilters, setTagFilters] = useState<Set<string>>(new Set());
+  const [filterMode, setFilterMode] = useState<"all" | "enabled" | "available">(initialView.filterMode);
+  const [sourceFilters, setSourceFilters] = useState<Set<string>>(() => new Set(initialView.sourceFilters));
+  const [tagFilters, setTagFilters] = useState<Set<string>>(() => new Set(initialView.tagFilters));
   const [profileSkillId, setProfileSkillId] = useState<string | null>(null);
   const [usage, setUsage] = useState<Record<string, SkillUsage>>({});
   const [allTags, setAllTags] = useState<string[]>([]);
@@ -179,7 +200,24 @@ export function MySkills() {
   const [tagToRename, setTagToRename] = useState<string | null>(null);
   const [tagToDelete, setTagToDelete] = useState<string | null>(null);
   const [createCategoryOpen, setCreateCategoryOpen] = useState(false);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialView.search);
+  const pendingScroll = useRef<number | null>(initialView.scrollTop);
+  useEffect(() => {
+    const container = document.getElementById("page-scroll-container");
+    if (!container) return;
+    return restoreLibraryScroll(container, initialView.scrollTop);
+  }, [initialView]);
+  useEffect(() => {
+    const container = document.getElementById("page-scroll-container");
+    if (!container) return;
+    const save = () => {
+      if (pendingScroll.current !== null && container.scrollTop === Math.min(pendingScroll.current, Math.max(0, container.scrollHeight - container.clientHeight))) pendingScroll.current = null;
+      writeLibraryViewState(libraryPath, presetId, { viewMode, filterMode, search, sourceFilters: [...sourceFilters], tagFilters: [...tagFilters], scrollTop: pendingScroll.current ?? container.scrollTop });
+    };
+    save();container.addEventListener("scroll", save, { passive: true });
+    // 离页后的 DOM 可能已经缩短，清理时不读取它，避免把旧页面滚动位置覆盖为 0。
+    return () => { container.removeEventListener("scroll", save); };
+  }, [libraryPath, presetId, viewMode, filterMode, search, sourceFilters, tagFilters]);
   const [operationReport, updateOperationReport] = useState<(OperationReport & { version: number }) | null>(null);
   function setOperationReport(report: OperationReport | null) { updateOperationReport(report ? { ...report, version: performance.now() } : null); }
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
@@ -1173,6 +1211,8 @@ export function MySkills() {
             <span aria-hidden="true" className="mx-1 h-5 w-px shrink-0 self-center bg-border-subtle" />
             <button
               onClick={() => setViewMode("grid")}
+              aria-label={t("mySkills.gridView", { defaultValue: "网格视图" })}
+              aria-pressed={viewMode === "grid"}
               className={cn(
                 "rounded-md p-2 transition-colors outline-none",
                 viewMode === "grid" ? "bg-surface-active text-secondary" : "text-muted hover:text-tertiary"
@@ -1182,6 +1222,8 @@ export function MySkills() {
             </button>
             <button
               onClick={() => setViewMode("list")}
+              aria-label={t("mySkills.listView", { defaultValue: "列表视图" })}
+              aria-pressed={viewMode === "list"}
               className={cn(
                 "rounded-md p-2 transition-colors outline-none",
                 viewMode === "list" ? "bg-surface-active text-secondary" : "text-muted hover:text-tertiary"

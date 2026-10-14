@@ -54,7 +54,7 @@ export function Layout() {
       </div>
       <Sidebar />
       <div className="relative flex min-w-[600px] flex-1 flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto px-5 pb-5 pt-[calc(28px+20px)] scrollbar-hide">
+        <div id="page-scroll-container" className="flex-1 overflow-y-auto px-5 pb-5 pt-[calc(28px+20px)] scrollbar-hide">
           {/* 技能库以表格化的列表/卡片为主，宽屏下放宽上限，避免右侧留下大片空白；
               其余页面（仪表盘、设置等）保持 1200px，避免正文行过长影响阅读。 */}
           <div className={`mx-auto flex min-h-full flex-col gap-4 ${location.pathname === "/my-skills" ? "max-w-[1760px]" : "max-w-[1200px]"}`}>
