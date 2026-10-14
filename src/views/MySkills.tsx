@@ -31,6 +31,7 @@ import { openDirectory as dialogOpen } from "../lib/desktop";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { OperationResults, type OperationReport, type OperationItem } from "../components/OperationResults";
+import { getSkillDisplayNames, matchSkillSearch } from "../lib/skillSearch";
 import { readLibraryViewState, writeLibraryViewState, restoreLibraryScroll } from "../lib/libraryViewState";
 import { toast } from "sonner";
 import { cn } from "../utils";
@@ -135,9 +136,6 @@ function getToolDisplayName(toolKey: string, tools: ToolInfo[]) {
   return tools.find((tool) => tool.key === toolKey)?.display_name || toolKey;
 }
 
-function centralDirName(skill: ManagedSkill) {
-  return skill.central_path.split(/[\\/]/).filter(Boolean).pop() || skill.name;
-}
 
 // 调用统计的时间：当天只显示时分，更早显示日期，避免卡片上一长串时间戳。
 function formatUsageTime(value: number | null) {
@@ -344,36 +342,12 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
     setFilterMode("all");
   };
 
-  const skillDisplayNames = useMemo(() => {
-    const nameCounts = new Map<string, number>();
-    for (const skill of skills) {
-      nameCounts.set(skill.name, (nameCounts.get(skill.name) || 0) + 1);
-    }
-
-    const displayNames = new Map<string, string>();
-    for (const skill of skills) {
-      const dirName = centralDirName(skill);
-      // 用户设置的别名优先；同名技能用目录名区分；否则用技能名。
-      displayNames.set(
-        skill.id,
-        skill.display_name && skill.display_name !== skill.name
-          ? skill.display_name
-          : (nameCounts.get(skill.name) || 0) > 1 && dirName !== skill.name
-            ? dirName
-            : skill.name
-      );
-    }
-    return displayNames;
-  }, [skills]);
+  const skillDisplayNames = useMemo(() => getSkillDisplayNames(skills), [skills]);
 
   const filtered = useMemo(() => {
     const result = skills.filter((skill) => {
       const displayName = skillDisplayNames.get(skill.id) || skill.name;
-      const matchesSearch =
-        skill.name.toLowerCase().includes(search.toLowerCase()) ||
-        displayName.toLowerCase().includes(search.toLowerCase()) ||
-        (skill.display_description || skill.description || "").toLowerCase().includes(search.toLowerCase());
-      if (!matchesSearch) return false;
+      if (!matchSkillSearch(skill, search, displayName)) return false;
 
       if (sourceFilters.size > 0 && !sourceFilters.has(skill.source_type)) return false;
 

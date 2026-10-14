@@ -66,6 +66,13 @@
       "navigate": "选择",
       "open": "打开",
       "toggle": "呼出"
+    },
+    "matchReasons": {
+      "alias": "匹配别名：{{value}}",
+      "name": "匹配原名：{{value}}",
+      "directory": "匹配目录名：{{value}}",
+      "customDescription": "匹配自定义说明：{{value}}",
+      "description": "匹配原描述：{{value}}"
     }
   },
   "dashboard": {
@@ -560,7 +567,9 @@
       "structureCount": "{{count}} 个文件",
       "sourceDetails": "来源详情",
       "sourceSummaryEmpty": "暂无来源信息"
-    }
+    },
+    "gridView": "网格视图",
+    "listView": "列表视图"
   },
   "install": {
     "title": "安装 Skills",

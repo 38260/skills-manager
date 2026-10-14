@@ -66,6 +66,13 @@
       "navigate": "navigate",
       "open": "open",
       "toggle": "toggle"
+    },
+    "matchReasons": {
+      "alias": "Alias match: {{value}}",
+      "name": "Original name match: {{value}}",
+      "directory": "Directory match: {{value}}",
+      "customDescription": "Custom description match: {{value}}",
+      "description": "Original description match: {{value}}"
     }
   },
   "dashboard": {
@@ -560,7 +567,9 @@
       "structureCount": "{{count}} files",
       "sourceDetails": "Source details",
       "sourceSummaryEmpty": "No source info"
-    }
+    },
+    "gridView": "Grid view",
+    "listView": "List view"
   },
   "install": {
     "title": "Install Skills",

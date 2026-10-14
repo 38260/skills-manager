@@ -66,6 +66,13 @@
       "navigate": "選擇",
       "open": "開啟",
       "toggle": "呼叫"
+    },
+    "matchReasons": {
+      "alias": "符合別名：{{value}}",
+      "name": "符合原名：{{value}}",
+      "directory": "符合目錄名：{{value}}",
+      "customDescription": "符合自訂說明：{{value}}",
+      "description": "符合原說明：{{value}}"
     }
   },
   "dashboard": {
@@ -517,7 +524,9 @@
       "structureCount": "{{count}} 個檔案",
       "sourceDetails": "來源詳情",
       "sourceSummaryEmpty": "尚無來源資訊"
-    }
+    },
+    "gridView": "網格檢視",
+    "listView": "列表檢視"
   },
   "install": {
     "title": "安裝 Skills",

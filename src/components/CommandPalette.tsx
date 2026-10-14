@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { getPresetIconOption } from "../lib/presetIcons";
+import { getSkillDisplayNames, matchSkillSearch } from "../lib/skillSearch";
 import { cn } from "../utils";
 
 type ItemKind = "skill" | "preset" | "project" | "action";
@@ -82,24 +83,23 @@ export function CommandPalette() {
 
   const items = useMemo<PaletteItem[]>(() => {
     const q = query.trim().toLowerCase();
+    const skillDisplayNames = getSkillDisplayNames(managedSkills);
 
     const skillItems: PaletteItem[] = managedSkills
-      .filter(
-        (s) =>
-          !q ||
-          s.name.toLowerCase().includes(q) ||
-          (s.description || "").toLowerCase().includes(q),
-      )
+      .map((skill) => ({ skill, match: matchSkillSearch(skill, query, skillDisplayNames.get(skill.id)) }))
+      .filter(({ match }) => match !== null)
       .slice(0, 8)
-      .map((s) => ({
-        id: `skill:${s.id}`,
+      .map(({ skill, match }) => ({
+        id: `skill:${skill.id}`,
         kind: "skill",
-        label: s.name,
-        sublabel: s.description || undefined,
+        label: skillDisplayNames.get(skill.id) || skill.name,
+        sublabel: match?.field
+          ? t(`commandPalette.matchReasons.${match.field}`, { value: match.value })
+          : skill.display_description || skill.description || undefined,
         icon: <Layers className="h-3.5 w-3.5" />,
         run: () => {
           navigate("/my-skills");
-          openSkillDetailById(s.id);
+          openSkillDetailById(skill.id);
         },
       }));
 
