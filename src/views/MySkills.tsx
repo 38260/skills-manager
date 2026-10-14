@@ -375,7 +375,7 @@ export function MySkills() {
 
   const {
     isMultiSelect, setIsMultiSelect,
-    selectedIds,
+    selectedIds, setSelectedIds,
     toggleSelect,
     isAllSelected,
     anyDisabled,
@@ -613,148 +613,87 @@ export function MySkills() {
     [selectedSkill, closeSkillDetail, t, scheduleRefreshAfterDelete]
   );
 
+  type BatchTask = { id: string; skillId: string; name: string; run: () => Promise<void | Pick<OperationItem, "status" | "message">> };
+
+  async function runOperations(title: string, tasks: BatchTask[]) {
+    const execute = async (selected: BatchTask[]) => {
+      const items: OperationItem[] = [];
+      for (const task of selected) {
+        try { const result = await task.run(); items.push({ id: task.id, name: task.name, status: "success", message: "已完成", ...result }); }
+        catch (cause) { items.push({ id: task.id, name: task.name, status: "failed", message: getErrorMessage(cause, t("common.error")) }); }
+      }
+      await Promise.all([refreshManagedSkills(), refreshPresets(), refreshTools()]);
+      const failedIds = new Set(items.filter(item => item.status === "failed").map(item => tasks.find(task => task.id === item.id)!.skillId));
+      setSelectedIds(failedIds);
+      if (failedIds.size) setIsMultiSelect(true); else exitMultiSelect();
+      return items;
+    };
+    const items = await execute(tasks);
+    setOperationReport({ title, items, retry: ids => execute(tasks.filter(task => ids.includes(task.id))) });
+    return items;
+  }
+
   const handleBatchDelete = async () => {
-    const ids = Array.from(selectedIds);
-    try {
-      const result = await api.deleteManagedSkills(ids);
-      if (selectedSkill && ids.includes(selectedSkill.id) && !result.failed.includes(selectedSkill.id)) {
-        closeSkillDetail();
-      }
-      if (result.deleted > 0) {
-        toast.success(t("mySkills.batchDeleted", { count: result.deleted }));
-      }
-      if (result.failed.length > 0) {
-        toast.error(t("mySkills.batchDeleteFailed", { count: result.failed.length }));
-      }
-    } catch (error: unknown) {
-      toast.error(getErrorMessage(error, t("common.error")));
-    } finally {
-      exitMultiSelect();
-      setBatchDeleteConfirm(false);
-      await Promise.all([refreshManagedSkills(), refreshPresets()]);
-    }
+    const tasks = skills.filter(skill => selectedIds.has(skill.id)).map(skill => ({ id: skill.id, skillId: skill.id, name: skill.display_name || skill.name,
+      run: async () => { await api.deleteManagedSkill(skill.id); if (selectedSkill?.id === skill.id) closeSkillDetail(); },
+    }));
+    await runOperations("批量删除结果", tasks);
   };
 
   const handleBatchEditTags = async (adds: string[], removes: string[]) => {
-    const selectedSkillsList = skills.filter((s) => selectedIds.has(s.id));
-    let updated = 0;
-    let failed = 0;
-    for (const skill of selectedSkillsList) {
-      const removeSet = new Set(removes);
-      const remaining = skill.tags.filter((tag) => !removeSet.has(tag));
-      const merged = [...remaining];
-      for (const tag of adds) {
-        if (!merged.includes(tag)) merged.push(tag);
-      }
-      const changed =
-        merged.length !== skill.tags.length ||
-        merged.some((tag, i) => tag !== skill.tags[i]);
-      if (!changed) continue;
-      try {
-        await api.setSkillTags(skill.id, merged);
-        updated++;
-      } catch {
-        failed++;
-      }
-    }
-    if (updated > 0) {
-      toast.success(t("mySkills.batchTagsUpdated", { count: updated }));
-    }
-    if (failed > 0) {
-      toast.error(t("mySkills.batchTagsFailed", { count: failed }));
-    }
-    await refreshManagedSkills();
-    await refreshAllTags();
+    const tasks = skills.filter(skill => selectedIds.has(skill.id)).map(skill => ({ id: skill.id, skillId: skill.id, name: skill.display_name || skill.name,
+      run: async () => {
+        // 重试时读取当前标签，只应用本次增减，不覆盖失败后用户新添加的分类。
+        const current = (await api.getManagedSkills()).find(item => item.id === skill.id);
+        if (!current) throw new Error("技能已不存在");
+        const next = [...new Set([...current.tags.filter(tag => !removes.includes(tag)), ...adds])];
+        await api.setSkillTags(skill.id, next);
+      },
+    }));
+    await runOperations("批量分类结果", tasks); await refreshAllTags();
   };
 
   const handleBatchTogglePreset = async () => {
     if (!viewedPreset || batchToggling) return;
-    const enabling = anyDisabled;
-    let count = 0;
-    let failed = 0;
+    const enabling = anyDisabled, presetId = viewedPreset.id;
     setBatchToggling(true);
     try {
-      for (const skill of togglableSelectedSkills) {
-        try {
-          if (enabling) {
-            await api.addSkillToPreset(skill.id, viewedPreset.id);
-          } else {
-            await api.removeSkillFromPreset(skill.id, viewedPreset.id);
-          }
-          count++;
-        } catch {
-          failed++;
-          // continue with remaining
-        }
-      }
-      if (count > 0) {
-        toast.success(enabling
-          ? t("mySkills.batchEnabled", { count })
-          : t("mySkills.batchDisabled", { count }));
-      }
-      if (failed > 0) {
-        toast.error(t("mySkills.batchToggleFailed", { count: failed }));
-      }
-      await Promise.all([refreshManagedSkills(), refreshPresets()]);
-    } finally {
-      setBatchToggling(false);
-    }
+      await runOperations(enabling ? "批量加入 Preset 结果" : "批量移出 Preset 结果", togglableSelectedSkills.map(skill => ({ id: skill.id, skillId: skill.id, name: skill.display_name || skill.name,
+        run: () => enabling ? api.addSkillToPreset(skill.id, presetId) : api.removeSkillFromPreset(skill.id, presetId),
+      })));
+    } finally { setBatchToggling(false); }
   };
 
   const handleBatchSyncAgents = async (agentKeys: string[]) => {
-    const selectedSkillsList = skills.filter((s) => selectedIds.has(s.id));
-    let synced = 0;
-    let failed = 0;
-    for (const skill of selectedSkillsList) {
-      for (const agentKey of agentKeys) {
-        if (skill.targets.some((target) => target.tool === agentKey)) continue;
-        try {
-          await api.syncSkillToTool(skill.id, agentKey);
-          synced++;
-        } catch {
-          failed++;
-        }
-      }
+    const tasks: BatchTask[] = [];
+    for (const skill of skills.filter(item => selectedIds.has(item.id))) for (const key of agentKeys) {
+      if (skill.targets.some(target => target.tool === key)) continue;
+      tasks.push({ id: skill.id + ":" + key, skillId: skill.id, name: (skill.display_name || skill.name) + " → " + (tools.find(tool => tool.key === key)?.display_name || key), run: () => api.syncSkillToTool(skill.id, key) });
     }
-    if (synced > 0) {
-      toast.success(t("mySkills.batchSynced", { count: synced }));
-    }
-    if (failed > 0) {
-      toast.error(t("mySkills.batchSyncFailed", { count: failed }));
-    }
-    await Promise.all([refreshManagedSkills(), refreshTools()]);
+    await runOperations("批量部署结果", tasks);
   };
 
-  const handleBatchRefresh = async () => {
-    const refreshableSkills = skills.filter((skill) => selectedIds.has(skill.id) && canRefresh(skill));
-    if (refreshableSkills.length === 0) return;
+  function updateTask(skill: ManagedSkill): BatchTask {
+    let failedTools: string[] = [];
+    return { id: skill.id, skillId: skill.id, name: skill.display_name || skill.name, run: async () => {
+      let deployments: api.DeploymentResult[];
+      if (failedTools.length) deployments = await api.retrySkillDeployments(skill.id, failedTools);
+      else {
+        const result = ["local", "import"].includes(skill.source_type) ? await api.reimportLocalSkill(skill.id) : await api.updateSkill(skill.id);
+        if (result.pending_removals.length) return { status: "held", message: "存在本地编辑或文件移除，请单项更新并确认" };
+        deployments = result.deployments || [];
+      }
+      failedTools = deployments.filter(item => item.status === "failed").map(item => item.tool);
+      return { status: failedTools.length ? "failed" : "success", message: "中央库已更新" + (deployments.length ? "；" + deployments.map(item => item.tool + "：" + item.message).join("；") : "") };
+    }};
+  }
 
+  const handleBatchRefresh = async () => {
+    const targets = skills.filter(skill => selectedIds.has(skill.id) && canRefresh(skill));
+    if (!targets.length || batchUpdating) return;
     setBatchUpdating(true);
-    try {
-      const result = await api.batchUpdateSkills(refreshableSkills.map((skill) => skill.id));
-      if (result.refreshed > 0) {
-        toast.success(t("mySkills.batchUpdated", { count: result.refreshed }));
-      }
-      if (result.unchanged > 0) {
-        toast.info(t("mySkills.batchAlreadyUpToDate", { count: result.unchanged }));
-      }
-      if (result.held_back.length > 0) {
-        toast.warning(
-          t("mySkills.batchHeldBack", {
-            count: result.held_back.length,
-            names: result.held_back.slice(0, 3).join("、"),
-          })
-        );
-      }
-      if (result.failed.length > 0) {
-        toast.error(t("mySkills.batchUpdateFailed", { count: result.failed.length }));
-      }
-    } catch (error: unknown) {
-      toast.error(getErrorMessage(error, t("common.error")));
-    } finally {
-      await refreshManagedSkills();
-      setBatchUpdating(false);
-    }
+    try { await runOperations("所选技能更新结果", targets.map(updateTask)); }
+    finally { setBatchUpdating(false); }
   };
 
   /** The update the user has been asked to confirm, and what it would remove. */
@@ -768,37 +707,11 @@ export function MySkills() {
   } | null>(null);
 
   const handleUpdateAvailableSkills = async () => {
-    const updatableSkills = skills.filter(
-      (skill) => skill.update_status === "update_available" && canRefresh(skill)
-    );
-    if (updatableSkills.length === 0) return;
-
+    const targets = skills.filter(skill => skill.update_status === "update_available" && canRefresh(skill));
+    if (!targets.length || batchUpdating) return;
     setBatchUpdating(true);
-    try {
-      const result = await api.batchUpdateSkills(updatableSkills.map((skill) => skill.id));
-      if (result.refreshed > 0) {
-        toast.success(t("mySkills.batchUpdated", { count: result.refreshed }));
-      }
-      if (result.unchanged > 0) {
-        toast.info(t("mySkills.batchAlreadyUpToDate", { count: result.unchanged }));
-      }
-      if (result.held_back.length > 0) {
-        toast.warning(
-          t("mySkills.batchHeldBack", {
-            count: result.held_back.length,
-            names: result.held_back.slice(0, 3).join("、"),
-          })
-        );
-      }
-      if (result.failed.length > 0) {
-        toast.error(t("mySkills.batchUpdateFailed", { count: result.failed.length }));
-      }
-    } catch (error: unknown) {
-      toast.error(getErrorMessage(error, t("common.error")));
-    } finally {
-      await refreshManagedSkills();
-      setBatchUpdating(false);
-    }
+    try { await runOperations("全部技能更新结果", targets.map(updateTask)); }
+    finally { setBatchUpdating(false); }
   };
 
   const handleCheckAllUpdates = async () => {

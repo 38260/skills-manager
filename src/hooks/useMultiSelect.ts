@@ -121,6 +121,7 @@ export function useMultiSelect<T>({
     isMultiSelect,
     setIsMultiSelect,
     selectedIds,
+    setSelectedIds: setRawSelectedIds,
     toggleSelect,
     isAllSelected,
     anyDisabled,

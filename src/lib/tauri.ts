@@ -398,6 +398,7 @@ export interface BatchUpdateSkillsResult {
   /** Skills left alone because updating would have removed files. */
   held_back: string[];
   failed: string[];
+  items?: { id: string; name: string; status: "success" | "failed" | "held"; message: string; deployments?: DeploymentResult[] }[];
 }
 
 export const batchUpdateSkills = (skillIds: string[]) =>
