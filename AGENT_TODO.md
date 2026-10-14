@@ -1,5 +1,7 @@
 # Agent 工作 Todo
 
+> 2026-10-14 后续八项优化及当前验收状态见 [OPTIMIZATION_TODO.md](OPTIMIZATION_TODO.md)。此前独立验收的失败原始记录保留；本轮弹窗复验已修复首次反向 Tab，工作区已有的单项删除 Promise 修复保持未提交。
+
 > 工作约定：每个「小功能」独立完成 → 跑静态检查（`npx tsc --noEmit` + `npm run build`）→ **提交一次 Git** → 回到这里勾选。
 > 提交时只带该小功能相关文件，不捆绑用户自己的 WIP。
 
