@@ -311,7 +311,7 @@
     "moreActions": "More actions",
     "dragToReorder": "Drag to reorder",
     "delete": "Delete skill",
-    "deleteConfirm": "Delete skill \"{{name}}\" permanently? This removes its central library files, preset links, and synced agent targets.",
+    "deleteConfirm": "Delete skill {{name}}? A recovery snapshot will be saved first. Library files, Preset membership and unedited Agent copies will be removed; edited Agent copies are retained.",
     "deleted": "deleted",
     "viewDoc": "View docs",
     "noSkills": "No skills to display",
@@ -482,7 +482,7 @@
     "batchAlreadyUpToDate": "{{count}} skills already up to date",
     "batchUpdateFailed": "{{count}} skills failed to refresh",
     "deleteSelected": "Delete {{count}}",
-    "batchDeleteConfirm": "Delete {{count}} selected skills permanently? This removes their central library files, preset links, and synced agent targets.",
+    "batchDeleteConfirm": "Delete {{count}} selected skills? Each skill will have a recovery snapshot saved before deletion; edited Agent copies are retained.",
     "batchDeleted": "{{count}} skills deleted",
     "batchDeleteFailed": "{{count}} skills failed to delete",
     "batchToggleFailed": "{{count}} skills failed to update",
@@ -571,7 +571,23 @@
     "gridView": "Grid view",
     "listView": "List view",
     "sourcePreviewCachedAt": "Read at: {{time}}",
-    "sourcePreviewRefresh": "Refresh source"
+    "sourcePreviewRefresh": "Refresh source",
+    "recovery": {
+      "title": "Skill recovery",
+      "hint": "Snapshots are saved before updates and deletions. Restore one skill while preserving its current version and local edits in Agent copies.",
+      "empty": "No snapshots yet. Update or delete a skill to create one.",
+      "beforeDelete": "Before deletion",
+      "beforeUpdate": "Before update",
+      "beforeRestore": "Before restore",
+      "deleted": "Deleted",
+      "files": "{{count}} files",
+      "restore": "Restore",
+      "restored": "Skill restored",
+      "partial": "Skill restored; some Agent copies need attention",
+      "savedCurrent": "The previous current version was saved as another snapshot.",
+      "confirmTitle": "Restore skill snapshot",
+      "confirm": "Restore {{name}} to this snapshot? Its current version will be saved and local edits in Agent copies retained."
+    }
   },
   "install": {
     "title": "Install Skills",
@@ -1358,5 +1374,25 @@
       "skill_call": "An explicit Skill tool call without clear trigger evidence",
       "document_read": "A skill document read; its result determines confirmed loading"
     }
+  },
+  "optimization": {
+    "retrying": "Retrying…",
+    "retryFailed": "Retry failed items ({{count}})",
+    "closeResults": "Close results",
+    "resultsSummary": "Succeeded {{success}} · Failed {{failed}} · Needs approval {{held}}",
+    "completed": "Completed",
+    "batchDeleteResults": "Batch deletion results",
+    "batchTagsResults": "Batch category results",
+    "batchEnableResults": "Add to Preset results",
+    "batchDisableResults": "Remove from Preset results",
+    "batchDeployResults": "Batch deployment results",
+    "selectedUpdateResults": "Selected skill update results",
+    "allUpdateResults": "All skill update results",
+    "libraryUpdated": "Library updated",
+    "heldUpdate": "Local edits or removed files need approval. Update this skill individually.",
+    "refreshFailed": "Actions completed, but lists could not refresh. Refresh the page for the latest state.",
+    "deploymentResultsTitle": "{{name}}: library updated · Agent deployment results",
+    "deploymentFailures": "Library updated; {{count}} Agent deployments failed",
+    "viewResults": "View results"
   }
 }

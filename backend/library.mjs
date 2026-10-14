@@ -154,6 +154,18 @@ export class Library {
     } catch(error) {if(fs.existsSync(staged))fs.rmSync(staged,{recursive:true,force:true});if(fs.existsSync(destination)&&!this.store.get("SELECT id FROM skills WHERE id=?",id))fs.rmSync(destination,{recursive:true});throw error;}
   }
   saveManifest(id,directory) {writeJson(inside(path.join(this.store.directory,"install-manifests"),`${id}.json`),Object.fromEntries(files(directory).map(file=>[file.relative,crypto.createHash("sha256").update(fs.readFileSync(file.full)).digest("hex")])));}
+  persistReplacement(id,action) {
+    const filenames=[inside(path.join(this.store.directory,"install-manifests"),`${id}.json`),inside(path.join(this.store.skillsDirectory,".skills-manager","skills"),`${id}.json`)];
+    const previous=new Map(filenames.map(filename=>[filename,fs.existsSync(filename)?fs.readFileSync(filename):null]));
+    try {this.store.transaction(()=>{action();this.saveManifest(id,this.store.skill(id).central_path);this.store.saveMetadata(id);});}
+    catch(error) {
+      for(const [filename,bytes] of previous) {
+        if(bytes!==null){fs.mkdirSync(path.dirname(filename),{recursive:true});fs.writeFileSync(filename,bytes);}
+        else if(fs.existsSync(filename))fs.unlinkSync(filename);
+      }
+      throw error;
+    }
+  }
 
   async previewGitInstall(url,hooks = {}) {
     hooks.onPhase?.("cloning");
@@ -241,10 +253,12 @@ export class Library {
       skill.targets.filter(target=>target.mode==="copy").map(target=>[target.target_path,fs.existsSync(target.target_path)?hashDirectory(target.target_path):null])];
   }
   async update(id,approvedRemovals) {
+    if(this.snapshots?.restoring.has(id)) throw new Error("该技能正在恢复，请等待完成");
     if(this.updates.has(id)) return this.updates.get(id);
     const operation=this.performUpdate(id,approvedRemovals,false).finally(()=>this.updates.delete(id)); this.updates.set(id,operation);return operation;
   }
   async reimport(id,approvedRemovals) {
+    if(this.snapshots?.restoring.has(id)) throw new Error("该技能正在恢复，请等待完成");
     const skill=this.store.skill(id);
     if(!["local","import"].includes(skill.source_type)) throw new Error("只有本地技能可以重新导入");
     if(!skill.source_ref||!fs.existsSync(skill.source_ref)) {
@@ -264,24 +278,27 @@ export class Library {
       if(pending.length && approved!==token) {this.store.run("UPDATE skills SET update_status=? WHERE id=?",local?skill.update_status:"update_available",id);return {skill:this.store.skill(id),content_changed:false,pending_removals:pending,removal_approval:token};}
       const changed=nextHash!==hashDirectory(skill.central_path);
       if(changed) {
+        this.snapshots?.capture(id,"before_update");
         const previous=inside(this.store.skillsDirectory,".previous-"+crypto.randomUUID());
         fs.renameSync(skill.central_path,previous);
         try {fs.renameSync(staged,skill.central_path);}
         catch(error){fs.renameSync(previous,skill.central_path);throw error;}
         const info=metadata(skill.central_path);
         try {
-          if(local) this.store.run("UPDATE skills SET description=?,content_hash=?,updated_at=?,update_status='local_only',last_checked_at=?,last_check_error=NULL WHERE id=?",info.description,nextHash,Date.now(),Date.now(),id);
-          else this.store.run("UPDATE skills SET description=?,content_hash=?,source_revision=?,remote_revision=?,updated_at=?,update_status='up_to_date',last_checked_at=?,last_check_error=NULL WHERE id=?",info.description,nextHash,source.revision,source.revision,Date.now(),Date.now(),id);
-          this.saveManifest(id,skill.central_path);
+          this.persistReplacement(id,()=>{
+            if(local) this.store.run("UPDATE skills SET description=?,content_hash=?,updated_at=?,update_status='local_only',last_checked_at=?,last_check_error=NULL WHERE id=?",info.description,nextHash,Date.now(),Date.now(),id);
+            else this.store.run("UPDATE skills SET description=?,content_hash=?,source_revision=?,remote_revision=?,updated_at=?,update_status='up_to_date',last_checked_at=?,last_check_error=NULL WHERE id=?",info.description,nextHash,source.revision,source.revision,Date.now(),Date.now(),id);
+          });
         } catch(error){fs.rmSync(skill.central_path,{recursive:true});fs.renameSync(previous,skill.central_path);throw error;}
         fs.rmSync(previous,{recursive:true});
       } else if(local) this.store.run("UPDATE skills SET update_status='local_only',last_checked_at=?,last_check_error=NULL WHERE id=?",Date.now(),id);
       else this.store.run("UPDATE skills SET update_status='up_to_date',remote_revision=?,last_checked_at=?,last_check_error=NULL WHERE id=?",source.revision,Date.now(),id);
       const deployments=await this.syncUpdatedTargets(id,skill.targets);
-      this.store.saveMetadata(id);this.changed();return {skill:this.store.skill(id),content_changed:changed,pending_removals:[],removal_approval:null,deployments};
+      this.changed();return {skill:this.store.skill(id),content_changed:changed,pending_removals:[],removal_approval:null,deployments};
     } finally {if(fs.existsSync(staged))fs.rmSync(staged,{recursive:true,force:true});source.cleanup();}
   }
   async relink(id,sourcePath,approvedRemovals) {
+    if(this.snapshots?.restoring.has(id)) throw new Error("该技能正在恢复，请等待完成");
     const skill=this.store.skill(id);
     if(!["local","import"].includes(skill.source_type)) throw new Error("只有本地技能可以重新关联来源");
     const resolved=path.resolve(sourcePath);
@@ -296,21 +313,22 @@ export class Library {
       const pending=this.risks(skill,staged);
       const token=crypto.createHash("sha256").update(JSON.stringify(this.removalSignature(skill,staged,hashDirectory(staged)))).digest("hex");
       if(pending.length && approved!==token) {fs.rmSync(staged,{recursive:true,force:true});return {skill:this.store.skill(id),pending_removals:pending,removal_approval:token};}
+      this.snapshots?.capture(id,"before_update");
       const previous=inside(this.store.skillsDirectory,".previous-"+crypto.randomUUID());
       fs.renameSync(skill.central_path,previous);
       try {fs.renameSync(staged,skill.central_path);}
       catch(error){fs.renameSync(previous,skill.central_path);throw error;}
       const info=metadata(skill.central_path);
       try {
-        this.store.run("UPDATE skills SET source_ref=?,description=?,content_hash=?,updated_at=?,update_status='local_only',last_check_error=NULL WHERE id=?",resolved,info.description,hashDirectory(skill.central_path),Date.now(),id);
-        this.saveManifest(id,skill.central_path);
+        this.persistReplacement(id,()=>this.store.run("UPDATE skills SET source_ref=?,description=?,content_hash=?,updated_at=?,update_status='local_only',last_check_error=NULL WHERE id=?",resolved,info.description,hashDirectory(skill.central_path),Date.now(),id));
       } catch(error){fs.rmSync(skill.central_path,{recursive:true});fs.renameSync(previous,skill.central_path);throw error;}
       fs.rmSync(previous,{recursive:true});
       const deployments=await this.syncUpdatedTargets(id,skill.targets);
-      this.store.saveMetadata(id);this.changed();return {skill:this.store.skill(id),pending_removals:[],removal_approval:null,deployments};
+      this.changed();return {skill:this.store.skill(id),pending_removals:[],removal_approval:null,deployments};
     } finally {if(fs.existsSync(staged))fs.rmSync(staged,{recursive:true,force:true});}
   }
   detach(id) {
+    if(this.updates.has(id)||this.snapshots?.restoring.has(id)) throw new Error("该技能正在更新或恢复，请等待完成");
     const skill=this.store.skill(id);
     if(!["local","import"].includes(skill.source_type)) throw new Error("只有本地技能可以分离来源");
     this.store.run("UPDATE skills SET source_ref=NULL,source_ref_resolved=NULL,source_subpath=NULL,source_branch=NULL,source_revision=NULL,remote_revision=NULL,update_status='local_only',updated_at=? WHERE id=?",Date.now(),id);
@@ -320,17 +338,21 @@ export class Library {
   // 用指定目录内容整体替换中心技能（工作区／项目导入到中心共用）：保留 ID、分类、Preset 与部署关系，
   // 失败回滚为原内容，并强制刷新 copy 模式的部署副本。
   async replaceWithDirectory(id,sourceDir) {
+    if(this.snapshots?.restoring.has(id)||this.updates.has(id)) throw new Error("该技能正在更新或恢复，请等待完成");
+    const operation=this.performReplacement(id,sourceDir).finally(()=>this.updates.delete(id));this.updates.set(id,operation);return operation;
+  }
+  async performReplacement(id,sourceDir) {
     const skill=this.store.skill(id);
     const staged=inside(this.store.skillsDirectory,".replace-"+crypto.randomUUID());
     copySkill(sourceDir,staged);
+    try {this.snapshots?.capture(id,"before_update");} catch(error) {fs.rmSync(staged,{recursive:true,force:true});throw error;}
     const previous=inside(this.store.skillsDirectory,".previous-"+crypto.randomUUID());
     fs.renameSync(skill.central_path,previous);
     try {fs.renameSync(staged,skill.central_path);}
     catch(error){fs.renameSync(previous,skill.central_path);fs.rmSync(staged,{recursive:true,force:true});throw error;}
     const info=metadata(skill.central_path);
     try {
-      this.store.run("UPDATE skills SET description=?,content_hash=?,updated_at=? WHERE id=?",info.description,hashDirectory(skill.central_path),Date.now(),id);
-      this.saveManifest(id,skill.central_path);
+      this.persistReplacement(id,()=>this.store.run("UPDATE skills SET description=?,content_hash=?,updated_at=? WHERE id=?",info.description,hashDirectory(skill.central_path),Date.now(),id));
     } catch(error){fs.rmSync(skill.central_path,{recursive:true,force:true});fs.renameSync(previous,skill.central_path);throw error;}
     fs.rmSync(previous,{recursive:true,force:true});
     for(const target of skill.targets.filter(target=>target.mode==="copy")) await this.deploy(id,target.tool,{force:true});
@@ -352,6 +374,7 @@ export class Library {
     this.changed();return results;
   }
   async retryDeployments(id,keys) {
+    if(this.updates.has(id)||this.snapshots?.restoring.has(id)) throw new Error("该技能正在更新或恢复，请等待完成");
     const skill=this.store.skill(id),tools=[...new Set(Array.isArray(keys)?keys:[])];
     if(tools.some(key=>!skill.targets.some(target=>target.tool===key&&target.mode==="copy"))) throw new Error("仅可重试已有复制部署目标");
     // 重试期间可能产生新的本地编辑，重新执行保护检查，不能复用更新时的强制覆盖授权。
@@ -407,7 +430,9 @@ export class Library {
     this.store.run("DELETE FROM skill_targets WHERE id=?",target.id);this.changed();
   }
   remove(id) {
+    if(this.updates.has(id)||this.snapshots?.restoring.has(id)) throw new Error("该技能正在更新或恢复，请等待完成");
     const skill=this.store.skill(id);
+    this.snapshots?.capture(id,"before_delete");
     for(const target of skill.targets) {
       if(fs.existsSync(target.target_path)) {
         const stat=fs.lstatSync(target.target_path);
@@ -421,6 +446,7 @@ export class Library {
     if(fs.existsSync(skill.central_path))fs.rmSync(skill.central_path,{recursive:true});
     this.store.run("DELETE FROM skills WHERE id=?",id);
     const meta=inside(path.join(this.store.skillsDirectory,".skills-manager","skills"),`${id}.json`);if(fs.existsSync(meta))fs.unlinkSync(meta);this.changed();
+    this.sourcePreviewCache.delete(id);
   }
 
   async batchImportFolder(folder,onProgress) {

@@ -1,8 +1,12 @@
 // 扩展命令独立登记，避免把用户现有服务接入改动捆进本轮提交。
 import { redact } from "./files.mjs";
+import { SkillSnapshots } from "./skill-snapshots.mjs";
 
 export function skillOperationCommands(library) {
+  library.snapshots ??= new SkillSnapshots(library);
   return {
+    get_skill_snapshots: { call: () => library.snapshots.list() },
+    restore_skill_snapshot: { call: args => library.snapshots.restore(args.snapshotId), mutating: true },
     retry_skill_deployments: { call: args => library.retryDeployments(args.skillId, args.tools), mutating: true },
     get_skill_source_preview: { call: args => library.skillSourcePreview(args.skillId, args.forceRefresh === true) },
     batch_update_skills: { call: async args => {

@@ -311,7 +311,7 @@
     "moreActions": "更多操作",
     "dragToReorder": "拖动排序",
     "delete": "删除 Skill",
-    "deleteConfirm": "确定彻底删除 Skill \"{{name}}\" 吗？中央仓库文件、Preset 关联和已同步到各 Agent 的目标都会被移除。",
+    "deleteConfirm": "删除 Skill「{{name}}」？删除前会保存恢复快照；中央库文件、Preset 关联和未编辑的 Agent 副本将移除，已编辑的副本会保留。",
     "deleted": "已删除",
     "viewDoc": "查看文档",
     "noSkills": "没有可显示的 Skills",
@@ -482,7 +482,7 @@
     "batchAlreadyUpToDate": "{{count}} 个 Skill 已是最新",
     "batchUpdateFailed": "{{count}} 个 Skill 更新失败",
     "deleteSelected": "删除 {{count}} 个",
-    "batchDeleteConfirm": "确定彻底删除选中的 {{count}} 个 Skill 吗？中央仓库文件、Preset 关联和已同步到各 Agent 的目标都会被移除。",
+    "batchDeleteConfirm": "删除所选 {{count}} 个 Skill？每项删除前均保存恢复快照，已编辑的 Agent 副本会保留。",
     "batchDeleted": "已删除 {{count}} 个 Skill",
     "batchDeleteFailed": "{{count}} 个 Skill 删除失败",
     "batchToggleFailed": "{{count}} 个 Skill 更新失败",
@@ -571,7 +571,23 @@
     "gridView": "网格视图",
     "listView": "列表视图",
     "sourcePreviewCachedAt": "读取时间：{{time}}",
-    "sourcePreviewRefresh": "刷新来源"
+    "sourcePreviewRefresh": "刷新来源",
+    "recovery": {
+      "title": "技能恢复",
+      "hint": "更新和删除前自动保存技能快照，可恢复单个技能。恢复会保留当前版本，并保护 Agent 副本里的本地改动。",
+      "empty": "暂无技能快照，更新或删除技能后会在这里显示。",
+      "beforeDelete": "删除前",
+      "beforeUpdate": "更新前",
+      "beforeRestore": "恢复前",
+      "deleted": "已删除",
+      "files": "{{count}} 个文件",
+      "restore": "恢复",
+      "restored": "技能已恢复",
+      "partial": "技能已恢复，部分 Agent 副本需要处理",
+      "savedCurrent": "恢复前的版本已另存为快照，可随时恢复。",
+      "confirmTitle": "恢复技能快照",
+      "confirm": "恢复「{{name}}」到所选快照？当前版本会另存快照，Agent 副本里的本地改动会保留。"
+    }
   },
   "install": {
     "title": "安装 Skills",
@@ -1358,5 +1374,25 @@
       "skill_call": "发现明确 Skill 工具调用，触发来源未明确",
       "document_read": "发现技能文档读取，并按对应结果判断加载状态"
     }
+  },
+  "optimization": {
+    "retrying": "正在重试…",
+    "retryFailed": "仅重试失败项（{{count}}）",
+    "closeResults": "关闭结果",
+    "resultsSummary": "成功 {{success}} · 失败 {{failed}} · 待确认 {{held}}",
+    "completed": "已完成",
+    "batchDeleteResults": "批量删除结果",
+    "batchTagsResults": "批量分类结果",
+    "batchEnableResults": "批量加入 Preset 结果",
+    "batchDisableResults": "批量移出 Preset 结果",
+    "batchDeployResults": "批量部署结果",
+    "selectedUpdateResults": "所选技能更新结果",
+    "allUpdateResults": "全部技能更新结果",
+    "libraryUpdated": "中央库已更新",
+    "heldUpdate": "存在本地编辑或文件移除，请单项更新并确认",
+    "refreshFailed": "操作已完成，列表刷新失败，请刷新页面查看最新状态",
+    "deploymentResultsTitle": "{{name}}：中央库已更新 · Agent 同步结果",
+    "deploymentFailures": "中央库已更新，{{count}} 个 Agent 同步失败",
+    "viewResults": "查看结果"
   }
 }

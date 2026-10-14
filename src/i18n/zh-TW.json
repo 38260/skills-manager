@@ -313,7 +313,7 @@
     "moreActions": "更多操作",
     "dragToReorder": "拖曳排序",
     "delete": "刪除 Skill",
-    "deleteConfirm": "確定徹底刪除 Skill「{{name}}」嗎？中央倉庫檔案、Preset 關聯和已同步到各 Agent 的目標都會被移除。",
+    "deleteConfirm": "刪除技能「{{name}}」？刪除前會儲存復原快照；中央庫檔案、Preset 關聯與未編輯的 Agent 副本將移除，已編輯的副本會保留。",
     "deleted": "已刪除",
     "viewDoc": "檢視文件",
     "noSkills": "沒有可顯示的 Skills",
@@ -452,7 +452,7 @@
     "batchAlreadyUpToDate": "{{count}} 個 Skill 已是最新",
     "batchUpdateFailed": "{{count}} 個 Skill 更新失敗",
     "deleteSelected": "刪除 {{count}} 個",
-    "batchDeleteConfirm": "確定徹底刪除選中的 {{count}} 個 Skill 嗎？中央倉庫檔案、Preset 關聯和已同步到各 Agent 的目標都會被移除。",
+    "batchDeleteConfirm": "刪除所選 {{count}} 個技能？每項刪除前均儲存復原快照，已編輯的 Agent 副本會保留。",
     "batchDeleted": "已刪除 {{count}} 個 Skill",
     "batchDeleteFailed": "{{count}} 個 Skill 刪除失敗",
     "batchToggleFailed": "{{count}} 個 Skill 更新失敗",
@@ -528,7 +528,23 @@
     "gridView": "網格檢視",
     "listView": "列表檢視",
     "sourcePreviewCachedAt": "讀取時間：{{time}}",
-    "sourcePreviewRefresh": "重新整理來源"
+    "sourcePreviewRefresh": "重新整理來源",
+    "recovery": {
+      "title": "技能復原",
+      "hint": "更新和刪除前自動儲存技能快照，可復原單一技能。復原會保留目前版本，並保護 Agent 副本的本機改動。",
+      "empty": "尚無技能快照，更新或刪除技能後會在這裡顯示。",
+      "beforeDelete": "刪除前",
+      "beforeUpdate": "更新前",
+      "beforeRestore": "復原前",
+      "deleted": "已刪除",
+      "files": "{{count}} 個檔案",
+      "restore": "復原",
+      "restored": "技能已復原",
+      "partial": "技能已復原，部分 Agent 副本需要處理",
+      "savedCurrent": "復原前版本已另存為快照，可隨時復原。",
+      "confirmTitle": "復原技能快照",
+      "confirm": "將「{{name}}」復原到所選快照？目前版本會另存快照，Agent 副本的本機改動會保留。"
+    }
   },
   "install": {
     "title": "安裝 Skills",
@@ -1273,5 +1289,25 @@
       "skill_call": "發現明確 Skill 工具呼叫，觸發來源未明確",
       "document_read": "發現技能文件讀取，並依對應結果判斷載入狀態"
     }
+  },
+  "optimization": {
+    "retrying": "正在重試…",
+    "retryFailed": "僅重試失敗項目（{{count}}）",
+    "closeResults": "關閉結果",
+    "resultsSummary": "成功 {{success}} · 失敗 {{failed}} · 待確認 {{held}}",
+    "completed": "已完成",
+    "batchDeleteResults": "批次刪除結果",
+    "batchTagsResults": "批次分類結果",
+    "batchEnableResults": "批次加入 Preset 結果",
+    "batchDisableResults": "批次移出 Preset 結果",
+    "batchDeployResults": "批次部署結果",
+    "selectedUpdateResults": "所選技能更新結果",
+    "allUpdateResults": "全部技能更新結果",
+    "libraryUpdated": "中央庫已更新",
+    "heldUpdate": "存在本機編輯或檔案移除，請單項更新並確認",
+    "refreshFailed": "操作已完成，列表重新整理失敗，請重新整理頁面查看最新狀態",
+    "deploymentResultsTitle": "{{name}}：中央庫已更新 · Agent 同步結果",
+    "deploymentFailures": "中央庫已更新，{{count}} 個 Agent 同步失敗",
+    "viewResults": "查看結果"
   }
 }

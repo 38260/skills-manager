@@ -32,6 +32,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { OperationResults, type OperationReport, type OperationItem } from "../components/OperationResults";
 import { getSkillDisplayNames, matchSkillSearch } from "../lib/skillSearch";
+import { SkillRecovery } from "../components/SkillRecovery";
 import { readLibraryViewState, writeLibraryViewState, restoreLibraryScroll } from "../lib/libraryViewState";
 import { toast } from "sonner";
 import { cn } from "../utils";
@@ -631,17 +632,18 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
     const execute = async (selected: BatchTask[]) => {
       const items: OperationItem[] = [];
       for (const task of selected) {
-        try { const result = await task.run(); items.push({ id: task.id, name: task.name, status: "success", message: "已完成", ...result }); }
+        try { const result = await task.run(); items.push({ id: task.id, name: task.name, status: "success", message: t("optimization.completed"), ...result }); }
         catch (cause) { items.push({ id: task.id, name: task.name, status: "failed", message: getErrorMessage(cause, t("common.error")) }); }
       }
-      await Promise.all([refreshManagedSkills(), refreshPresets(), refreshTools()]);
       const failedIds = new Set(items.filter(item => item.status === "failed").map(item => tasks.find(task => task.id === item.id)!.skillId));
       setSelectedIds(failedIds);
       if (failedIds.size) setIsMultiSelect(true); else exitMultiSelect();
+      const refreshed = await Promise.allSettled([refreshManagedSkills(), refreshPresets(), refreshTools()]);
+      if (refreshed.some(result => result.status === "rejected")) toast.warning(t("optimization.refreshFailed"));
       return items;
     };
     const items = await execute(tasks);
-    setOperationReport({ title, items, retry: ids => execute(tasks.filter(task => ids.includes(task.id))) });
+    setOperationReport({ title, items, retry: ids => execute(tasks.filter(task => ids.includes(task.id))), inspect: id => { const task = tasks.find(item => item.id === id); if (task) openSkillDetailById(task.skillId); } });
     return items;
   }
 
@@ -649,7 +651,7 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
     const tasks = skills.filter(skill => selectedIds.has(skill.id)).map(skill => ({ id: skill.id, skillId: skill.id, name: skill.display_name || skill.name,
       run: async () => { await api.deleteManagedSkill(skill.id); if (selectedSkill?.id === skill.id) closeSkillDetail(); },
     }));
-    await runOperations("批量删除结果", tasks);
+    await runOperations(t("optimization.batchDeleteResults"), tasks);
   };
 
   const handleBatchEditTags = async (adds: string[], removes: string[]) => {
@@ -662,7 +664,7 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
         await api.setSkillTags(skill.id, next);
       },
     }));
-    await runOperations("批量分类结果", tasks); await refreshAllTags();
+    await runOperations(t("optimization.batchTagsResults"), tasks); await refreshAllTags();
   };
 
   const handleBatchTogglePreset = async () => {
@@ -670,7 +672,7 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
     const enabling = anyDisabled, presetId = viewedPreset.id;
     setBatchToggling(true);
     try {
-      await runOperations(enabling ? "批量加入 Preset 结果" : "批量移出 Preset 结果", togglableSelectedSkills.map(skill => ({ id: skill.id, skillId: skill.id, name: skill.display_name || skill.name,
+      await runOperations(enabling ? t("optimization.batchEnableResults") : t("optimization.batchDisableResults"), togglableSelectedSkills.map(skill => ({ id: skill.id, skillId: skill.id, name: skill.display_name || skill.name,
         run: () => enabling ? api.addSkillToPreset(skill.id, presetId) : api.removeSkillFromPreset(skill.id, presetId),
       })));
     } finally { setBatchToggling(false); }
@@ -682,7 +684,7 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
       if (skill.targets.some(target => target.tool === key)) continue;
       tasks.push({ id: skill.id + ":" + key, skillId: skill.id, name: (skill.display_name || skill.name) + " → " + (tools.find(tool => tool.key === key)?.display_name || key), run: () => api.syncSkillToTool(skill.id, key) });
     }
-    await runOperations("批量部署结果", tasks);
+    await runOperations(t("optimization.batchDeployResults"), tasks);
   };
 
   function updateTask(skill: ManagedSkill): BatchTask {
@@ -692,11 +694,11 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
       if (failedTools.length) deployments = await api.retrySkillDeployments(skill.id, failedTools);
       else {
         const result = ["local", "import"].includes(skill.source_type) ? await api.reimportLocalSkill(skill.id) : await api.updateSkill(skill.id);
-        if (result.pending_removals.length) return { status: "held", message: "存在本地编辑或文件移除，请单项更新并确认" };
+        if (result.pending_removals.length) return { status: "held", message: t("optimization.heldUpdate") };
         deployments = result.deployments || [];
       }
       failedTools = deployments.filter(item => item.status === "failed").map(item => item.tool);
-      return { status: failedTools.length ? "failed" : "success", message: "中央库已更新" + (deployments.length ? "；" + deployments.map(item => item.tool + "：" + item.message).join("；") : "") };
+      return { status: failedTools.length ? "failed" : "success", message: t("optimization.libraryUpdated") + (deployments.length ? "；" + deployments.map(item => item.tool + "：" + item.message).join("；") : "") };
     }};
   }
 
@@ -704,7 +706,7 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
     const targets = skills.filter(skill => selectedIds.has(skill.id) && canRefresh(skill));
     if (!targets.length || batchUpdating) return;
     setBatchUpdating(true);
-    try { await runOperations("所选技能更新结果", targets.map(updateTask)); }
+    try { await runOperations(t("optimization.selectedUpdateResults"), targets.map(updateTask)); }
     finally { setBatchUpdating(false); }
   };
 
@@ -722,7 +724,7 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
     const targets = skills.filter(skill => skill.update_status === "update_available" && canRefresh(skill));
     if (!targets.length || batchUpdating) return;
     setBatchUpdating(true);
-    try { await runOperations("全部技能更新结果", targets.map(updateTask)); }
+    try { await runOperations(t("optimization.allUpdateResults"), targets.map(updateTask)); }
     finally { setBatchUpdating(false); }
   };
 
@@ -758,11 +760,11 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
       id: result.tool, name: tools.find(tool => tool.key === result.tool)?.display_name ?? result.tool,
       status: result.status, message: result.message,
     }));
-    setOperationReport({ title: `${skill.display_name || skill.name}：中央库已更新 · Agent 同步结果`, items: rows(deployments),
+    setOperationReport({ title: t("optimization.deploymentResultsTitle", { name: skill.display_name || skill.name }), items: rows(deployments),
       retry: async keys => { const result = await api.retrySkillDeployments(skill.id, keys); await refreshManagedSkills(); return rows(result); },
     });
     const failed = deployments.filter(result => result.status === "failed");
-    if (failed.length) toast.warning(`中央库已更新，${failed.length} 个 Agent 同步失败`, { action: { label: "查看结果", onClick: closeSkillDetail } });
+    if (failed.length) toast.warning(t("optimization.deploymentFailures", { count: failed.length }), { action: { label: t("optimization.viewResults"), onClick: closeSkillDetail } });
   }
 
   const handleRefreshSkill = async (skill: ManagedSkill, approvedRemovals?: string) => {
@@ -1090,6 +1092,7 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
 
   return (
     <div className="app-page skill-library">
+      <SkillRecovery refresh={async () => { await Promise.all([refreshManagedSkills(), refreshPresets()]); }} />
       {operationReport && <OperationResults key={operationReport.version} report={operationReport} onClose={() => setOperationReport(null)} />}
       <div className="app-page-header pr-2 pb-1 flex items-center justify-between gap-3">
         <h1 className="app-page-title flex items-center gap-2">

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 export interface OperationItem {
   id: string;
@@ -11,9 +12,11 @@ export interface OperationReport {
   title: string;
   items: OperationItem[];
   retry?: (ids: string[]) => Promise<OperationItem[]>;
+  inspect?: (id: string) => void;
 }
 
 export function OperationResults({ report, onClose }: { report: OperationReport; onClose: () => void }) {
+  const { t } = useTranslation();
   const [replacement, setReplacement] = useState<OperationItem[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -34,15 +37,15 @@ export function OperationResults({ report, onClose }: { report: OperationReport;
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h2 className="text-sm font-semibold">{report.title}</h2>
       <div className="flex gap-2">
-        {report.retry && failed.length > 0 && <button type="button" className="app-button-secondary" disabled={busy} onClick={() => void retry()}>{busy ? "正在重试…" : `仅重试失败项（${failed.length}）`}</button>}
-        <button type="button" className="app-button-secondary" disabled={busy} onClick={onClose}>关闭结果</button>
+        {report.retry && failed.length > 0 && <button type="button" className="app-button-secondary" disabled={busy} onClick={() => void retry()}>{busy ? t("optimization.retrying") : t("optimization.retryFailed", { count: failed.length })}</button>}
+        <button type="button" className="app-button-secondary" disabled={busy} onClick={onClose}>{t("optimization.closeResults")}</button>
       </div>
     </div>
-    <p role="status" className="mt-2 text-xs text-muted">成功 {items.filter(item => item.status === "success").length} · 失败 {failed.length} · 待确认 {items.filter(item => item.status === "held").length}</p>
+    <p role="status" className="mt-2 text-xs text-muted">{t("optimization.resultsSummary", { success: items.filter(item => item.status === "success").length, failed: failed.length, held: items.filter(item => item.status === "held").length })}</p>
     {error && <p role="alert" className="mt-2 text-sm text-danger">{error}</p>}
     <ul className="mt-3 max-h-64 space-y-1 overflow-auto text-sm">
       {items.map(item => <li key={item.id} className="flex flex-wrap gap-x-3 border-t border-border-subtle py-2">
-        <span className="font-medium">{item.name}</span>
+        {report.inspect && item.status !== "success" ? <button type="button" className="font-medium text-accent underline focus-visible:ring-2 focus-visible:ring-accent" onClick={() => report.inspect?.(item.id)}>{item.name}</button> : <span className="font-medium">{item.name}</span>}
         <span className={item.status === "failed" ? "text-danger" : "text-muted"}>{item.message}</span>
       </li>)}
     </ul>
