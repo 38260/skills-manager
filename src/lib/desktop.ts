@@ -1,5 +1,6 @@
 // 桌面能力适配层：Tauri（原生 IPC）、Electron（preload 桥）、纯浏览器三种环境统一行为。
 import { isTauri } from "./transport";
+import { getDesktopCapabilities } from "./desktopCapabilities";
 
 interface DesktopBridge {
   openDirectory: () => Promise<string | null>;
@@ -12,6 +13,11 @@ function bridge(): DesktopBridge | null {
   if (typeof window === "undefined") return null;
   return (window as Window & { __desktopBridge__?: DesktopBridge }).__desktopBridge__ ?? null;
 }
+
+export const desktopCapabilities = getDesktopCapabilities(
+  isTauri ? "tauri" : bridge() ? "electron" : "browser",
+  typeof navigator === "undefined" ? "" : navigator.userAgent,
+);
 
 /**
  * 选择一个目录；取消返回 null。options 兼容 Tauri plugin-dialog 的调用形状（当前仅支持目录选择）。

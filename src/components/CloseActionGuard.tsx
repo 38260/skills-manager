@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { listen } from "../lib/transport";
 import { CloseActionDialog } from "./CloseActionDialog";
 import * as api from "../lib/tauri";
+import { desktopCapabilities } from "../lib/desktop";
 
 export function CloseActionGuard() {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
+    if (!desktopCapabilities.closeAction) return;
     const unlisten = listen("window-close-requested", async () => {
       const tray = await api.getSettings("show_tray_icon");
       const trayEnabled = (() => {

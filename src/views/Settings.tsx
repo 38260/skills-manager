@@ -50,7 +50,7 @@ import { toast } from "sonner";
 import { listen } from "../lib/transport";
 import { writeText as clipboardWriteText } from "@tauri-apps/plugin-clipboard-manager";
 import { check as checkUpdater } from "@tauri-apps/plugin-updater";
-import { openDirectory as dialogOpen, confirmDialog as dialogConfirm, openExternal } from "../lib/desktop";
+import { openDirectory as dialogOpen, confirmDialog as dialogConfirm, openExternal, desktopCapabilities } from "../lib/desktop";
 import { useNavigate } from "react-router-dom";
 import { cn, compactHomePath } from "../utils";
 import { useApp } from "../context/AppContext";
@@ -61,16 +61,6 @@ import * as api from "../lib/tauri";
 import { applyTextSize } from "../lib/textScale";
 import { getErrorMessage } from "../lib/error";
 import type { Theme } from "../hooks/useTheme";
-
-const IS_WINDOWS = navigator.userAgent.includes("Windows");
-const IS_MACOS = navigator.userAgent.includes("Mac");
-
-/** Platforms whose updater artifact can replace the running install.
- *
- *  Linux is excluded on purpose: only the AppImage can be updated in place,
- *  and a .deb/.rpm install is indistinguishable from it here, so those users
- *  keep the download link rather than a button that fails for half of them. */
-const CAN_INSTALL_IN_APP = IS_WINDOWS || IS_MACOS;
 
 const RESTART_TOAST_ID = "app-update-restart";
 
@@ -203,6 +193,7 @@ export function Settings() {
 
   const GITHUB_URL = "https://github.com/xingkongliang/skills-manager";
   const WEBSITE_URL = "https://skillsmanager.dev";
+  const appReleaseUrl = appUpdate?.release_url || `${GITHUB_URL}/releases`;
 
   const startEditPath = useCallback((key: string, currentPath: string) => {
     setEditingPathKey(key);
@@ -436,12 +427,14 @@ export function Settings() {
   };
 
   const handleCloseActionChange = async (action: string) => {
+    if (!desktopCapabilities.closeAction) return;
     if (action === "hide" && !showTrayIcon) return;
     setCloseAction(action);
     await api.setSettings("close_action", action);
   };
 
   const handleShowTrayIconChange = async (enabled: boolean) => {
+    if (!desktopCapabilities.tray) return;
     setShowTrayIcon(enabled);
     await api.setSettings("show_tray_icon", enabled ? "true" : "false");
     if (!enabled && closeAction === "hide") {
@@ -463,6 +456,7 @@ export function Settings() {
   };
 
   const handleAutoUpdateIntervalChange = async (value: string) => {
+    if (!desktopCapabilities.skillUpdateSchedule) return;
     setAutoUpdateInterval(value);
     await api.setSettings("auto_update_check_interval", value);
   };
@@ -696,6 +690,7 @@ export function Settings() {
   };
 
   const handleAutoUpdate = async () => {
+    if (!desktopCapabilities.installAppUpdate) return;
     setInstalling(true);
     try {
       // Read-only image or Gatekeeper-translocated copy: the updater would
@@ -775,6 +770,7 @@ export function Settings() {
   };
 
   const handleSaveProxy = async () => {
+    if (!desktopCapabilities.proxy) return;
     const trimmed = proxyInput.trim();
     if (trimmed && !/^(https?|socks5):\/\//i.test(trimmed)) {
       toast.error(t("settings.proxyUrlInvalid"));
@@ -1547,45 +1543,58 @@ export function Settings() {
             </div>
 
             {/* Close action */}
-            <div className="flex flex-wrap items-start justify-between gap-3 px-5 py-4">
-              <div className="min-w-0 flex-1">
-                <h3 className="text-[14px] font-semibold text-primary">{t("settings.closeAction")}</h3>
-                <p className="mt-0.5 text-[12px] text-muted">{t("settings.closeActionDesc")}</p>
-                {!showTrayIcon && (
-                  <p className="text-[12px] text-muted mt-1">{t("settings.trayIconOffHint")}</p>
-                )}
-              </div>
-              <div className="app-segmented flex-wrap bg-background">
-                {(["", "hide", "close"] as const).map((val) => (
-                  <button
-                    key={val}
-                    onClick={() => handleCloseActionChange(val)}
-                    disabled={val === "hide" && !showTrayIcon}
-                    className={cn(
-                      segmentedButtonClass,
-                      closeAction === val ? "bg-surface-active text-secondary" : "text-muted hover:text-tertiary",
-                      val === "hide" && !showTrayIcon && "opacity-50 cursor-not-allowed hover:text-muted"
+            {desktopCapabilities.closeAction ? (
+              <>
+                <div className="flex flex-wrap items-start justify-between gap-3 px-5 py-4">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-[14px] font-semibold text-primary">{t("settings.closeAction")}</h3>
+                    <p className="mt-0.5 text-[12px] text-muted">{t("settings.closeActionDesc")}</p>
+                    {!showTrayIcon && (
+                      <p className="text-[12px] text-muted mt-1">{t("settings.trayIconOffHint")}</p>
                     )}
-                  >
-                    {t(`settings.closeAction_${val || "ask"}`)}
-                  </button>
-                ))}
-              </div>
-            </div>
+                  </div>
+                  <div className="app-segmented flex-wrap bg-background">
+                    {(["", "hide", "close"] as const).map((val) => (
+                      <button
+                        key={val}
+                        onClick={() => handleCloseActionChange(val)}
+                        disabled={val === "hide" && !showTrayIcon}
+                        className={cn(
+                          segmentedButtonClass,
+                          closeAction === val ? "bg-surface-active text-secondary" : "text-muted hover:text-tertiary",
+                          val === "hide" && !showTrayIcon && "opacity-50 cursor-not-allowed hover:text-muted"
+                        )}
+                      >
+                        {t(`settings.closeAction_${val || "ask"}`)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-            {/* Tray icon */}
-            <div className="flex flex-wrap items-start justify-between gap-3 px-5 py-4">
-              <div className="min-w-0 flex-1">
-                <h3 className="text-[14px] font-semibold text-primary">{t("settings.trayIcon")}</h3>
-                <p className="mt-0.5 text-[12px] text-muted">{t("settings.trayIconDesc")}</p>
+                {/* Tray icon */}
+                <div className="flex flex-wrap items-start justify-between gap-3 px-5 py-4">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-[14px] font-semibold text-primary">{t("settings.trayIcon")}</h3>
+                    <p className="mt-0.5 text-[12px] text-muted">{t("settings.trayIconDesc")}</p>
+                  </div>
+                  <ToggleSwitch
+                    className="mt-1"
+                    checked={showTrayIcon}
+                    onChange={() => handleShowTrayIconChange(!showTrayIcon)}
+                    title={showTrayIcon ? t("settings.trayIcon_on") : t("settings.trayIcon_off")}
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="px-5 py-4">
+                <h3 className="text-[14px] font-semibold text-primary">{t("settings.closeAction")} / {t("settings.trayIcon")}</h3>
+                <p className="mt-0.5 text-[12px] text-muted">
+                  {desktopCapabilities.runtime === "electron"
+                    ? t("settings.desktopCloseUnavailable", { defaultValue: "当前桌面版本暂不支持托盘和关闭后隐藏。关闭窗口使用默认行为，已保存的偏好会保留。" })
+                    : t("settings.browserCloseUnavailable", { defaultValue: "网页模式不支持托盘和应用窗口关闭设置。已保存的偏好会保留。" })}
+                </p>
               </div>
-              <ToggleSwitch
-                className="mt-1"
-                checked={showTrayIcon}
-                onChange={() => handleShowTrayIconChange(!showTrayIcon)}
-                title={showTrayIcon ? t("settings.trayIcon_on") : t("settings.trayIcon_off")}
-              />
-            </div>
+            )}
           </div>
         </section>
 
@@ -1597,28 +1606,34 @@ export function Settings() {
           <div className="app-panel overflow-hidden divide-y divide-border-faint">
             <div className="px-4 py-3">
               <h3 className="text-[14px] font-semibold text-primary">{t("settings.proxyUrl")}</h3>
-              <p className="mt-0.5 mb-2 text-[12px] text-muted">{t("settings.proxyUrlDesc")}</p>
-              <div className="flex flex-wrap items-center gap-2">
-                <input
-                  type="text"
-                  value={proxyInput}
-                  onChange={(e) => setProxyInput(e.target.value)}
-                  placeholder={t("settings.proxyUrlPlaceholder")}
-                  className={`${fieldClass} min-w-0 flex-1 font-mono`}
-                />
-                <button
-                  onClick={handleSaveProxy}
-                  disabled={proxySaving}
-                  className={`${actionButtonClass} bg-surface-hover hover:bg-surface-active text-tertiary border-border`}
-                >
-                  {proxySaving ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <LinkIcon className="w-3 h-3" />
-                  )}
-                  {t("common.save")}
-                </button>
-              </div>
+              <p className="mt-0.5 mb-2 text-[12px] text-muted">
+                {desktopCapabilities.proxy
+                  ? t("settings.proxyUrlDesc")
+                  : t("settings.proxyUnavailable", { defaultValue: "当前版本尚未接入应用内代理设置，网络请求使用运行环境的网络配置。已保存的代理地址会保留。" })}
+              </p>
+              {desktopCapabilities.proxy && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    type="text"
+                    value={proxyInput}
+                    onChange={(e) => setProxyInput(e.target.value)}
+                    placeholder={t("settings.proxyUrlPlaceholder")}
+                    className={`${fieldClass} min-w-0 flex-1 font-mono`}
+                  />
+                  <button
+                    onClick={handleSaveProxy}
+                    disabled={proxySaving}
+                    className={`${actionButtonClass} bg-surface-hover hover:bg-surface-active text-tertiary border-border`}
+                  >
+                    {proxySaving ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <LinkIcon className="w-3 h-3" />
+                    )}
+                    {t("common.save")}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -1635,7 +1650,9 @@ export function Settings() {
                   {t("settings.autoUpdate.intervalLabel")}
                 </h3>
                 <p className="text-[12px] text-muted">
-                  {t("settings.autoUpdate.intervalDesc")}
+                  {desktopCapabilities.skillUpdateSchedule
+                    ? t("settings.autoUpdate.intervalDesc")
+                    : t("settings.autoUpdate.scheduleUnavailable", { defaultValue: "当前版本在启动时检查技能更新，暂不支持按频率定时检查。已保存的检查频率会保留。" })}
                   {autoUpdateLastRun
                     ? ` · ${t("settings.autoUpdate.lastRun", {
                         time: new Date(autoUpdateLastRun).toLocaleString(),
@@ -1643,24 +1660,26 @@ export function Settings() {
                     : ""}
                 </p>
               </div>
-              <div className="app-segmented flex-wrap bg-background">
-                {autoUpdateIntervalOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    aria-pressed={autoUpdateInterval === option.value}
-                    onClick={() => handleAutoUpdateIntervalChange(option.value)}
-                    className={cn(
-                      segmentedButtonClass,
-                      autoUpdateInterval === option.value
-                        ? "bg-surface-active text-secondary"
-                        : "text-muted hover:text-tertiary"
-                    )}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
+              {desktopCapabilities.skillUpdateSchedule && (
+                <div className="app-segmented flex-wrap bg-background">
+                  {autoUpdateIntervalOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      aria-pressed={autoUpdateInterval === option.value}
+                      onClick={() => handleAutoUpdateIntervalChange(option.value)}
+                      className={cn(
+                        segmentedButtonClass,
+                        autoUpdateInterval === option.value
+                          ? "bg-surface-active text-secondary"
+                          : "text-muted hover:text-tertiary"
+                      )}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="flex items-center justify-between gap-4 px-4 py-2.5">
               <div className="min-w-0">
@@ -1851,11 +1870,16 @@ export function Settings() {
                     </span>
                   )}
                 </p>
+                {!desktopCapabilities.installAppUpdate && (
+                  <p className="mt-1 text-[12px] text-muted">
+                    {t("settings.manualAppUpdate", { defaultValue: "当前版本请通过下载新版本更新应用。" })}
+                  </p>
+                )}
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
               {appUpdate?.has_update ? (
-                CAN_INSTALL_IN_APP ? (
+                desktopCapabilities.installAppUpdate ? (
                   <>
                     <button
                       type="button"
@@ -1872,7 +1896,7 @@ export function Settings() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => { openExternal(appUpdate.release_url).catch(() => {}); }}
+                      onClick={() => { openExternal(appReleaseUrl).catch(() => {}); }}
                       className={`${actionButtonClass} bg-surface-hover hover:bg-surface-active text-tertiary border-border`}
                     >
                       <ExternalLink className="w-3 h-3" /> {t("settings.download")}
@@ -1881,7 +1905,7 @@ export function Settings() {
                 ) : (
                   <button
                     type="button"
-                    onClick={() => { openExternal(appUpdate.release_url).catch(() => {}); }}
+                    onClick={() => { openExternal(appReleaseUrl).catch(() => {}); }}
                     className={`${actionButtonClass} bg-accent text-white border-accent hover:opacity-90`}
                   >
                     <Download className="w-3 h-3" /> {t("settings.download")}
@@ -1900,6 +1924,15 @@ export function Settings() {
                     <RefreshCw className="w-3 h-3" />
                   )}
                   {checkingUpdate ? t("settings.checking") : t("settings.checkUpdate")}
+                </button>
+              )}
+              {!appUpdate?.has_update && !desktopCapabilities.installAppUpdate && (
+                <button
+                  type="button"
+                  onClick={() => { openExternal(appReleaseUrl).catch(() => {}); }}
+                  className={`${actionButtonClass} bg-surface-hover hover:bg-surface-active text-tertiary border-border`}
+                >
+                  <Download className="w-3 h-3" /> {t("settings.download")}
                 </button>
               )}
               <button

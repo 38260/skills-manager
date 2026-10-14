@@ -759,7 +759,8 @@
       "applyLabel": "自動套用更新",
       "applyDesc": "開啟後自動拉取並覆寫本地內容；關閉則僅在技能庫標記，需手動更新。",
       "applyOff": "關閉（僅提示）",
-      "applyOn": "開啟"
+      "applyOn": "開啟",
+      "scheduleUnavailable": "目前版本僅在啟動後檢查技能更新；定時檢查週期暫不生效。"
     },
     "gitSyncConfig": "Git 同步設定",
     "gitSyncConfigDesc": "備份已移到獨立的「備份」頁面。這裡保留為進階 Git URL 編輯入口。",
@@ -845,7 +846,11 @@
     "gitErrorRejected": "遠端有新的更新，需要先合併後再同步。",
     "gitErrorUnrelatedHistories": "本機倉庫與遠端倉庫歷史不一致。請打開「修復同步設定」選擇處理方式。",
     "gitErrorNoUpstream": "尚未建立遠端追蹤關係。請打開「修復同步設定」處理。",
-    "gitErrorGeneric": "Git 操作失敗，請檢查設定中的遠端倉庫位址後重試。"
+    "gitErrorGeneric": "Git 操作失敗，請檢查設定中的遠端倉庫位址後重試。",
+    "desktopCloseUnavailable": "目前 Electron 版本關閉視窗後退出，暫不支援系統匣或關閉後隱藏。既有設定保留。",
+    "browserCloseUnavailable": "網頁模式由瀏覽器管理關閉行為，系統匣設定不適用。",
+    "proxyUnavailable": "目前版本的本機服務不使用此代理設定，請使用系統或 Git 的網路設定。既有值保留。",
+    "manualAppUpdate": "目前版本透過下載發行包更新，不支援應用程式內自動安裝。"
   },
   "common": {
     "loading": "載入中...",

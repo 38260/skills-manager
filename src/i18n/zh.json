@@ -815,7 +815,8 @@
       "applyLabel": "自动应用更新",
       "applyDesc": "开启后自动拉取并覆盖本地内容；关闭则仅在技能库标记，需手动更新。",
       "applyOff": "关闭（仅提示）",
-      "applyOn": "开启"
+      "applyOn": "开启",
+      "scheduleUnavailable": "当前版本只在启动后检查技能更新；定时检查周期暂不生效。"
     },
     "gitSyncConfig": "Git 同步配置",
     "gitSyncConfigDesc": "备份已移到独立的「备份」页面。这里保留为高级 Git URL 编辑入口。",
@@ -911,7 +912,11 @@
     "trayIconDesc": "在系统托盘中显示图标，便于快速执行显示和退出操作。",
     "trayIcon_on": "显示",
     "trayIcon_off": "隐藏",
-    "trayIconOffHint": "托盘图标已隐藏，关闭窗口时将直接退出应用。"
+    "trayIconOffHint": "托盘图标已隐藏，关闭窗口时将直接退出应用。",
+    "desktopCloseUnavailable": "当前 Electron 版本关闭窗口后退出，暂不支持托盘或关闭后隐藏。已有配置保留。",
+    "browserCloseUnavailable": "网页模式由浏览器管理关闭行为，托盘设置不适用。",
+    "proxyUnavailable": "当前版本的本地服务不使用此代理设置，请使用系统或 Git 的网络配置。已有值保留。",
+    "manualAppUpdate": "当前版本通过下载发行包更新，不支持应用内自动安装。"
   },
   "closeAction": {
     "title": "关闭行为",

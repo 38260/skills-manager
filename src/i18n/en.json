@@ -815,7 +815,8 @@
       "applyLabel": "Apply updates automatically",
       "applyDesc": "When on, updates are pulled and applied automatically; when off, they are only flagged in the Library for manual update.",
       "applyOff": "Off (notify only)",
-      "applyOn": "On"
+      "applyOn": "On",
+      "scheduleUnavailable": "This version checks skill updates after startup. Scheduled intervals are unavailable."
     },
     "gitSyncConfig": "Git Sync Configuration",
     "gitSyncConfigDesc": "Backup has moved to the dedicated Backup page. This legacy field is kept here for advanced Git URL edits.",
@@ -911,7 +912,11 @@
     "trayIconDesc": "Show an icon in the system tray for quick Show and Quit actions.",
     "trayIcon_on": "Show",
     "trayIcon_off": "Hide",
-    "trayIconOffHint": "Tray icon is hidden, so closing the window will quit the app."
+    "trayIconOffHint": "Tray icon is hidden, so closing the window will quit the app.",
+    "desktopCloseUnavailable": "This Electron version exits when its window closes. Tray and hide-on-close are unavailable; saved settings are retained.",
+    "browserCloseUnavailable": "The browser controls closing this page. Tray settings do not apply.",
+    "proxyUnavailable": "The local service does not use this proxy setting. Use your system or Git network configuration. The saved value is retained.",
+    "manualAppUpdate": "Update this version by downloading a release. In-app installation is unavailable."
   },
   "closeAction": {
     "title": "Close behavior",
