@@ -9,6 +9,11 @@ const candidate = "tool='codex' AND lower(skillName)='this' AND skillPath IS NUL
 export async function repairGenericRequests(store, { cancelled = () => false } = {}) {
   const db = store.db;
   const result = { archived: 0, confirmed: 0, missing: 0 };
+  if (cancelled()) return result;
+  db.exec("CREATE TABLE IF NOT EXISTS activity_repairs(name TEXT PRIMARY KEY,completedAt INTEGER NOT NULL)");
+  // 只迁移修复前的旧数据，避免未来真实的 $this 请求因日志后来丢失而被隔离。
+  const migration = "generic-this-request-v1";
+  if (db.prepare("SELECT 1 FROM activity_repairs WHERE name=?").get(migration)) return result;
   const repairs = [];
   for (const event of db.prepare(`SELECT * FROM events WHERE ${candidate}`).all()) {
     if (cancelled()) return result;
@@ -32,7 +37,7 @@ export async function repairGenericRequests(store, { cancelled = () => false } =
     }
     if (reason) repairs.push({ event, reason });
   }
-  if (!repairs.length || cancelled()) return result;
+  if (cancelled()) return result;
   db.exec(`CREATE TABLE IF NOT EXISTS archived_requests AS SELECT ${fields},'' AS reason,0 AS archivedAt FROM events WHERE 0;
     CREATE UNIQUE INDEX IF NOT EXISTS archived_requests_id ON archived_requests(id);`);
   const archive = db.prepare(`INSERT OR IGNORE INTO archived_requests(${fields},reason,archivedAt)
@@ -48,6 +53,7 @@ export async function repairGenericRequests(store, { cancelled = () => false } =
       if (reason === "generic_skill_reference") result.confirmed += changed;
       else result.missing += changed;
     }
+    db.prepare("INSERT OR IGNORE INTO activity_repairs(name,completedAt) VALUES(?,?)").run(migration, Date.now());
     db.exec("COMMIT");
   } catch (error) { db.exec("ROLLBACK"); throw error; }
   return result;

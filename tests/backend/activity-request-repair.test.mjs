@@ -74,6 +74,7 @@ test("升级扫描先隔离历史误报，旧缓存重读且不重新产生 this
   store.configure("codex", logs, true);
   await scanSources(store);
   seed(store, prose, "legacy");
+  store.db.exec("DELETE FROM activity_repairs");
   store.db.prepare("UPDATE scanned_files SET parser_version=?").run(PARSER_VERSION - 1);
   const result = await scanSources(store);
   assert.equal(result.parsed, 2);
@@ -92,7 +93,6 @@ test("隔离事务失败时恢复原事件和归档，缺失日志恢复后可�
   assert.equal(store.query().total, 1);
   assert.equal(store.db.prepare("SELECT COUNT(*) AS n FROM archived_requests").get().n, 0);
   store.db.exec("DROP TRIGGER stop_repair");
-  await repairGenericRequests(store);
   const logs = path.join(root, "restored"); fs.mkdirSync(logs);
   const missing = path.join(logs, "real.jsonl");
   seed(store, missing, "missing");
@@ -102,4 +102,7 @@ test("隔离事务失败时恢复原事件和归档，缺失日志恢复后可�
   await scanSources(store);
   assert.deepEqual(store.query().items.map(row => row.skillName), ["this"]);
   assert.equal((await repairGenericRequests(store)).archived, 0);
+  fs.unlinkSync(missing);
+  assert.equal((await repairGenericRequests(store)).archived, 0, "迁移后真实请求的日志丢失也不能再次隔离");
+  assert.deepEqual(store.query().items.map(row => row.skillName), ["this"]);
 });
