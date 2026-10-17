@@ -1,13 +1,15 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
-import { History, RefreshCw, Square, ChevronLeft, ChevronRight, Search, Settings2, AlertTriangle } from "lucide-react";
+import { History, RefreshCw, Square, ChevronLeft, ChevronRight, Search, Settings2, AlertTriangle, X } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { listen } from "../lib/transport";
 import { cn } from "../utils";
 import * as api from "../lib/activity";
 import { ActivityTable } from "../components/ActivityTable";
 import { ActivityDetailPanel } from "../components/ActivityDetailPanel";
+import { useDialogFocus } from "../hooks/useDialogFocus";
 
 const field = "min-w-0 rounded-lg border border-border-subtle bg-surface px-3 py-2 text-[13px] text-primary outline-none focus:border-accent focus:ring-1 focus:ring-accent";
 const button = "inline-flex items-center justify-center gap-2 rounded-lg border border-border-subtle px-3 py-2 text-[13px] text-secondary outline-none hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-40";
@@ -63,6 +65,11 @@ export function SkillActivity() {
   // 常驻条件：技能搜索、工具、触发方式、记录类型、结果；低频条件收进"更多筛选"（项目、日期）。
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const sourcesHeadingId = useId();
+  const sourcesDescriptionId = useId();
+  const sourcesPanelRef = useRef<HTMLDivElement>(null);
+  const sourcesCloseRef = useRef<HTMLButtonElement>(null);
+  useDialogFocus(sourcesOpen, sourcesPanelRef, () => setSourcesOpen(false), sourcesCloseRef);
   const activeFilterCount = Object.values(filters).filter(value => value !== "").length;
   const [query, setQuery] = useState<api.ActivityQuery>({ page: 1, pageSize, skillName: deepLinkSkill });
   const [result, setResult] = useState<api.ActivityResult | null>(null);
@@ -189,10 +196,18 @@ export function SkillActivity() {
         <h1 className="app-page-title flex items-center gap-2"><History className="h-4 w-4 text-accent" />{t("activity.title")}</h1>
         <p className="app-page-subtitle">{t("activity.subtitle")}</p>
       </div>
-      <button type="button" onClick={() => void scan()} disabled={busy} className={cn(button, "shrink-0 bg-surface")}>
-        {running ? <Square className="h-3.5 w-3.5" /> : <RefreshCw className={cn("h-3.5 w-3.5", busy && "animate-spin")} />}
-        {t(running ? "activity.stop" : "activity.refresh")}
-      </button>
+      <div className="flex flex-wrap items-center gap-2">
+        <button type="button" onClick={() => setSourcesOpen(true)} aria-haspopup="dialog" aria-expanded={sourcesOpen} className={cn(button, "bg-surface")}>
+          <Settings2 className="h-3.5 w-3.5" />
+          <span>{t("activity.sources")}</span>
+          <span aria-live="polite" className="text-[12px] text-tertiary">{t("activity.sourceSummary", { count: enabledSourceCount })}</span>
+          {problems.length > 0 && <AlertTriangle aria-label={t("activity.sourceProblems", { count: problems.length })} className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />}
+        </button>
+        <button type="button" onClick={() => void scan()} disabled={busy} className={cn(button, "shrink-0 bg-surface")}>
+          {running ? <Square className="h-3.5 w-3.5" /> : <RefreshCw className={cn("h-3.5 w-3.5", busy && "animate-spin")} />}
+          {t(running ? "activity.stop" : "activity.refresh")}
+        </button>
+      </div>
     </header>
 
     {error && <div role="alert" className="flex items-center justify-between gap-3 border-l-2 border-danger bg-danger-bg px-3 py-2 text-[13px] text-danger"><span>{error}</span><button className={button} onClick={refresh}>{t("activity.retry")}</button></div>}
@@ -206,36 +221,6 @@ export function SkillActivity() {
         </div>)}
       </div>
       <p className="mt-2 text-[12px] leading-5 text-tertiary">{t("activity.countNote")}</p>
-    </section>
-
-    {/* 日志来源：一行摘要 + 展开编辑 */}
-    <section className="app-panel">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5">
-        <h2 className="text-[13px] font-semibold text-secondary">{t("activity.sources")}</h2>
-        <span aria-live="polite" className="text-[12px] text-tertiary">
-          {running ? t("activity.scanning") : t("activity.sourceSummary", { count: enabledSourceCount })}
-        </span>
-        {problems.length > 0 && (
-          <span className="inline-flex items-center gap-1 text-[12px] text-amber-600 dark:text-amber-400">
-            <AlertTriangle className="h-3.5 w-3.5" />{t("activity.sourceProblems", { count: problems.length })}
-          </span>
-        )}
-        <button
-          type="button"
-          onClick={() => setSourcesOpen(value => !value)}
-          aria-expanded={sourcesOpen}
-          className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[12px] font-medium text-muted outline-none transition-colors hover:bg-surface-hover hover:text-secondary focus-visible:ring-2 focus-visible:ring-accent"
-        >
-          <Settings2 className="h-3.5 w-3.5" />
-          {sourcesOpen ? t("activity.hideFilters") : t("activity.manageSources")}
-        </button>
-      </div>
-      {sourcesOpen && (
-        <div className="border-t border-border-subtle px-4 pb-1">
-          <p className="py-3 text-[12px] leading-relaxed text-tertiary">{t("activity.sourceHelp")}</p>
-          {sources.map(source => <SourceEditor key={`${source.tool}:${source.path}:${source.enabled}`} source={source} running={running} onSaved={refresh} />)}
-        </div>
-      )}
     </section>
 
     {/* 筛选：常驻搜索 + 工具 / 触发方式 / 类型 / 结果，"更多筛选"承载项目与日期 */}
@@ -372,5 +357,28 @@ export function SkillActivity() {
           : <p className="py-6 text-center text-[13px] text-tertiary">{t("activity.noSelection")}</p>}
       </aside>
     </div>
+    {sourcesOpen && createPortal(
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSourcesOpen(false)} />
+        <div ref={sourcesPanelRef} role="dialog" aria-modal="true" aria-labelledby={sourcesHeadingId} aria-describedby={sourcesDescriptionId} tabIndex={-1}
+          className="relative flex max-h-[calc(85vh/var(--app-scale))] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-border-subtle bg-surface shadow-2xl outline-none">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border-subtle px-5 py-4">
+            <div>
+              <h2 id={sourcesHeadingId} className="text-[15px] font-semibold text-primary">{t("activity.sources")}</h2>
+              <p aria-live="polite" className="mt-1 text-[12px] text-tertiary">{running ? t("activity.scanning") : t("activity.sourceSummary", { count: enabledSourceCount })}</p>
+            </div>
+            <button ref={sourcesCloseRef} type="button" onClick={() => setSourcesOpen(false)} aria-label={t("common.close")}
+              className="rounded-md p-1.5 text-muted outline-none hover:bg-surface-hover hover:text-secondary focus-visible:ring-2 focus-visible:ring-accent">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="min-h-0 overflow-y-auto px-5 pb-2">
+            <p id={sourcesDescriptionId} className="py-3 text-[12px] leading-relaxed text-tertiary">{t("activity.sourceHelp")}</p>
+            {problems.length > 0 && <p role="status" className="pb-3 text-[12px] text-amber-600 dark:text-amber-400">{t("activity.sourceProblems", { count: problems.length })}</p>}
+            {sources.map(source => <SourceEditor key={`${source.tool}:${source.path}:${source.enabled}`} source={source} running={running} onSaved={refresh} />)}
+          </div>
+        </div>
+      </div>, document.body
+    )}
   </div>;
 }
