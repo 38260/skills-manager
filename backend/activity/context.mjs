@@ -1,5 +1,6 @@
 import path from "node:path";
 import { eventId } from "./store.mjs";
+import { userInstructionText } from "./user-instructions.mjs";
 
 export const object = value => {
   if (typeof value === "string") { try { value = JSON.parse(value); } catch { return {}; } }
@@ -27,7 +28,7 @@ export class ParseContext {
   user(content, row, selections = []) {
     this.flushRequests();
     this.sawUserTurn = true;
-    const text = contentText(content);
+    const text = userInstructionText(contentText(content));
     // 只接受明确的「用户点名」写法：
     //   Codex / DSH 的 `$技能名`（必须出现在消息开头，避免和 shell 变量混淆）
     //   通用的 `/skill 技能名`
