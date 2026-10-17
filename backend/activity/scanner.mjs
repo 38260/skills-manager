@@ -7,6 +7,7 @@ import { parseDsh } from "./dsh.mjs";
 import { parseQoder } from "./qoder.mjs";
 import { parseWorkbuddy } from "./workbuddy.mjs";
 import { readZcode } from "./zcode.mjs";
+import { repairGenericRequests } from "./request-repair.mjs";
 
 // workbuddy 与 workbuddy_ai 是同一产品线的两个客户端，日志格式一致，复用同一解析器。
 const parsers = { codex: parseCodex, dsh: parseDsh, qoder: parseQoder, workbuddy: parseWorkbuddy, workbuddy_ai: parseWorkbuddy };
@@ -15,7 +16,7 @@ const cancelledError = () => Object.assign(new Error("扫描已取消"), { code:
 // 解析器版本：修复解析缺陷后 +1。缓存里记录了写入时的版本，版本不一致的文件会重新读取一次，
 // 否则旧的错误计数会一直复用（文件内容没变 → 走缓存），来源会永远停在"部分读取"。
 // v1：DSH 接受日志版本 0；WorkBuddy 的 Skill 参数兼容 command 键。
-export const PARSER_VERSION = 2;   // 2：识别 @skill: 写法；非点名调用改判为「自动触发（Agent 自选）」
+export const PARSER_VERSION = 4;   // 4：过滤技能说明和审批历史的伪点名，并隔离历史可疑请求。
 
 async function discover(source, cancelled) {
   const files = [], visited = new Set();
@@ -65,6 +66,7 @@ async function fingerprint(filename, database = false) {
 }
 
 export async function scanSources(store, { cancelled = () => false, progress = () => {} } = {}) {
+  await repairGenericRequests(store, { cancelled });
   const cached = store.db.prepare("SELECT fingerprint,errors,parser_version FROM scanned_files WHERE tool=? AND path=?");
   const saveFile = store.db.prepare("INSERT INTO scanned_files(tool,path,fingerprint,errors,parser_version) VALUES(?,?,?,?,?) ON CONFLICT(tool,path) DO UPDATE SET fingerprint=excluded.fingerprint,errors=excluded.errors,parser_version=excluded.parser_version");
   const summary = { files: 0, parsed: 0, errors: 0, cancelled: false };
