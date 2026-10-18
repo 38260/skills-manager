@@ -1,0 +1,113 @@
+{
+  "date": "2026-10-18",
+  "baseline": "11c87ff plus existing worktree changes",
+  "environment": {
+    "platform": "win32",
+    "node": "v22.22.0"
+  },
+  "scope": "read-only product audit with isolated reproduction; no product fixes",
+  "tests": {
+    "backend": {
+      "passed": 104,
+      "failed": 0
+    },
+    "ui": {
+      "passed": 20,
+      "failed": 0
+    },
+    "electronBridge": {
+      "passed": 1,
+      "failed": 0
+    },
+    "lint": "passed",
+    "typescript": "passed",
+    "isolatedViteBuild": "passed",
+    "initialSandboxBackend": {
+      "passed": 102,
+      "failed": 2,
+      "reason": "Windows taskkill permission denied; both cases and final full suite passed outside sandbox"
+    }
+  },
+  "reproductionMeaning": "Each reproduced=true confirms a current defect, not correct product behavior.",
+  "results": [
+    {
+      "id": "B1",
+      "reproduced": true,
+      "evidence": {
+        "fileAlias": "before",
+        "databaseAliasAfterRestart": "after",
+        "missingDirectoryStillListed": true,
+        "presetMembersAfterRestore": 0
+      }
+    },
+    {
+      "id": "B2",
+      "reproduced": true,
+      "evidence": {
+        "membershipFilePresent": true,
+        "immediateSkillCount": 0,
+        "restartedSkillCount": 1,
+        "restoredPresetMembers": 0,
+        "restoredAgentSwitches": 0
+      }
+    },
+    {
+      "id": "B3",
+      "reproduced": true,
+      "evidence": {
+        "successReturned": true,
+        "disableLeftEnabledCopy": true,
+        "disabledUniqueCopyDeleted": true
+      }
+    },
+    {
+      "id": "B4",
+      "reproduced": true,
+      "evidence": {
+        "editedAgentCopyOverwritten": true,
+        "uniqueFileInSnapshot": false
+      }
+    },
+    {
+      "id": "B5",
+      "reproduced": true,
+      "evidence": {
+        "requestFailed": true,
+        "firstAgentWritten": true,
+        "secondAgentUnchanged": true
+      }
+    },
+    {
+      "id": "B6",
+      "reproduced": true,
+      "evidence": {
+        "realContentsDiffer": true,
+        "reportedSyncStatus": "in_sync"
+      }
+    },
+    {
+      "id": "B7",
+      "reproduced": true,
+      "evidence": {
+        "requestPath": "/%ZZ",
+        "serverExitCode": 1,
+        "error": "URIError: URI malformed"
+      }
+    }
+  ],
+  "sourceSha256": {
+    "backend/backup.mjs": "52486a023d879a2789ec507b0ca7f4ce8bba46151950bbac1fa9d7723268bcaa",
+    "backend/store.mjs": "ccc65568bc918858551b4f677564d428c6a557c249243cf05dcb4a78d5c76b9c",
+    "backend/projects.mjs": "5388d4a2b208be9e13d2bc672af56921ac58d2fecfd6c90c9979a0ed206b32f5",
+    "backend/library.mjs": "faec0ea17799d75a5dbd0ea7ad992b54716c260a4eafbf8e376f8b1589f9581c",
+    "backend/workspace.mjs": "d68c483659a6e354ae6f59f54a1ce08406f65aee18ee3c9091b6cc23c5f5bda5",
+    "backend/server.mjs": "7d342fa0f5f38f494341fa6018ba7f6bc28331ccde544aeb408dbece4237b24c",
+    "backend/shell.mjs": "3cd4e9746adb11b7bc7b195675a241d3f60b082deaad9606b706653f58485c39"
+  },
+  "notChecked": [
+    "packaged Electron lifecycle",
+    "live client new log flow",
+    "browser click acceptance",
+    "remote CI"
+  ]
+}
