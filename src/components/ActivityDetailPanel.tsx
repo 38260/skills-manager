@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ExternalLink, FileSearch, FolderSearch, FileText, FolderOpen, RefreshCw } from "lucide-react";
 import { cn } from "../utils";
@@ -6,6 +6,7 @@ import { openPath } from "../lib/tauri";
 import { getActivityExcerpt, toolIconKeys, toolNames, type ActivityEvent, type ActivityExcerpt } from "../lib/activity";
 import { TRIGGER_TONE } from "../lib/activityTone";
 import { AgentIcon } from "./AgentIcon";
+import { ActivityEvidenceCard } from "./ActivityEvidenceCard";
 
 interface Props {
   record: ActivityEvent;
@@ -13,21 +14,6 @@ interface Props {
   compact?: boolean;
   onOpenSkill?: (managedSkillId: string) => void;
   className?: string;
-}
-
-const SNIPPET_PREVIEW = 260;
-
-// Codex 的单行日志可达数千字符；默认截取技能名附近的一段，完整原文按需展开。
-function previewLine(text: string, skillName: string) {
-  if (text.length <= SNIPPET_PREVIEW) return { text, clipped: false };
-  let index = skillName ? text.indexOf(skillName) : -1;
-  if (index < 0) index = text.indexOf("SKILL.md");
-  let start = index > 80 ? index - 80 : 0;
-  start = Math.min(start, text.length - SNIPPET_PREVIEW);
-  return {
-    text: `${start > 0 ? "…" : ""}${text.slice(start, start + SNIPPET_PREVIEW)}${start + SNIPPET_PREVIEW < text.length ? "…" : ""}`,
-    clipped: true,
-  };
 }
 
 /**
@@ -54,26 +40,6 @@ export function ActivityDetailPanel({ record, compact = false, onOpenSkill, clas
   const excerpt = fresh?.data ?? null;
   const excerptError = fresh?.error ?? "";
   const excerptLoading = !fresh;
-  const snippetRef = useRef<HTMLDivElement | null>(null);
-  const focusRef = useRef<HTMLDivElement | null>(null);
-  // 展开状态跟着记录 id 走，切换记录时无需在 effect 里清空。
-  const [expandedLines, setExpandedLines] = useState<{ id: string; keys: Set<string> } | null>(null);
-
-  function toggleLine(key: string) {
-    setExpandedLines(previous => {
-      const keys = new Set(previous?.id === record.id ? previous.keys : []);
-      if (keys.has(key)) keys.delete(key); else keys.add(key);
-      return { id: record.id, keys };
-    });
-  }
-
-  // 长 JSON 行会换行，切换记录后把高亮行滚到靠上的位置，保留少量上下文。
-  useEffect(() => {
-    const container = snippetRef.current, focus = focusRef.current;
-    if (!container || !focus) return;
-    const offset = focus.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop;
-    container.scrollTop = Math.max(0, offset - 54);
-  }, [excerpt]);
 
   async function revealFile(path: string) {
     setOpenError("");
@@ -145,8 +111,10 @@ export function ActivityDetailPanel({ record, compact = false, onOpenSkill, clas
       <section className="mt-4 border-t border-border-subtle pt-3">
         <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1.5">
           <div className="min-w-0">
-            <h4 className="text-[12px] font-semibold text-secondary">{t("activity.sourceSnippet")}</h4>
-            <p className="mt-0.5 break-all text-[11px] text-tertiary">{t("activity.snippetPosition", { position: record.sourceLine || "—" })}</p>
+            <h4 className="text-[12px] font-semibold text-secondary">{t("activity.evidenceLocation")}</h4>
+            <p className="mt-1 break-all text-[11px] text-tertiary" title={record.sourcePath}>
+              {record.sourcePath.split(/[/\\]/).at(-1)} · {t(record.sourceLine.startsWith("part:") ? "activity.evidencePart" : "activity.evidenceLine", { position: record.sourceLine.replace(/^part:/, "") || "—" })}
+            </p>
           </div>
           <button
             type="button"
@@ -172,52 +140,13 @@ export function ActivityDetailPanel({ record, compact = false, onOpenSkill, clas
           </div>
         )}
         {!excerptLoading && !excerptError && excerpt?.available && (
-          <>
-            <div role="region" aria-label={t("activity.sourceSnippet")} className="mt-1.5 overflow-hidden rounded-lg border border-border-subtle bg-background">
-              {excerpt.lineKind === "part" ? (
-                <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all px-2.5 py-2 font-mono text-[11px] leading-[18px] text-secondary">{excerpt.lines[0]?.text ?? ""}</pre>
-              ) : (
-                <div ref={snippetRef} className="max-h-56 overflow-y-auto overflow-x-hidden py-1 font-mono text-[11px] leading-[18px]">
-                  {excerpt.lines.map((line, index) => {
-                    const key = `${line.label}:${index}`;
-                    const expanded = expandedLines?.id === record.id && expandedLines.keys.has(key);
-                    const long = line.text.length > SNIPPET_PREVIEW;
-                    const preview = expanded ? { text: line.text } : previewLine(line.text, record.skillName);
-                    return (
-                      <div
-                        key={key}
-                        ref={line.label === excerpt.focus ? focusRef : undefined}
-                        className={cn("flex gap-2 px-2 py-0.5", line.label === excerpt.focus && "bg-accent-bg")}
-                      >
-                        <span className={cn("w-9 shrink-0 select-none text-right tabular-nums", line.label === excerpt.focus ? "font-medium text-accent-dark dark:text-accent-light" : "text-muted")}>{line.label}</span>
-                        <div className="min-w-0 flex-1">
-                          <span className="whitespace-pre-wrap break-all text-secondary">{preview.text}</span>
-                          {long && (
-                            <button
-                              type="button"
-                              onClick={() => toggleLine(key)}
-                              className="ml-1 whitespace-nowrap rounded text-[10.5px] text-accent-dark underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-accent dark:text-accent-light"
-                            >
-                              {expanded ? t("activity.snippetCollapse") : t("activity.snippetExpand")}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-            {excerpt.kind === "zstd" && <p className="mt-1 text-[11px] text-tertiary">{t("activity.snippetCompressed")}</p>}
-            {excerpt.kind === "zcode" && <p className="mt-1 text-[11px] text-tertiary">{t("activity.snippetDatabase")}</p>}
-            {excerpt.truncated && <p className="mt-1 text-[11px] text-tertiary">{t("activity.snippetTruncated")}</p>}
-          </>
+          <ActivityEvidenceCard key={record.id} record={record} excerpt={excerpt} />
         )}
       </section>
 
       {/* 记录信息 */}
-      <section className="mt-4 border-t border-border-subtle pt-3">
-        <h4 className="text-[12px] font-semibold text-secondary">{t("activity.detailInfo")}</h4>
+      <details className="mt-4 border-t border-border-subtle pt-3">
+        <summary className="cursor-pointer text-[12px] font-semibold text-secondary outline-none focus-visible:ring-2 focus-visible:ring-accent">{t("activity.detailInfo")}</summary>
         <dl className="mt-1.5 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-[12px]">
           {rows.map(([label, value]) => (
             <Fragment key={label}>
@@ -226,7 +155,7 @@ export function ActivityDetailPanel({ record, compact = false, onOpenSkill, clas
             </Fragment>
           ))}
         </dl>
-      </section>
+      </details>
 
       {/* 来源文件 */}
       <section className="mt-4 border-t border-border-subtle pt-3">
