@@ -1,0 +1,80 @@
+{
+  "verifiedOn": "2026-10-19",
+  "backend": {
+    "failed": 0,
+    "passed": 130
+  },
+  "ui": {
+    "failed": 0,
+    "passed": 33
+  },
+  "electron": {
+    "failed": 0,
+    "passed": 1
+  },
+  "build": "passed",
+  "lint": "passed",
+  "browserChecks": [
+    {
+      "name": "技能名打开真实技能详情后原路返回",
+      "ok": true
+    },
+    {
+      "name": "点击技能名不改变当前选中记录或路由",
+      "ok": true
+    },
+    {
+      "name": "返回保留搜索、工具筛选、第二页、选中项和滚动",
+      "ok": true
+    },
+    {
+      "name": "返回后焦点回到技能链接",
+      "ok": true
+    },
+    {
+      "name": "Enter 打开详情、Esc 返回并恢复焦点",
+      "ok": true
+    },
+    {
+      "name": "4000 字符之后的命中命令仍然可见",
+      "ok": true
+    },
+    {
+      "name": "技能路径有局部高亮，原文和上下文默认折叠",
+      "ok": true
+    },
+    {
+      "name": "复制得到解码后的命令",
+      "ok": true
+    },
+    {
+      "name": "上下文展示真实的用户、调用、返回与原始行号",
+      "ok": true
+    },
+    {
+      "name": "原始记录展开并明确原文截断",
+      "ok": true
+    },
+    {
+      "name": "切换记录清除旧的证据和展开状态",
+      "ok": true
+    },
+    {
+      "name": "损坏记录有明确原文回退",
+      "ok": true
+    },
+    {
+      "name": "缺失日志提示准确，未关联技能没有虚假跳转",
+      "ok": true
+    },
+    {
+      "name": "窄窗口无横向溢出",
+      "ok": true
+    },
+    {
+      "name": "窄窗口选中记录后详情进入视野",
+      "ok": true
+    }
+  ],
+  "scope": "当前源码、Vite 构建和隔离演示库；未打包 Windows EXE"
+}

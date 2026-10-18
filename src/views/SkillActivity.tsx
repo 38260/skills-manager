@@ -194,7 +194,7 @@ export function SkillActivity() {
   ]), [allCount, result, t]);
   const emptyText = t(problems.length ? "activity.checkSources" : "activity.empty");
 
-  return <div className="app-page">
+  return <div className="app-page max-w-none">
     {/* 页头：标题与扫描操作 */}
     <header className="app-page-header flex flex-wrap items-start justify-between gap-3">
       <div>
@@ -295,7 +295,7 @@ export function SkillActivity() {
     </form>
 
     {/* 主区：左列表 + 右详情 */}
-    <div className="grid min-w-0 grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
+    <div className="grid min-w-0 grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_420px] 2xl:grid-cols-[minmax(0,1fr)_480px]">
       <section aria-label={t("activity.records")} aria-busy={loading || undefined} className="app-panel min-w-0 overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-border-subtle px-3 py-2.5">
           <div className="flex flex-wrap items-center gap-1" role="tablist" aria-label={t("activity.kind")}>
