@@ -146,12 +146,28 @@ export class Library {
     const staged=inside(this.store.skillsDirectory,".install-"+crypto.randomUUID());
     copySkill(directory,staged);
     const id=crypto.randomUUID(),now=Date.now(),hash=hashDirectory(staged);
+    // 安装是一个整体操作：数据库记录、技能目录、安装清单、技能元数据任一失败都要一起撤销。
+    // 旧实现只在「数据库里没有该 id」时才删目录，而插入在清单写入之前已经成功，
+    // 于是失败后留下「记录在、目录在」的半成品，重装还会再生成一份同名技能。
+    const manifest=inside(path.join(this.store.directory,"install-manifests"),`${id}.json`);
+    const metadataFile=inside(path.join(this.store.skillsDirectory,".skills-manager","skills"),`${id}.json`);
     try {
       fs.renameSync(staged,destination);
       this.store.run("INSERT INTO skills(id,name,description,source_type,source_ref,source_ref_resolved,source_subpath,source_branch,source_revision,remote_revision,central_path,content_hash,enabled,created_at,updated_at,status,update_status) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         id,meta.name||name,meta.description,source.source_type||"import",source.source_ref,source.source_ref_resolved,source.source_subpath,source.source_branch,source.source_revision,source.source_revision,destination,hash,true,now,now,"ok",["git","skillssh"].includes(source.source_type)?"up_to_date":"local_only");
       this.saveManifest(id,destination); this.store.saveMetadata(id);this.changed();return this.store.skill(id);
-    } catch(error) {if(fs.existsSync(staged))fs.rmSync(staged,{recursive:true,force:true});if(fs.existsSync(destination)&&!this.store.get("SELECT id FROM skills WHERE id=?",id))fs.rmSync(destination,{recursive:true});throw error;}
+    } catch(error) {
+      // 逆序撤销：先撤数据库记录，再撤落盘产物；单步失败不掩盖原始错误。
+      for(const rollback of [
+        () => this.store.run("DELETE FROM skills WHERE id=?",id),
+        () => this.store.run("DELETE FROM skill_tags WHERE skill_id=?",id),
+        () => {if(fs.existsSync(manifest))fs.unlinkSync(manifest);},
+        () => {if(fs.existsSync(metadataFile))fs.unlinkSync(metadataFile);},
+        () => {if(fs.existsSync(staged))fs.rmSync(staged,{recursive:true,force:true});},
+        () => {if(fs.existsSync(destination))fs.rmSync(destination,{recursive:true,force:true});},
+      ]) {try{rollback();}catch{}}
+      throw error;
+    }
   }
   saveManifest(id,directory) {writeJson(inside(path.join(this.store.directory,"install-manifests"),`${id}.json`),Object.fromEntries(files(directory).map(file=>[file.relative,crypto.createHash("sha256").update(fs.readFileSync(file.full)).digest("hex")])));}
   persistReplacement(id,action) {

@@ -81,3 +81,33 @@ test("自定义别名、说明与作者覆盖优先展示，清空后回退技�
   assert.equal(sidecar.alias,null);
   assert.equal(sidecar.custom_description,null);
 });
+
+// 安装是「记录 + 目录 + 清单 + 元数据」的整体：任一步失败都必须整体撤销，
+// 否则失败提示之后数据库与技能目录仍留着半成品，重装会再多出一份同名技能。
+test("安装清单写入失败时整体回滚，重装不产生重复技能",async t=>{
+  const {source,store,library}=fixture(t);
+  const manifestsDir=path.join(store.directory,"install-manifests");
+  const metadataDir=path.join(store.skillsDirectory,".skills-manager","skills");
+  const original=library.saveManifest;
+  library.saveManifest=()=>{throw new Error("写入安装清单失败");};
+  await assert.rejects(library.installLocal(source),/写入安装清单失败/);
+  assert.equal(store.skills().length,0,"失败后不应留下技能记录");
+  assert.equal(fs.existsSync(path.join(store.skillsDirectory,"example")),false,"失败后不应留下技能目录");
+  assert.deepEqual(fs.existsSync(manifestsDir)?fs.readdirSync(manifestsDir):[],[] ,"失败后不应留下安装清单");
+  assert.deepEqual(fs.existsSync(metadataDir)?fs.readdirSync(metadataDir):[],[] ,"失败后不应留下技能元数据");
+  library.saveManifest=original;
+  const skill=await library.installLocal(source);
+  assert.equal(store.skills().length,1,"重装后只应有一份技能");
+  assert.equal(skill.name,"example");
+  assert.equal(fs.existsSync(path.join(store.skillsDirectory,"example")),true);
+});
+
+test("技能元数据写入失败同样撤销整个安装",async t=>{
+  const {source,store,library}=fixture(t);
+  const manifestsDir=path.join(store.directory,"install-manifests");
+  store.saveMetadata=()=>{throw new Error("写入技能元数据失败");};
+  await assert.rejects(library.installLocal(source),/写入技能元数据失败/);
+  assert.equal(store.skills().length,0);
+  assert.equal(fs.existsSync(path.join(store.skillsDirectory,"example")),false);
+  assert.deepEqual(fs.existsSync(manifestsDir)?fs.readdirSync(manifestsDir):[],[]);
+});
