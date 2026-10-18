@@ -78,9 +78,13 @@ export function SyncDots({
     }
   }
 
-  const collapsedDots = typeof limit === "number" ? dots.slice(0, limit) : dots;
-  const hiddenCount = dots.length - collapsedDots.length;
-  const visible = onToggle && expanded ? dots : collapsedDots;
+  // 技能库摘要固定展示这三种 Agent；缺失时不补其他图标，其余保留在 +X 中。
+  const primaryDots = ["codex", "qoder", "workbuddy"].flatMap(key => dots.filter(dot => dot.key === key));
+  const collapsedDots = typeof limit === "number" ? primaryDots.slice(0, limit) : primaryDots;
+  const hiddenDots = dots.filter(dot => !collapsedDots.some(visible => visible.key === dot.key));
+  const hiddenCount = hiddenDots.length;
+  const visible = onToggle && expanded ? [...collapsedDots, ...hiddenDots] : collapsedDots;
+  const overflowTitle = `${t("common.expandAll")} · ${hiddenDots.map(dot => dot.displayName).join(", ")}`;
 
   const dim = size === "sm"
     ? "h-[16px] w-[16px] text-[8px]"
@@ -164,8 +168,8 @@ export function SyncDots({
       {hiddenCount > 0 && (onToggle ? (
         <button
           type="button"
-          title={t(expanded ? "common.collapse" : "common.expandAll")}
-          aria-label={t(expanded ? "common.collapse" : "common.expandAll")}
+          title={expanded ? t("common.collapse") : overflowTitle}
+          aria-label={expanded ? t("common.collapse") : overflowTitle}
           aria-expanded={expanded}
           onClick={(e) => {
             e.preventDefault();
@@ -181,7 +185,7 @@ export function SyncDots({
         </button>
       ) : (
         <span
-          title={`+${hiddenCount} more agents`}
+          title={overflowTitle}
           className={cn(
             "inline-flex shrink-0 select-none items-center justify-center rounded-[4px] border border-border-subtle bg-surface-hover font-mono font-semibold text-faint",
             dim,

@@ -1,0 +1,31 @@
+async page => {
+  const checks = [];
+  const check = (name, ok) => { checks.push({ name, ok }); if (!ok) throw new Error(name); };
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.goto("http://127.0.0.1:14319/my-skills");
+  await page.locator("#boot-splash").waitFor({ state: "hidden" });
+  const card = page.locator('div[role="button"]').filter({ has: page.getByRole("heading", { name: "sidebar-demo", exact: true }) });
+  const icons = () => card.getByRole("button", { name: / · 点击安装| · 点击卸载/ });
+  const names = async () => (await icons().evaluateAll(elements => elements.map(element => element.getAttribute("aria-label")))).map(name => name.split(" · ")[0]);
+  check("网格默认仅显示 Codex、Qoder、WorkBuddy，顺序固定", JSON.stringify(await names()) === JSON.stringify(["Codex", "Qoder", "WorkBuddy"]));
+  check("其余三个 Agent 汇总为 +3", await card.getByRole("button", { name: /^展开全部/ }).textContent() === "+3");
+  await page.screenshot({ path: "output/playwright/detail-agents-grid.png" });
+  await card.getByRole("button", { name: /^展开全部/ }).click();
+  check("点击 +X 展开全部，未误开技能详情", await icons().count() === 6 && await page.getByRole("dialog").count() === 0);
+  check("展开后前三个图标仍保持指定顺序", JSON.stringify((await names()).slice(0, 3)) === JSON.stringify(["Codex", "Qoder", "WorkBuddy"]));
+  await card.getByRole("button", { name: /^Cursor ·/ }).click();
+  await card.getByRole("button", { name: /^Cursor · synced · 点击卸载/ }).waitFor();
+  check("展开区 Agent 可以执行真实隔离部署", true);
+  await card.getByRole("button", { name: /^Cursor ·/ }).click();
+  await card.getByRole("button", { name: "Cursor · 点击安装", exact: true }).waitFor();
+  check("展开区 Agent 可以卸载并恢复可用状态", true);
+  await card.getByRole("button", { name: "收起", exact: true }).click();
+  check("收起恢复三个指定图标和 +3", await icons().count() === 3 && await card.getByRole("button", { name: /^展开全部/ }).textContent() === "+3");
+  await page.getByRole("button", { name: "列表视图", exact: true }).click();
+  const row = page.locator('div[role="button"]').filter({ hasText: "sidebar-demo" }).filter({ has: page.getByRole("button", { name: /^展开全部/ }) });
+  const rowNames = await row.getByRole("button", { name: / · 点击安装| · 点击卸载/ }).evaluateAll(elements => elements.map(element => element.getAttribute("aria-label").split(" · ")[0]));
+  check("列表视图同样只显示三个指定图标", JSON.stringify(rowNames) === JSON.stringify(["Codex", "Qoder", "WorkBuddy"]));
+  await page.screenshot({ path: "output/playwright/detail-agents-list.png" });
+  await page.getByRole("button", { name: "网格视图", exact: true }).click();
+  return checks;
+}
