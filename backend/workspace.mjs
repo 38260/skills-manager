@@ -55,7 +55,7 @@ export function cachedDirectoryHash(directory) {
 }
 
 // 递归读取一个技能根目录：识别含 SKILL.md 的目录，跳过隐藏目录与嵌入的 bundle skills 子树。
-export function readSkillsRoot(root, { enabled, agent, agentDisplayName, recursive = true, includeSyncState = true }) {
+export function readSkillsRoot(root, { enabled, agent, agent_display_name, agentDisplayName = agent_display_name ?? agent, recursive = true, includeSyncState = true }) {
   const skills = [];
   if (!fs.existsSync(root)) return skills;
   const visited = new Set();
