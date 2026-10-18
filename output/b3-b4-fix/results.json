@@ -1,0 +1,66 @@
+{
+  "date": "2026-10-18",
+  "scope": [
+    "B3",
+    "B4",
+    "B3 UI Agent display name"
+  ],
+  "commits": {
+    "B3": "4fb4ac5",
+    "B3DisplayName": "cb0cef3",
+    "B4": "d250ca5"
+  },
+  "tests": {
+    "backend": {
+      "passed": 119,
+      "failed": 0
+    },
+    "ui": {
+      "passed": 21,
+      "failed": 0
+    },
+    "electronBridge": {
+      "passed": 1,
+      "failed": 0
+    },
+    "lint": "passed",
+    "typescript": "passed",
+    "isolatedBuild": "passed"
+  },
+  "browser": {
+    "b3": {
+      "conflictToast": true,
+      "bothVersionsPreserved": true
+    },
+    "b4Project": {
+      "centerUpdated": true,
+      "cleanTargetUpdated": true,
+      "editedTargetPreserved": true,
+      "retryWithEditsBlocked": true,
+      "retryAfterResolvingSucceeded": true
+    },
+    "b4Global": {
+      "centerUpdated": true,
+      "sourceTargetSynchronized": true,
+      "otherAgentEditsPreserved": true
+    },
+    "backendFilesMatched": 30
+  },
+  "originalModifiedFilesPreserved": 13,
+  "temporaryTestCleanup": {
+    "lockedBackupDirectoriesRemoved": 2
+  },
+  "sourceSha256": {
+    "backend/projects.mjs": "05bb518bd178f0cd164b22852156efd20cc1444fe485390390bbc921eb12f7e9",
+    "backend/library.mjs": "98e65c92b6e4e9a2c36eb26978a56bdf05e81004e52261ca2970330555da9b00",
+    "backend/workspace.mjs": "63a450e251e6d9f9092b9c3b335dc198612f2355ec4bb3ee24f0a59440cbb837",
+    "src/components/WorkspaceDeploymentResults.tsx": "d384d0c2b9a3bcad8a94bd310346b8e9c2d9d5df5e2b0113fa1613d2a769a629",
+    "src/lib/tauri.ts": "d706504f189975ddef69b6174fddc35631fc297be7a8718e6b013f876da73cc4",
+    "src/views/WorkspaceView.tsx": "5a662615bee88f5e8d7b254a23b937e7c5eac043db72c9e58355be28ff9f822e",
+    "src/views/ProjectDetail.tsx": "d6cc9cefebb056bb5417e6f96e7e4a9bbe3af62e3699b3b74036b18ab2aa9c6f"
+  },
+  "notChecked": [
+    "packaged Electron executable",
+    "new real-client log flow"
+  ]
+}
