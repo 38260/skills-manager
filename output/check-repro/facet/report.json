@@ -1,0 +1,128 @@
+{
+  "url": "http://127.0.0.1:14399/skill-activity",
+  "baseline": {
+    "stats": [
+      60,
+      15,
+      40,
+      5
+    ],
+    "tabs": [
+      60,
+      15,
+      40,
+      5
+    ]
+  },
+  "checks": [
+    {
+      "clicked": "明确调用",
+      "same": true,
+      "stats": [
+        60,
+        15,
+        40,
+        5
+      ],
+      "tabCounts": [
+        60,
+        15,
+        40,
+        5
+      ],
+      "rows": 15,
+      "footer": "共 15 条记录"
+    },
+    {
+      "clicked": "已确认加载",
+      "same": true,
+      "stats": [
+        60,
+        15,
+        40,
+        5
+      ],
+      "tabCounts": [
+        60,
+        15,
+        40,
+        5
+      ],
+      "rows": 20,
+      "footer": "共 40 条记录"
+    },
+    {
+      "clicked": "仅请求／待确认",
+      "same": true,
+      "stats": [
+        60,
+        15,
+        40,
+        5
+      ],
+      "tabCounts": [
+        60,
+        15,
+        40,
+        5
+      ],
+      "rows": 5,
+      "footer": "共 5 条记录"
+    },
+    {
+      "clicked": "全部记录",
+      "same": true,
+      "stats": [
+        60,
+        15,
+        40,
+        5
+      ],
+      "tabCounts": [
+        60,
+        15,
+        40,
+        5
+      ],
+      "rows": 20,
+      "footer": "共 60 条记录"
+    },
+    {
+      "clicked": "已确认加载",
+      "same": true,
+      "stats": [
+        60,
+        15,
+        40,
+        5
+      ],
+      "tabCounts": [
+        60,
+        15,
+        40,
+        5
+      ],
+      "rows": 20,
+      "footer": "共 40 条记录"
+    },
+    {
+      "clicked": "明确调用",
+      "same": true,
+      "stats": [
+        60,
+        15,
+        40,
+        5
+      ],
+      "tabCounts": [
+        60,
+        15,
+        40,
+        5
+      ],
+      "rows": 15,
+      "footer": "共 15 条记录"
+    }
+  ],
+  "pass": true
+}

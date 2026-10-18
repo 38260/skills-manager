@@ -1,0 +1,22 @@
+import fs from "node:fs";
+import path from "node:path";
+import { execFileSync } from "node:child_process";
+const root = path.resolve("output/detail-rework/data");
+const upstream = path.join(root, "upstream");
+const filename = path.join(upstream, "ui-design", "SKILL.md");
+const full = fs.readFileSync(filename, "utf8");
+const longPath = path.join(root, "long-document");
+fs.mkdirSync(longPath);
+fs.writeFileSync(path.join(longPath, "SKILL.md"), full.replace("name: ui-design", "name: long-document") + "\nhttps://example.invalid/" + "long-path-".repeat(90) + "\n");
+fs.writeFileSync(filename, full.slice(0, full.indexOf("## 无语言代码")));
+const git = args => execFileSync("git", ["-C", upstream, ...args], { windowsHide: true, stdio: "pipe" });
+git(["add", "-A"]); git(["commit", "-m", "准备与参考图相同结构的短文档"]);
+const invoke = async (command, args = {}) => {
+  const result = await (await fetch(`http://127.0.0.1:14229/api/invoke/${command}`, { method: "POST", headers: { "content-type": "application/json", "x-skills-manager-client": "webview" }, body: JSON.stringify(args) })).json();
+  if (!result.ok) throw new Error(result.message);
+  return result.data;
+};
+const fixture = JSON.parse(fs.readFileSync(path.join(root, "fixture.json"), "utf8"));
+await invoke("install_local", { sourcePath: longPath });
+await invoke("check_skill_update", { skillId: fixture.skillId });
+console.log("短文档、真实可更新状态与长文档样本已准备。");

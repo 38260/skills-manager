@@ -1,0 +1,80 @@
+{
+  "runs": [
+    {
+      "name": "A 占位·深色（拦住 JS）",
+      "boot": {
+        "seen": true,
+        "firstSeenAt": 9,
+        "removedAt": null,
+        "bg": "rgb(13, 13, 15)",
+        "hint": "正在启动本地服务…"
+      },
+      "splashPresent": true,
+      "splashBg": "rgb(13, 13, 15)",
+      "markColor": "rgb(230, 230, 234)",
+      "bootLightClass": false,
+      "rootChildren": 0,
+      "heading": null,
+      "consoleErrors": []
+    },
+    {
+      "name": "B 占位·浅色（拦住 JS）",
+      "boot": {
+        "seen": true,
+        "firstSeenAt": 10,
+        "removedAt": null,
+        "bg": "rgb(247, 247, 249)",
+        "hint": "正在启动本地服务…"
+      },
+      "splashPresent": true,
+      "splashBg": "rgb(247, 247, 249)",
+      "markColor": "rgb(24, 24, 27)",
+      "bootLightClass": true,
+      "rootChildren": 0,
+      "heading": null
+    },
+    {
+      "name": "C 完整启动（放行 JS）",
+      "boot": {
+        "seen": true,
+        "firstSeenAt": 11,
+        "removedAt": 340,
+        "bg": "rgb(13, 13, 15)",
+        "hint": "正在启动本地服务…"
+      },
+      "splashPresent": false,
+      "splashBg": null,
+      "markColor": null,
+      "bootLightClass": false,
+      "rootChildren": 2,
+      "heading": "工作台",
+      "consoleErrors": []
+    },
+    {
+      "name": "D 完整启动·浅色",
+      "boot": {
+        "seen": true,
+        "firstSeenAt": 11,
+        "removedAt": 326,
+        "bg": "rgb(247, 247, 249)",
+        "hint": "正在启动本地服务…"
+      },
+      "splashPresent": false,
+      "splashBg": null,
+      "markColor": null,
+      "bootLightClass": true,
+      "rootChildren": 2,
+      "heading": "工作台"
+    },
+    {
+      "name": "E Electron 启动占位页（file://）",
+      "mark": "Skills Manager",
+      "hint": "正在启动本地服务…",
+      "barColor": "rgb(59, 165, 93)",
+      "bodyBg": "rgb(13, 13, 15)",
+      "bootLightClass": false
+    }
+  ],
+  "failures": [],
+  "ok": true
+}

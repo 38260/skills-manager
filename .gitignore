@@ -74,3 +74,6 @@ output/optimization/evidence
 
 # PPT 技能演示素材（88MB 视频/图片），仅本机留档。
 output/ppt-skill/
+
+# output/page-perf 的对照组：从 git HEAD 导出的旧后端副本，跑之前现导出即可。
+output/page-perf/old-backend
