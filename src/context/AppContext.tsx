@@ -5,6 +5,7 @@ import type { AppUpdateInfo, ManagedSkill, Project, Preset, ToolInfo } from "../
 import * as api from "../lib/tauri";
 import i18n from "../i18n";
 import { applyTextSize } from "../lib/textScale";
+import { dismissBootSplash } from "../lib/bootSplash";
 import { toast } from "sonner";
 
 interface AppState {
@@ -156,8 +157,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // identical to the other frontend startup marks avoids ambiguity in
       // the log file (see codex review note on #153).
       api.logStartupEvent("refresh_app_data_start", performance.now()).catch(() => {});
-      await refreshAppData();
-      api.logStartupEvent("refresh_app_data_done", performance.now()).catch(() => {});
+      try {
+        await refreshAppData();
+      } finally {
+        // 首屏占位一直盖到首次数据落地为止：加载期间有明确反馈，
+        // 落地后淡出，避免先露出 0 值空壳再填数。失败路径同样要收。
+        api.logStartupEvent("refresh_app_data_done", performance.now()).catch(() => {});
+        dismissBootSplash();
+      }
       // Apply saved text size on startup
       const savedSize = await api.getSettings("text_size").catch(() => null);
       if (savedSize) {
