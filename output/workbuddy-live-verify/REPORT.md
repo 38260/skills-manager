@@ -51,6 +51,19 @@ D5（WorkBuddy 读取 `SKILL.md` 的文档加载未采集）保留为明确的�
 - 仅提及：`9b2762ba-13c4-43b9-93ca-dd47c8b2a08d`（`d-AI-Workbuddy-2026-10-18-11-42-22`）
 - 隐式：`9d641f09-7b76-4fad-8855-4c8216b8eb65`（`d-AI-Workbuddy-2026-10-18-11-43-42`），`call_00_aUp045fTVoqthSrhhwYK4891`
 
+## 补充实机复核（12:01，走完整 UI 选人路径）
+
+前面几轮的技能芯片是用键盘写进输入框的；这一轮改为纯鼠标操作：`/` 打开技能列表 → 点选 `eli5` → 输入「用一句话解释什么是缓存雪崩，不要写文件。」→ 点发送。
+
+- 会话：`38b0e6df-6113-462a-a685-6c2beea0b889`（`d-AI-Workbuddy-2026-10-18-12-01-54`）
+- 原始日志：第 3 行 `@skill:"C:\\Users\\<user>\\.workbuddy\\skills\\eli5\\SKILL.md"` + 附加技能块；第 7 行 `Skill {skill:"eli5"}`，completed
+- 活动库：仅 1 条 `eli5 / invocation / manual / returned`，行 7，`evidence=user_selection`，无多余请求
+- 计数：WorkBuddy 88 → 89，手动调用 8 → 9；`eli5` 使用 5 → 6，最后使用 12:02
+- 页面：调用记录详情显示「手动触发 / 用户明确选择，并与本次技能关联」，技能卡显示「调用 6 次 · 最后使用 12:02」
+- 再连续扫描两次：仍为 89 条，无重复 ID
+
+证据：`retest-live.json`、`api-final-pass.json`、`usage-final-pass.json`。
+
 ## 计数核对
 
 活动库修复前：91 条 WorkBuddy 记录（含 7 条陈旧请求）。
