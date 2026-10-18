@@ -1,5 +1,8 @@
+import type { LibrarySortMode } from "./librarySort";
+
 export interface LibraryViewState {
   viewMode: "grid" | "list";
+  sortMode: LibrarySortMode;
   filterMode: "all" | "enabled" | "available";
   search: string;
   sourceFilters: string[];
@@ -30,8 +33,8 @@ function stateKey(libraryPath: string, presetId: string | null) {
   return `skills-manager.libraryView.v1.${libraryKey(libraryPath)}.${presetId === null ? "library" : `preset:${encodeURIComponent(presetId)}`}`;
 }
 
-function preferenceKey(libraryPath: string) {
-  return `skills-manager.libraryViewMode.v1.${libraryKey(libraryPath)}`;
+function preferenceKey(libraryPath: string, kind: "ViewMode" | "SortMode") {
+  return `skills-manager.library${kind}.v1.${libraryKey(libraryPath)}`;
 }
 
 function filterValues(value: unknown): string[] {
@@ -47,6 +50,7 @@ export function readLibraryViewState(
 ): LibraryViewState {
   let saved: Record<string, unknown> = {};
   let viewMode: LibraryViewState["viewMode"] = "grid";
+  let sortMode: LibrarySortMode = "default";
   try {
     const raw = (storage.session ?? getStorage("sessionStorage"))?.getItem(stateKey(libraryPath, presetId));
     const parsed: unknown = raw ? JSON.parse(raw) : null;
@@ -55,13 +59,17 @@ export function readLibraryViewState(
     // 缓存损坏或浏览器禁用存储时仍可正常浏览技能库。
   }
   try {
-    if ((storage.preferences ?? getStorage("localStorage"))?.getItem(preferenceKey(libraryPath)) === "list") viewMode = "list";
+    const preferences = storage.preferences ?? getStorage("localStorage");
+    if (preferences?.getItem(preferenceKey(libraryPath, "ViewMode")) === "list") viewMode = "list";
+    const savedSort = preferences?.getItem(preferenceKey(libraryPath, "SortMode"));
+    if (savedSort === "usage-desc" || savedSort === "usage-asc") sortMode = savedSort;
   } catch {
     // 视图偏好读取失败不影响本次操作。
   }
   const tagFilters = filterValues(saved.tagFilters);
   return {
     viewMode,
+    sortMode,
     filterMode: saved.filterMode === "enabled" || saved.filterMode === "available" ? saved.filterMode : "all",
     search: typeof saved.search === "string" ? saved.search : "",
     // 保持现有来源与分类筛选互斥的交互语义。
@@ -77,14 +85,16 @@ export function writeLibraryViewState(
   state: LibraryViewState,
   storage: LibraryViewStorage = {},
 ) {
-  const { viewMode, ...sessionState } = state;
+  const { viewMode, sortMode, ...sessionState } = state;
   try {
     (storage.session ?? getStorage("sessionStorage"))?.setItem(stateKey(libraryPath, presetId), JSON.stringify(sessionState));
   } catch {
     // 存储额度不足时保持界面可用。
   }
   try {
-    (storage.preferences ?? getStorage("localStorage"))?.setItem(preferenceKey(libraryPath), viewMode);
+    const preferences = storage.preferences ?? getStorage("localStorage");
+    preferences?.setItem(preferenceKey(libraryPath, "ViewMode"), viewMode);
+    preferences?.setItem(preferenceKey(libraryPath, "SortMode"), sortMode);
   } catch {
     // 视图模式仍保留在当前页面状态中。
   }

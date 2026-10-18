@@ -190,7 +190,7 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
     refreshProjects,
   } = useApp();
   const [viewMode, setViewMode] = useState<"grid" | "list">(initialView.viewMode);
-  const [sortMode, setSortMode] = useState<LibrarySortMode>("default");
+  const [sortMode, setSortMode] = useState<LibrarySortMode>(initialView.sortMode);
   const [showCreatePreset, setShowCreatePreset] = useState(false);
   const [filterMode, setFilterMode] = useState<"all" | "enabled" | "available">(initialView.filterMode);
   const [sourceFilters, setSourceFilters] = useState<Set<string>>(() => new Set(initialView.sourceFilters));
@@ -216,12 +216,12 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
     if (!container) return;
     const save = () => {
       if (pendingScroll.current !== null && container.scrollTop === Math.min(pendingScroll.current, Math.max(0, container.scrollHeight - container.clientHeight))) pendingScroll.current = null;
-      writeLibraryViewState(libraryPath, presetId, { viewMode, filterMode, search, sourceFilters: [...sourceFilters], tagFilters: [...tagFilters], scrollTop: pendingScroll.current ?? container.scrollTop });
+      writeLibraryViewState(libraryPath, presetId, { viewMode, sortMode, filterMode, search, sourceFilters: [...sourceFilters], tagFilters: [...tagFilters], scrollTop: pendingScroll.current ?? container.scrollTop });
     };
     save();container.addEventListener("scroll", save, { passive: true });
     // 离页后的 DOM 可能已经缩短，清理时不读取它，避免把旧页面滚动位置覆盖为 0。
     return () => { container.removeEventListener("scroll", save); };
-  }, [libraryPath, presetId, viewMode, filterMode, search, sourceFilters, tagFilters]);
+  }, [libraryPath, presetId, viewMode, sortMode, filterMode, search, sourceFilters, tagFilters]);
   const [operationReport, updateOperationReport] = useState<(OperationReport & { version: number }) | null>(null);
   function setOperationReport(report: OperationReport | null) { updateOperationReport(report ? { ...report, version: performance.now() } : null); }
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
