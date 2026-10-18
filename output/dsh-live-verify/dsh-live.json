@@ -1,0 +1,185 @@
+{
+  "generatedAt": "2026-10-18T05:00:42.208Z",
+  "tool": "dsh",
+  "parserVersion": 7,
+  "note": "DSH 实测证据；用户主目录已脱敏为 <user>",
+  "cases": [
+    {
+      "key": "explicit-menu",
+      "session": "session-e3ef01ea-df33-44e5-9fae-e575fec214ac",
+      "note": "菜单点选注入技能正文；同会话第二条消息再次点名但未产生新调用",
+      "sourceFile": "\\--D-AIWorkSpace-test--\\session-e3ef01ea-df33-44e5-9fae-e575fec214ac\\session.v4.jsonl.zstd",
+      "users": [
+        {
+          "line": 10,
+          "text": "/animation-vocabulary  popover 打开时那种微微回弹的效果叫什么名字？只回答术语和一句解释。"
+        },
+        {
+          "line": 31,
+          "text": "请使用 animation-vocabulary 技能回答：卡片悬停时轻微上浮再落定的效果叫什么？只回答术语和一句解释。"
+        }
+      ],
+      "skillToolCalls": [],
+      "skillInvocations": [
+        {
+          "line": 14,
+          "name": "animation-vocabulary",
+          "messageId": "52bd919a-f29e-439f-ae63-30b8d3306923"
+        }
+      ],
+      "managerEvents": [
+        {
+          "skillName": "animation-vocabulary",
+          "kind": "invocation",
+          "trigger": "manual",
+          "status": "returned",
+          "evidence": "user_selection",
+          "sourceLine": "14",
+          "callId": "52bd919a-f29e-439f-ae63-30b8d3306923"
+        },
+        {
+          "skillName": "animation-vocabulary",
+          "kind": "request",
+          "trigger": "manual",
+          "status": "pending",
+          "evidence": "user_selection",
+          "sourceLine": "31",
+          "callId": "request:35a1a4e9-1f15-45c0-ae6a-93ddaf3b4cd4"
+        }
+      ]
+    },
+    {
+      "key": "auto-choice",
+      "session": "session-d5ce8d05-a0ba-498c-b4f7-210b14078b24",
+      "note": "要求自动选择，模型自行调用 skill 工具",
+      "sourceFile": "\\--D-AIWorkSpace-test--\\session-d5ce8d05-a0ba-498c-b4f7-210b14078b24\\session.v4.jsonl.zstd",
+      "users": [
+        {
+          "line": 10,
+          "text": "请自动选择技能，帮我判断：popover 打开时那种微微回弹的效果该叫什么名字？只回答术语和一句解释。"
+        }
+      ],
+      "skillToolCalls": [
+        {
+          "line": 20,
+          "callId": "call_00_4qWuctPZHjukBATravrB6761",
+          "arguments": "{\"name\":\"animation-vocabulary\"}"
+        }
+      ],
+      "skillInvocations": [],
+      "managerEvents": [
+        {
+          "skillName": "animation-vocabulary",
+          "kind": "invocation",
+          "trigger": "automatic",
+          "status": "returned",
+          "evidence": "user_auto_choice",
+          "sourceLine": "20",
+          "callId": "call_00_4qWuctPZHjukBATravrB6761"
+        }
+      ]
+    },
+    {
+      "key": "named-not-executed",
+      "session": "session-e418eb8a-47b8-40ed-a048-66042fc168fc",
+      "note": "点名但要求不执行",
+      "sourceFile": "\\--D-AIWorkSpace-test--\\session-e418eb8a-47b8-40ed-a048-66042fc168fc\\session.v4.jsonl.zstd",
+      "users": [
+        {
+          "line": 10,
+          "text": "请使用 animation-vocabulary 技能回答：什么是 Rubber-banding？但这次只说明你会怎么用这个技能，不要实际调用任何工具或技能。"
+        }
+      ],
+      "skillToolCalls": [],
+      "skillInvocations": [],
+      "managerEvents": [
+        {
+          "skillName": "animation-vocabulary",
+          "kind": "request",
+          "trigger": "manual",
+          "status": "pending",
+          "evidence": "user_selection",
+          "sourceLine": "10",
+          "callId": "request:c29d299e-7ecb-4e9b-8420-fe91a84056e9"
+        }
+      ]
+    },
+    {
+      "key": "mention-negation",
+      "session": "session-3286a6e4-14c1-4df7-96c4-c6bf8a2987ce",
+      "note": "仅询问技能描述",
+      "sourceFile": "\\--D-AIWorkSpace-test--\\session-3286a6e4-14c1-4df7-96c4-c6bf8a2987ce\\session.v4.jsonl.zstd",
+      "users": [
+        {
+          "line": 10,
+          "text": "animation-vocabulary 这个技能是做什么的？只回答它的描述，不要调用任何技能。"
+        }
+      ],
+      "skillToolCalls": [],
+      "skillInvocations": [],
+      "managerEvents": []
+    },
+    {
+      "key": "implicit",
+      "session": "session-54a8e30f-88bd-4c3a-a668-33bd00f69ea0",
+      "note": "普通任务隐式触发",
+      "sourceFile": "\\--D-AIWorkSpace-test--\\session-54a8e30f-88bd-4c3a-a668-33bd00f69ea0\\session.v4.jsonl.zstd",
+      "users": [
+        {
+          "line": 10,
+          "text": "popover 打开时那种微微回弹的效果该叫什么名字？只回答术语和一句解释。"
+        }
+      ],
+      "skillToolCalls": [
+        {
+          "line": 19,
+          "callId": "call_00_uFzT0zKS0rfI81I6BtFP9576",
+          "arguments": "{\"name\":\"animation-vocabulary\"}"
+        }
+      ],
+      "skillInvocations": [],
+      "managerEvents": [
+        {
+          "skillName": "animation-vocabulary",
+          "kind": "invocation",
+          "trigger": "unknown",
+          "status": "returned",
+          "evidence": "skill_call",
+          "sourceLine": "19",
+          "callId": "call_00_uFzT0zKS0rfI81I6BtFP9576"
+        }
+      ]
+    }
+  ],
+  "counts": [
+    {
+      "kind": "invocation",
+      "trigger": "unknown",
+      "status": "returned",
+      "n": 7
+    },
+    {
+      "kind": "request",
+      "trigger": "manual",
+      "status": "pending",
+      "n": 2
+    },
+    {
+      "kind": "invocation",
+      "trigger": "automatic",
+      "status": "returned",
+      "n": 1
+    },
+    {
+      "kind": "invocation",
+      "trigger": "manual",
+      "status": "returned",
+      "n": 1
+    }
+  ],
+  "total": 11,
+  "usageAnimationVocabulary": {
+    "n": 3,
+    "last": 1792298524615
+  }
+}
