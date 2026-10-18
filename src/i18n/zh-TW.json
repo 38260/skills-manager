@@ -497,6 +497,7 @@
       "deployToTools": "部署到工具",
       "projects": "專案關聯",
       "sourceInfo": "來源資訊",
+      "sidebarSource": "專案來源",
       "tabDoc": "文件",
       "tabSourceDiff": "來源與差異",
       "tabActivity": "呼叫記錄",

@@ -540,6 +540,7 @@
       "deployToTools": "Deploy to Tools",
       "projects": "Projects",
       "sourceInfo": "Source Info",
+      "sidebarSource": "Source",
       "tabDoc": "Document",
       "tabSourceDiff": "Source & Diff",
       "tabActivity": "Activity",

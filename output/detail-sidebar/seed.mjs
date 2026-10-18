@@ -1,0 +1,22 @@
+import fs from "node:fs";
+import path from "node:path";
+import { Store } from "../../backend/store.mjs";
+import { Library } from "../../backend/library.mjs";
+import { UsageStore, defaultSources } from "../../backend/activity/store.mjs";
+
+const root = path.resolve("output/detail-sidebar/data/demo");
+const home = path.join(root, "home"), directory = path.join(root, "app");
+if (fs.existsSync(path.join(directory, "skills-manager.db"))) throw new Error("演示库已存在，拒绝覆盖");
+for (const folder of [".codex", ".qoder", ".workbuddy", ".claude", ".cursor", ".trae"]) fs.mkdirSync(path.join(home, folder, "skills"), { recursive: true });
+const source = path.join(root, "source", "sidebar-demo");
+fs.mkdirSync(path.join(source, "references"), { recursive: true });
+fs.writeFileSync(path.join(source, "SKILL.md"), `---\nname: sidebar-demo\ndescription: 详情侧栏和 Agent 图标验收示例\n---\n# sidebar-demo\n\n${Array.from({ length: 8 }, (_, index) => `## 章节 ${index + 1}\n\n${"这是用于界面验收的示例正文，切换信息页签应保留阅读位置。\n\n".repeat(8)}`).join("\n")}`);
+fs.writeFileSync(path.join(source, "references", "guide.md"), "# 参考说明\n\n用于验证文件结构。\n");
+const store = new Store({ directory, home }), library = new Library(store);
+const skill = await library.installLocal(source);
+store.run("INSERT OR IGNORE INTO scenario_skills(scenario_id,skill_id) VALUES(?,?)", store.presets()[0].id, skill.id);
+store.setSetting("language", "zh"); store.setSetting("theme", "light");
+const usage = new UsageStore(path.join(home, ".skills-manager-activity"));
+usage.initialize(defaultSources(home, {})); usage.db.prepare("UPDATE sources SET enabled=0").run();
+usage.close(); store.close();
+console.log(JSON.stringify({ directory, home, skillId: skill.id }));

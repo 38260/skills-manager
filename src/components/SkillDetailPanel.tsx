@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -34,6 +34,7 @@ import { getActivity, type ActivityEvent } from "../lib/activity";
 import { useDialogFocus } from "../hooks/useDialogFocus";
 
 type ContentTab = "doc" | "sourceDiff" | "activity";
+type SidebarTab = "toc" | "structure" | "source";
 
 /** 一次读取失败的快照：带上「哪一次尝试」的 key，重跑之后旧失败自动失效（不用清 state）。 */
 interface SourceFailure {
@@ -159,6 +160,8 @@ function SkillDetailPanelContent({
     return next;
   });
   const [contentTab, setContentTab] = useState<ContentTab>("doc");
+  const [sidebarTab, setSidebarTab] = useState<SidebarTab>("toc");
+  const sidebarId = useId();
   const [drawerOpen, setDrawerOpen] = useState(false);
   // 右栏区块折叠状态：默认收起"部署到工具"与来源区块内的"来源详情"，
   // 其余按需收起——这样首屏只看到一行来源摘要，不会被长路径和 6 条元数据顶满。
@@ -488,7 +491,7 @@ function SkillDetailPanelContent({
       {headings.length === 0 ? (
         <p className="px-1 py-1 text-[12px] text-tertiary">{t("mySkills.detail.tocEmpty")}</p>
       ) : (
-        <nav className="flex max-h-[min(28vh,220px)] flex-col overflow-y-auto scrollbar-hide" aria-label={t("mySkills.detail.toc")}>
+        <nav className="flex max-h-[min(55vh,480px)] flex-col overflow-y-auto scrollbar-hide" aria-label={t("mySkills.detail.toc")}>
           {headings.map((heading) => {
             const id = `${tocPrefix}-heading-${heading.line}`;
             const active = activeHeading === id;
@@ -635,13 +638,38 @@ function SkillDetailPanelContent({
     </SidebarSection>
   );
 
+  const sidebarTabs: { key: SidebarTab; label: string; disabled?: boolean }[] = [
+    { key: "toc", label: t("mySkills.detail.toc"), disabled: contentTab !== "doc" },
+    { key: "structure", label: t("mySkills.detail.structure") },
+    { key: "source", label: t("mySkills.detail.sidebarSource") },
+  ];
+  // 非文档页不显示无法定位正文的目录；回到文档时保留之前的侧栏选择。
+  const activeSidebarTab = sidebarTab === "toc" && contentTab !== "doc" ? "structure" : sidebarTab;
   const sidebar = (
     <>
-      {contentTab === "doc" && toc}
-      {structureSection}
+      <div role="tablist" aria-label={t("mySkills.detail.sidebar")} className="mb-3 flex shrink-0 gap-1 rounded-lg bg-surface-hover p-1">
+        {sidebarTabs.map(tab => <button key={tab.key} type="button" role="tab" id={`${sidebarId}-tab-${tab.key}`}
+          aria-selected={activeSidebarTab === tab.key} aria-controls={`${sidebarId}-panel`} disabled={tab.disabled}
+          tabIndex={activeSidebarTab === tab.key ? 0 : -1}
+          onClick={() => setSidebarTab(tab.key)}
+          onKeyDown={event => {
+            if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+            event.preventDefault();
+            const available = sidebarTabs.filter(item => !item.disabled);
+            const index = available.findIndex(item => item.key === tab.key);
+            const next = event.key === "Home" ? available[0] : event.key === "End" ? available.at(-1)!
+              : available[(index + (event.key === "ArrowRight" ? 1 : -1) + available.length) % available.length];
+            setSidebarTab(next.key);
+            document.getElementById(`${sidebarId}-tab-${next.key}`)?.focus();
+          }}
+          className={cn("min-w-0 flex-1 whitespace-nowrap rounded-md px-1 py-1.5 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-40", activeSidebarTab === tab.key ? "bg-surface font-medium text-primary shadow-sm" : "text-tertiary hover:text-secondary")}
+        >{tab.label}</button>)}
+      </div>
+      <div role="tabpanel" id={`${sidebarId}-panel`} aria-labelledby={`${sidebarId}-tab-${activeSidebarTab}`} tabIndex={0} className="min-w-0 rounded outline-none focus-visible:ring-2 focus-visible:ring-accent">
+        {activeSidebarTab === "toc" ? toc : activeSidebarTab === "structure" ? structureSection : sourceInfo}
+      </div>
       {deploySection}
       {projectsSection}
-      {sourceInfo}
     </>
   );
 

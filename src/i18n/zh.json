@@ -540,6 +540,7 @@
       "deployToTools": "部署到工具",
       "projects": "项目关联",
       "sourceInfo": "来源信息",
+      "sidebarSource": "项目来源",
       "tabDoc": "文档",
       "tabSourceDiff": "来源与差异",
       "tabActivity": "调用记录",
