@@ -3,6 +3,7 @@
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
+import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { Store } from "./store.mjs";
 import { ActivityService } from "./activity/service.mjs";
@@ -243,7 +244,7 @@ const autoBackupTimer = setInterval(() => {
   autoBackupRunning = true;
   void (async () => {
     try {
-      const outcome = await commands.git_backup_sync.call({ message: "自动备份" });
+      await commands.git_backup_sync.call({ message: "自动备份" });
       store.setSetting("backup_last_auto_error", "");
       const pending = store.get("SELECT COUNT(*) AS count FROM pending_conflicts").count > 0;
       broadcast("backup-auto-completed", { ok: true, pending, error: null });
@@ -264,19 +265,25 @@ Object.assign(commands, activity.commands);
 Object.assign(commands, skillOperationCommands(library));
 
 // ── 桌面外壳与诊断：日志落盘、panic 记录、退出与重启 ──
+// 重启必须等 restart_app 的响应真正写完再退出：同步退出会让请求以 ECONNRESET 收尾，
+// 前端把一次成功的重启当成失败弹错误提示，页面也不会重连。
+let pendingRestart = false;
+function performRestart() {
+  if (process.env.SKILLS_MANAGER_ROLE === "electron-backend") { process.exit(0); return; }
+  // 浏览器模式没有主进程兜底，自己拉一份同样参数的新服务，再退出旧进程。
+  const child = spawn(process.execPath, process.argv.slice(1), { detached: true, stdio: "ignore", windowsHide: true });
+  child.unref();
+  server?.close();
+  store.close();
+  process.exit(0);
+}
+
 const diagnostics = attachDiagnostics(store);
 Object.assign(commands, shellCommands(store, {
   exit: () => { server?.close(); store.close(); process.exit(0); },
   // 调用记录来源目录同样允许"在文件夹中显示"，便于从记录定位原始日志。
   extraRoots: () => activity.store.sources().map(source => source.path),
-  restart: () => {
-    if (process.env.SKILLS_MANAGER_ROLE === "electron-backend") { process.exit(0); return; }
-    const child = spawn(process.execPath, process.argv.slice(1), { detached: true, stdio: "ignore", windowsHide: true });
-    child.unref();
-    server?.close();
-    store.close();
-    process.exit(0);
-  },
+  restart: () => { pendingRestart = true; },
 }));
 
 function localOrigin(request) {
@@ -286,10 +293,10 @@ function localOrigin(request) {
   catch { return false; }
 }
 
-function sendJson(response, status, payload) {
+function sendJson(response, status, payload, onFlushed) {
   const body = JSON.stringify(payload);
   response.writeHead(status, { "content-type": "application/json; charset=utf-8", "content-length": Buffer.byteLength(body) });
-  response.end(body);
+  response.end(body, onFlushed);
 }
 
 async function readBody(request, limit = 8 * 1024 * 1024) {
@@ -325,7 +332,10 @@ async function handleInvoke(request, response, commandName) {
     if (!entry) throw Object.assign(new Error(`该功能尚未接入本地服务（命令：${commandName}）`), { code: "NOT_IMPLEMENTED" });
     const data = await entry.call(args);
     if (entry.mutating) notifyChange();
-    sendJson(response, 200, { ok: true, data: data ?? null });
+    // 重启类命令（restart_app）在响应写完后再执行，避免前端收到连接被重置。
+    const restartAfterFlush = pendingRestart;
+    pendingRestart = false;
+    sendJson(response, 200, { ok: true, data: data ?? null }, restartAfterFlush ? performRestart : undefined);
   } catch (error) {
     sendJson(response, 200, { ok: false, code: error.code || "ERROR", message: redact(error.message || String(error)) });
   }
