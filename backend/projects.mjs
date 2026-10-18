@@ -127,19 +127,25 @@ function cleanupEmptyDirs(start, root) {
 function setEnabledState(skillsRoot, disabledRoot, relativePath, enabled) {
   const enabledPath = ensureInside(path.join(skillsRoot, relativePath), skillsRoot);
   const disabledPath = ensureInside(path.join(disabledRoot, relativePath), disabledRoot);
+  // 失效链接仍占用路径，不能把它当成空目录，也不能删除另一侧的独有内容。
+  const entryExists = target => {
+    try { fs.lstatSync(target); return true; }
+    catch (error) { if (error.code === "ENOENT") return false; throw error; }
+  };
+  const hasEnabled = entryExists(enabledPath), hasDisabled = entryExists(disabledPath);
+  if (hasEnabled && hasDisabled) {
+    throw Object.assign(new Error(`同名技能冲突：${relativePath} 同时存在于启用与停用目录，已保留两份内容，请先处理冲突`), { code: "CONFLICT", kind: "target_conflict" });
+  }
   if (enabled) {
-    if (fs.existsSync(enabledPath)) {
-      if (fs.existsSync(disabledPath)) removeEntry(disabledPath);
-      return;
-    }
-    if (!fs.existsSync(disabledPath)) throw new Error("在 skills-disabled 中未找到该技能目录");
+    if (hasEnabled) return;
+    if (!hasDisabled) throw new Error("在 skills-disabled 中未找到该技能目录");
     fs.mkdirSync(path.dirname(enabledPath), { recursive: true });
     fs.renameSync(disabledPath, enabledPath);
     cleanupEmptyDirs(path.dirname(disabledPath), disabledRoot);
     return;
   }
-  if (fs.existsSync(disabledPath)) return;
-  if (!fs.existsSync(enabledPath)) throw new Error("未找到该技能目录");
+  if (hasDisabled) return;
+  if (!hasEnabled) throw new Error("未找到该技能目录");
   fs.mkdirSync(path.dirname(disabledPath), { recursive: true });
   fs.renameSync(enabledPath, disabledPath);
   cleanupEmptyDirs(path.dirname(enabledPath), skillsRoot);
