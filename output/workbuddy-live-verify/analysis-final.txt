@@ -1,0 +1,1147 @@
+(node:49640) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "generatedAt": "2026-10-18T03:52:10.473Z",
+  "files": 500,
+  "parseErrors": 0,
+  "expectedTotal": 88,
+  "actualTotal": 88,
+  "expectedCounts": {
+    "invocation/manual/returned": 8,
+    "invocation/unknown/returned": 70,
+    "request/manual/pending": 8,
+    "invocation/automatic/returned": 2
+  },
+  "actualCounts": {
+    "invocation/unknown/returned": 70,
+    "request/manual/pending": 8,
+    "invocation/automatic/returned": 2,
+    "invocation/manual/returned": 8
+  },
+  "stale": [],
+  "missing": [],
+  "changes": [
+    {
+      "id": "a6fb21923f6455cb7cc87f315875ff32be506e662564fde1982f7899c12997f0",
+      "skillName": "ardot-design-core",
+      "sessionId": "ae6995011c70",
+      "sourceLine": "10",
+      "diff": {
+        "sessionId": {
+          "db": "21050cad45ed",
+          "expected": "ae6995011c70"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-b9dacb7599e5\\21050cad45ed.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-b9dacb7599e5\\ae6995011c70.jsonl"
+        }
+      }
+    },
+    {
+      "id": "4b4235f19074692c51f1e85b5d32f2d06519dfc25838d74829a63d70ca24eec9",
+      "skillName": "ardot-slides",
+      "sessionId": "ae6995011c70",
+      "sourceLine": "14",
+      "diff": {
+        "sessionId": {
+          "db": "21050cad45ed",
+          "expected": "ae6995011c70"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-b9dacb7599e5\\21050cad45ed.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-b9dacb7599e5\\ae6995011c70.jsonl"
+        }
+      }
+    },
+    {
+      "id": "f8a59eead43b8323bca113d0780251a681a87a379d0218ce33bc453823681de3",
+      "skillName": "ardot-design-core",
+      "sessionId": "ae6995011c70",
+      "sourceLine": "187",
+      "diff": {
+        "sessionId": {
+          "db": "21050cad45ed",
+          "expected": "ae6995011c70"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-b9dacb7599e5\\21050cad45ed.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-b9dacb7599e5\\ae6995011c70.jsonl"
+        }
+      }
+    },
+    {
+      "id": "6a0b41c2f1187c34f66823f0184c399b5b70ded777713e4ee21caa8cf13ef82c",
+      "skillName": "ardot-design-core",
+      "sessionId": "ae6995011c70",
+      "sourceLine": "191",
+      "diff": {
+        "sessionId": {
+          "db": "21050cad45ed",
+          "expected": "ae6995011c70"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-b9dacb7599e5\\21050cad45ed.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-b9dacb7599e5\\ae6995011c70.jsonl"
+        }
+      }
+    },
+    {
+      "id": "bca75157355e7b10aef8dee1fc9230c522c80ff498dddca0e06089989ccba0bd",
+      "skillName": "tencent-docs-routing",
+      "sessionId": "ae6995011c70",
+      "sourceLine": "210",
+      "diff": {
+        "sessionId": {
+          "db": "21050cad45ed",
+          "expected": "ae6995011c70"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-b9dacb7599e5\\21050cad45ed.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-b9dacb7599e5\\ae6995011c70.jsonl"
+        }
+      }
+    },
+    {
+      "id": "03730ddec4267c9c608d048fd3de58681c9ca0f425e3f5c5bfa6fb9f443220e4",
+      "skillName": "ardot-design-core",
+      "sessionId": "ae6995011c70",
+      "sourceLine": "206",
+      "diff": {
+        "sessionId": {
+          "db": "21050cad45ed",
+          "expected": "ae6995011c70"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-b9dacb7599e5\\21050cad45ed.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-b9dacb7599e5\\ae6995011c70.jsonl"
+        }
+      }
+    },
+    {
+      "id": "f3437097367881a5a649b0e4f09dcfbb60509e74712f45c2aed7e27030f13477",
+      "skillName": "ardot-design-core",
+      "sessionId": "ae6995011c70",
+      "sourceLine": "227",
+      "diff": {
+        "sessionId": {
+          "db": "21050cad45ed",
+          "expected": "ae6995011c70"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-b9dacb7599e5\\21050cad45ed.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-b9dacb7599e5\\ae6995011c70.jsonl"
+        }
+      }
+    },
+    {
+      "id": "cc4e61806fce9dc8130674199bdf453b4032eff715edaa1f4839c7086ec59cf2",
+      "skillName": "video-generator",
+      "sessionId": "3f81d147325b",
+      "sourceLine": "6",
+      "diff": {
+        "sessionId": {
+          "db": "8d7d5f6b8782",
+          "expected": "3f81d147325b"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-7dfa39517711\\8d7d5f6b8782.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-7dfa39517711\\3f81d147325b.jsonl"
+        }
+      }
+    },
+    {
+      "id": "77c5876fa04e01487e58924a10121c5d9305816e58e28eeacdc4624691237432",
+      "skillName": "skill-creator",
+      "sessionId": "3f81d147325b",
+      "sourceLine": "336",
+      "diff": {
+        "sessionId": {
+          "db": "8d7d5f6b8782",
+          "expected": "3f81d147325b"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-7dfa39517711\\8d7d5f6b8782.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-7dfa39517711\\3f81d147325b.jsonl"
+        }
+      }
+    },
+    {
+      "id": "16f85269827f0fbc54205a68a6fcee78e484f2e49fa0abc8c31f90bc4f16f9cb",
+      "skillName": "aihot",
+      "sessionId": "8201f658de96",
+      "sourceLine": "6",
+      "diff": {
+        "sessionId": {
+          "db": "8d5d00b19641",
+          "expected": "8201f658de96"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-4db5c1eb1939\\8d5d00b19641.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-4db5c1eb1939\\8201f658de96.jsonl"
+        }
+      }
+    },
+    {
+      "id": "e3063d8fc440b1b5d6553df062114e2008c9c8c48bf4a612851e9133156ebdf1",
+      "skillName": "browser-smoke-test",
+      "sessionId": "6d801405dfd6",
+      "sourceLine": "49",
+      "diff": {
+        "sessionId": {
+          "db": "45ed997712ec",
+          "expected": "6d801405dfd6"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-4eba905a7b61\\45ed997712ec.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-4eba905a7b61\\6d801405dfd6.jsonl"
+        }
+      }
+    },
+    {
+      "id": "d1ad1568685e4860aaa0c5c091a6515e50af835dd035dc10518b37067f75870d",
+      "skillName": "wechat-miniprogram",
+      "sessionId": "2a3922c10416",
+      "sourceLine": "6",
+      "diff": {
+        "sessionId": {
+          "db": "c544b4210bd3",
+          "expected": "2a3922c10416"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-9c05343da8e6\\c544b4210bd3.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-9c05343da8e6\\2a3922c10416.jsonl"
+        }
+      }
+    },
+    {
+      "id": "31fac99567a90a7fa535c3715f6743f876cf1bd4da6858d6f1fa7b343bed9902",
+      "skillName": "eli5",
+      "sessionId": "8f2660bfae6e",
+      "sourceLine": "5",
+      "diff": {
+        "sessionId": {
+          "db": "f534f3ff3686",
+          "expected": "8f2660bfae6e"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-79657b1e8126\\f534f3ff3686.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-79657b1e8126\\8f2660bfae6e.jsonl"
+        }
+      }
+    },
+    {
+      "id": "dd0373307675e1c11640d1ac76d5a5437854c6994d5a3dc38e1190cd7ded2ebb",
+      "skillName": "eli5",
+      "sessionId": "8f2660bfae6e",
+      "sourceLine": "15",
+      "diff": {
+        "sessionId": {
+          "db": "f534f3ff3686",
+          "expected": "8f2660bfae6e"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-79657b1e8126\\f534f3ff3686.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-79657b1e8126\\8f2660bfae6e.jsonl"
+        }
+      }
+    },
+    {
+      "id": "82b9de74d8e8943161380aaf490995b2301d8daf9522dcaf8ab8cc4bf6c69fbd",
+      "skillName": "miniprogram-development",
+      "sessionId": "65d587bc9e17",
+      "sourceLine": "5",
+      "diff": {
+        "sessionId": {
+          "db": "2b4433014db9",
+          "expected": "65d587bc9e17"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-075b37abafab\\2b4433014db9.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-075b37abafab\\65d587bc9e17.jsonl"
+        }
+      }
+    },
+    {
+      "id": "979d76a69104c2c8bfedb8f4100614577fc21548c1ccb050df49b9920717163a",
+      "skillName": "domain-learning-companion",
+      "sessionId": "499aa30fc4e0",
+      "sourceLine": "23",
+      "diff": {
+        "sessionId": {
+          "db": "9f188469f31c",
+          "expected": "499aa30fc4e0"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-3586ebda4f64\\9f188469f31c.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-3586ebda4f64\\499aa30fc4e0.jsonl"
+        }
+      }
+    },
+    {
+      "id": "c5062528bd4c2935ebf05567f1b379175fd36a6a22bb91a0383e7aa71f54038d",
+      "skillName": "pdfkit-py",
+      "sessionId": "aa338375db36",
+      "sourceLine": "17",
+      "diff": {
+        "sessionId": {
+          "db": "3d8a792a486e",
+          "expected": "aa338375db36"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-1ac942662913\\3d8a792a486e.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-1ac942662913\\aa338375db36.jsonl"
+        }
+      }
+    },
+    {
+      "id": "fd9a6b88bac8f3602d605d95c5b7e8bb2997d171a5e4f8d8e3c0bf54ef5d52cb",
+      "skillName": "project",
+      "sessionId": "fb3588e11664",
+      "sourceLine": "5",
+      "diff": {
+        "sessionId": {
+          "db": "6e056760439a",
+          "expected": "fb3588e11664"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-7417d58023cf\\6e056760439a.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-7417d58023cf\\fb3588e11664.jsonl"
+        }
+      }
+    },
+    {
+      "id": "be4cfcc1d975b1901ef17455ad6c6f5932a8d9ec1110bc2422af38a3befc459a",
+      "skillName": "资料库",
+      "sessionId": "d8240aa4af1c",
+      "sourceLine": "5",
+      "diff": {
+        "sessionId": {
+          "db": "784fc1c191d2",
+          "expected": "d8240aa4af1c"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-12dd79e77ddf\\784fc1c191d2.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-12dd79e77ddf\\d8240aa4af1c.jsonl"
+        }
+      }
+    },
+    {
+      "id": "77bbfc69097fd2791284af0f21ec83442367ebbc7f25a5cc8d84169fd00ced08",
+      "skillName": "github-api-push-when-git-blocked",
+      "sessionId": "80ecd9a6c37e",
+      "sourceLine": "30",
+      "diff": {
+        "sessionId": {
+          "db": "6fbe802ae0f7",
+          "expected": "80ecd9a6c37e"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Zcode_Workspace-ws-0b6b8a705675\\6fbe802ae0f7.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Zcode_Workspace-ws-0b6b8a705675\\80ecd9a6c37e.jsonl"
+        }
+      }
+    },
+    {
+      "id": "ee281e9ac70f89bbfbc002980c7d7249c06d6af09aaae8e49367b7b122799d98",
+      "skillName": "github-api-push-when-git-blocked",
+      "sessionId": "adfbbdbb5a44",
+      "sourceLine": "572",
+      "diff": {
+        "sessionId": {
+          "db": "2e3728d41678",
+          "expected": "adfbbdbb5a44"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Zcode_Workspace-ws-0b6b8a705675\\2e3728d41678.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Zcode_Workspace-ws-0b6b8a705675\\adfbbdbb5a44.jsonl"
+        }
+      }
+    },
+    {
+      "id": "8f9372dbe2a2dd9e1038f832ecfa58f7c56ad6f718e2c173ecde34bae0e02938",
+      "skillName": "report-driven-batch-fix",
+      "sessionId": "adfbbdbb5a44",
+      "sourceLine": "887",
+      "diff": {
+        "sessionId": {
+          "db": "2e3728d41678",
+          "expected": "adfbbdbb5a44"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Zcode_Workspace-ws-0b6b8a705675\\2e3728d41678.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Zcode_Workspace-ws-0b6b8a705675\\adfbbdbb5a44.jsonl"
+        }
+      }
+    },
+    {
+      "id": "a6907094cc48affbab935d4c23455b649882246446538c99ac734789b87dcc4f",
+      "skillName": "github-api-push-when-git-blocked",
+      "sessionId": "adfbbdbb5a44",
+      "sourceLine": "1536",
+      "diff": {
+        "sessionId": {
+          "db": "2e3728d41678",
+          "expected": "adfbbdbb5a44"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Zcode_Workspace-ws-0b6b8a705675\\2e3728d41678.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Zcode_Workspace-ws-0b6b8a705675\\adfbbdbb5a44.jsonl"
+        }
+      }
+    },
+    {
+      "id": "865a1af5bdd9b328c9e5f26e34e8713df20dd0b010e442717bf4036d558f0265",
+      "skillName": "windows-safe-delete-pack-workaround",
+      "sessionId": "adfbbdbb5a44",
+      "sourceLine": "1597",
+      "diff": {
+        "sessionId": {
+          "db": "2e3728d41678",
+          "expected": "adfbbdbb5a44"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Zcode_Workspace-ws-0b6b8a705675\\2e3728d41678.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Zcode_Workspace-ws-0b6b8a705675\\adfbbdbb5a44.jsonl"
+        }
+      }
+    },
+    {
+      "id": "7e1b29e7e4f207f14110b38b490357425fa2c9385bc5fbe6017b78295bba9692",
+      "skillName": "browser-smoke-test",
+      "sessionId": "0b012897f550",
+      "sourceLine": "95",
+      "diff": {
+        "sessionId": {
+          "db": "1953c9c1a2ff",
+          "expected": "0b012897f550"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Zcode_Workspace-ws-0b6b8a705675\\1953c9c1a2ff.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Zcode_Workspace-ws-0b6b8a705675\\0b012897f550.jsonl"
+        }
+      }
+    },
+    {
+      "id": "b6c0108f3f51dd87c13f84bc85d9d3bfb9cff0ec22f7da55ce94b8014fa9afbb",
+      "skillName": "report-driven-batch-fix",
+      "sessionId": "2fafbd07f116",
+      "sourceLine": "259",
+      "diff": {
+        "sessionId": {
+          "db": "d38d2518bc17",
+          "expected": "2fafbd07f116"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Zcode_Workspace-ws-0b6b8a705675\\d38d2518bc17.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Zcode_Workspace-ws-0b6b8a705675\\2fafbd07f116.jsonl"
+        }
+      }
+    },
+    {
+      "id": "e5b91a3a13113e7d10f1f74e1a0d5e2577f16d9d09dd8e7306ab06e7301de103",
+      "skillName": "browser-smoke-test",
+      "sessionId": "2fafbd07f116",
+      "sourceLine": "694",
+      "diff": {
+        "sessionId": {
+          "db": "d38d2518bc17",
+          "expected": "2fafbd07f116"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Zcode_Workspace-ws-0b6b8a705675\\d38d2518bc17.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Zcode_Workspace-ws-0b6b8a705675\\2fafbd07f116.jsonl"
+        }
+      }
+    },
+    {
+      "id": "056317cd882041efd476282e3c8141612c25c1ffbbb074e6706e1150592a2dcc",
+      "skillName": "windows-safe-delete-pack-workaround",
+      "sessionId": "2fafbd07f116",
+      "sourceLine": "1035",
+      "diff": {
+        "sessionId": {
+          "db": "d38d2518bc17",
+          "expected": "2fafbd07f116"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Zcode_Workspace-ws-0b6b8a705675\\d38d2518bc17.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Zcode_Workspace-ws-0b6b8a705675\\2fafbd07f116.jsonl"
+        }
+      }
+    },
+    {
+      "id": "3551e80e04f118b5fd66eae105c25432bb59e2983ce383c82683807c61a58dc2",
+      "skillName": "github-release-asset-update",
+      "sessionId": "2fafbd07f116",
+      "sourceLine": "1038",
+      "diff": {
+        "sessionId": {
+          "db": "d38d2518bc17",
+          "expected": "2fafbd07f116"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Zcode_Workspace-ws-0b6b8a705675\\d38d2518bc17.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Zcode_Workspace-ws-0b6b8a705675\\2fafbd07f116.jsonl"
+        }
+      }
+    },
+    {
+      "id": "46591967930312ad1e19de0eb089dde3cde81a9a31a832e34a4aa24d2b34bc4c",
+      "skillName": "github-api-push-when-git-blocked",
+      "sessionId": "2fafbd07f116",
+      "sourceLine": "1487",
+      "diff": {
+        "sessionId": {
+          "db": "d38d2518bc17",
+          "expected": "2fafbd07f116"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Zcode_Workspace-ws-0b6b8a705675\\d38d2518bc17.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Zcode_Workspace-ws-0b6b8a705675\\2fafbd07f116.jsonl"
+        }
+      }
+    },
+    {
+      "id": "20d02a1c8a936ceab7b2740aecc8c43ebcd7de599a9f9bcbbc1408326fafa34d",
+      "skillName": "browser-smoke-test",
+      "sessionId": "4e0bcfe174f8",
+      "sourceLine": "124",
+      "diff": {
+        "sessionId": {
+          "db": "97c617eefa75",
+          "expected": "4e0bcfe174f8"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Zcode_Workspace\\97c617eefa75.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Zcode_Workspace\\4e0bcfe174f8.jsonl"
+        }
+      }
+    },
+    {
+      "id": "40d428fcca82709599570fae12c485af1a5b71d1227a2ca4525fabb4562defbc",
+      "skillName": "design-pitfall-cn",
+      "sessionId": "5652b6d9750d",
+      "sourceLine": "993",
+      "diff": {
+        "sessionId": {
+          "db": "7de53859c146",
+          "expected": "5652b6d9750d"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-aa53ae8dda7f\\7de53859c146.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-aa53ae8dda7f\\5652b6d9750d.jsonl"
+        }
+      }
+    },
+    {
+      "id": "5f34787c7aa39e05f041ae5b2cdac0f2b2d9db5eb57e7aa8d5d17e5e3d600424",
+      "skillName": "github-api-push-when-git-blocked",
+      "sessionId": "5652b6d9750d",
+      "sourceLine": "1451",
+      "diff": {
+        "sessionId": {
+          "db": "7de53859c146",
+          "expected": "5652b6d9750d"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-aa53ae8dda7f\\7de53859c146.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-aa53ae8dda7f\\5652b6d9750d.jsonl"
+        }
+      }
+    },
+    {
+      "id": "af47957aed32cbbb72c1ab5b43e04c52fa82afc4ba800d6208120dbcd7462c1f",
+      "skillName": "tencent-docs-routing",
+      "sessionId": "a1c9970e35dc",
+      "sourceLine": "70",
+      "diff": {
+        "sessionId": {
+          "db": "c208fbc51f0c",
+          "expected": "a1c9970e35dc"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-737d949b8677\\c208fbc51f0c.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-737d949b8677\\a1c9970e35dc.jsonl"
+        }
+      }
+    },
+    {
+      "id": "494d740833c4ae456bae7119430a596acb5b3954ab927bb8cd738fae32f07b55",
+      "skillName": "tencent-local-office-edit",
+      "sessionId": "a1c9970e35dc",
+      "sourceLine": "73",
+      "diff": {
+        "sessionId": {
+          "db": "c208fbc51f0c",
+          "expected": "a1c9970e35dc"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-737d949b8677\\c208fbc51f0c.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-737d949b8677\\a1c9970e35dc.jsonl"
+        }
+      }
+    },
+    {
+      "id": "2b897079e6e921e4a089c3824bb27caa33899792e0157ba7a8d118f13a70b511",
+      "skillName": "github-api-push-when-git-blocked",
+      "sessionId": "6b6ee682206d",
+      "sourceLine": "408",
+      "diff": {
+        "sessionId": {
+          "db": "331c8e25d17b",
+          "expected": "6b6ee682206d"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\331c8e25d17b.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\6b6ee682206d.jsonl"
+        }
+      }
+    },
+    {
+      "id": "693fe88007ac1313356aede84691a1cded588e1b1d535a2bb4b3c82c10e55aa0",
+      "skillName": "github-api-push-when-git-blocked",
+      "sessionId": "66b58148d2d2",
+      "sourceLine": "77",
+      "diff": {
+        "sessionId": {
+          "db": "13ad5d54c27e",
+          "expected": "66b58148d2d2"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\13ad5d54c27e.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\66b58148d2d2.jsonl"
+        }
+      }
+    },
+    {
+      "id": "d2698646e14ca8bee1b8eb3d30f94e753ad9f7f6a364f3c5307f344570547f34",
+      "skillName": "css-state-probe-cdp",
+      "sessionId": "0c330382fb79",
+      "sourceLine": "207",
+      "diff": {
+        "sessionId": {
+          "db": "0fd5c16d48e4",
+          "expected": "0c330382fb79"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\0fd5c16d48e4.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\0c330382fb79.jsonl"
+        }
+      }
+    },
+    {
+      "id": "b667a9b26c9f0af2f3880a3d1771caf2b210ea7db1790cea38c8b96a8eba7156",
+      "skillName": "css-state-probe-cdp",
+      "sessionId": "b41e69bad057",
+      "sourceLine": "215",
+      "diff": {
+        "sessionId": {
+          "db": "3b84041cc431",
+          "expected": "b41e69bad057"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\3b84041cc431.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\b41e69bad057.jsonl"
+        }
+      }
+    },
+    {
+      "id": "1993851b576ed2fdef7ca851bd477b7346fe3a8b015a3a297f9684c396c7985a",
+      "skillName": "report-driven-batch-fix",
+      "sessionId": "ab393c94c009",
+      "sourceLine": "6",
+      "diff": {
+        "sessionId": {
+          "db": "e252908f89e6",
+          "expected": "ab393c94c009"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\e252908f89e6.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\ab393c94c009.jsonl"
+        }
+      }
+    },
+    {
+      "id": "acd244395ce1c294b085524e96a5f796d2a6526b18b2833542f051e6632128fa",
+      "skillName": "css-state-probe-cdp",
+      "sessionId": "ab393c94c009",
+      "sourceLine": "670",
+      "diff": {
+        "sessionId": {
+          "db": "e252908f89e6",
+          "expected": "ab393c94c009"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\e252908f89e6.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\ab393c94c009.jsonl"
+        }
+      }
+    },
+    {
+      "id": "d852fb940b3c595905276d088f7e965a01e67ab762fb093465fee85a3d4a9b29",
+      "skillName": "css-state-probe-cdp",
+      "sessionId": "04e3977becf1",
+      "sourceLine": "69",
+      "diff": {
+        "sessionId": {
+          "db": "4b0d9fb88506",
+          "expected": "04e3977becf1"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\4b0d9fb88506.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\04e3977becf1.jsonl"
+        }
+      }
+    },
+    {
+      "id": "767453f05aa64577ab007c12bee7fb7ede7de6380e3ed3dd0f35182ef651868c",
+      "skillName": "github-api-push-when-git-blocked",
+      "sessionId": "aedfc341bb75",
+      "sourceLine": "294",
+      "diff": {
+        "sessionId": {
+          "db": "67cde85b7a2e",
+          "expected": "aedfc341bb75"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\67cde85b7a2e.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\aedfc341bb75.jsonl"
+        }
+      }
+    },
+    {
+      "id": "08e3e91af6bb534a806e6977f5d513f8c4d65b2298afe2b62e3e06fce8c571ec",
+      "skillName": "github-api-push-when-git-blocked",
+      "sessionId": "175a8248a4d4",
+      "sourceLine": "204",
+      "diff": {
+        "sessionId": {
+          "db": "0211cb9580c9",
+          "expected": "175a8248a4d4"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\0211cb9580c9.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\175a8248a4d4.jsonl"
+        }
+      }
+    },
+    {
+      "id": "c3507905b2615c9d9a3b7ca0e0bd4dc5973f1b39df63cb89d351d339591d7447",
+      "skillName": "github-release-asset-update",
+      "sessionId": "175a8248a4d4",
+      "sourceLine": "207",
+      "diff": {
+        "sessionId": {
+          "db": "0211cb9580c9",
+          "expected": "175a8248a4d4"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\0211cb9580c9.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\175a8248a4d4.jsonl"
+        }
+      }
+    },
+    {
+      "id": "84c008100b40d2aecd1278de4fac50b2367a424d39c53f37a6a33ea812660317",
+      "skillName": "css-state-probe-cdp",
+      "sessionId": "c49322a82bcc",
+      "sourceLine": "219",
+      "diff": {
+        "sessionId": {
+          "db": "6e3836ff7223",
+          "expected": "c49322a82bcc"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\6e3836ff7223.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\c49322a82bcc.jsonl"
+        }
+      }
+    },
+    {
+      "id": "aa688b906a4d787e42a2680c85cd7da0fb6fc6dbfe2f313aa5ed11f79ac10b2b",
+      "skillName": "agent-browser",
+      "sessionId": "c49322a82bcc",
+      "sourceLine": "724",
+      "diff": {
+        "sessionId": {
+          "db": "6e3836ff7223",
+          "expected": "c49322a82bcc"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\6e3836ff7223.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\c49322a82bcc.jsonl"
+        }
+      }
+    },
+    {
+      "id": "12bb2845e9aadb60c4674475771dd97764a1fddbed8eba942cb322827b3e9ede",
+      "skillName": "github-api-push-when-git-blocked",
+      "sessionId": "c49322a82bcc",
+      "sourceLine": "922",
+      "diff": {
+        "sessionId": {
+          "db": "6e3836ff7223",
+          "expected": "c49322a82bcc"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\6e3836ff7223.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\c49322a82bcc.jsonl"
+        }
+      }
+    },
+    {
+      "id": "7725387b6e4c318e9d2fbef65e84ce911da610ac4475dd2e5cd72d022e25d965",
+      "skillName": "windows-safe-delete-pack-workaround",
+      "sessionId": "c49322a82bcc",
+      "sourceLine": "1026",
+      "diff": {
+        "sessionId": {
+          "db": "6e3836ff7223",
+          "expected": "c49322a82bcc"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\6e3836ff7223.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\c49322a82bcc.jsonl"
+        }
+      }
+    },
+    {
+      "id": "7b8f94f96e81f9f6ca719e949579f0e60df52ac1e37e44a41e669bc444d6556a",
+      "skillName": "github-release-asset-update",
+      "sessionId": "c49322a82bcc",
+      "sourceLine": "1121",
+      "diff": {
+        "sessionId": {
+          "db": "6e3836ff7223",
+          "expected": "c49322a82bcc"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\6e3836ff7223.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\c49322a82bcc.jsonl"
+        }
+      }
+    },
+    {
+      "id": "b789b8164343707413b79ae575923864204a963e7059e0f6a2ad5257319ab803",
+      "skillName": "css-state-probe-cdp",
+      "sessionId": "0a87f0607f6e",
+      "sourceLine": "381",
+      "diff": {
+        "sessionId": {
+          "db": "7d3ded48119a",
+          "expected": "0a87f0607f6e"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\7d3ded48119a.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\0a87f0607f6e.jsonl"
+        }
+      }
+    },
+    {
+      "id": "c899fc7aba15507f441bb347ca502d811dd3d1f13f9b01335b1713327837243d",
+      "skillName": "github-api-push-when-git-blocked",
+      "sessionId": "9dd29405d020",
+      "sourceLine": "58",
+      "diff": {
+        "sessionId": {
+          "db": "f4de5c1ded1f",
+          "expected": "9dd29405d020"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\f4de5c1ded1f.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\9dd29405d020.jsonl"
+        }
+      }
+    },
+    {
+      "id": "d751c0421d0de48deeb1803c5f188395310887a25e875eb4b95dfe867193f34f",
+      "skillName": "css-state-probe-cdp",
+      "sessionId": "9dd29405d020",
+      "sourceLine": "720",
+      "diff": {
+        "sessionId": {
+          "db": "f4de5c1ded1f",
+          "expected": "9dd29405d020"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\f4de5c1ded1f.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\9dd29405d020.jsonl"
+        }
+      }
+    },
+    {
+      "id": "a44a997cbe56c8a4ceb776909837da61f3500b04f382cdcdd631ef4a30421795",
+      "skillName": "report-driven-batch-fix",
+      "sessionId": "c9bdd28d515f",
+      "sourceLine": "171",
+      "diff": {
+        "sessionId": {
+          "db": "c4faa65ef4df",
+          "expected": "c9bdd28d515f"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\c4faa65ef4df.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\c9bdd28d515f.jsonl"
+        }
+      }
+    },
+    {
+      "id": "e7df7e6c91b7c0afdd2909cec52b59fa4b40992d1df640d73c6d97ef4a13057d",
+      "skillName": "css-state-probe-cdp",
+      "sessionId": "c9bdd28d515f",
+      "sourceLine": "389",
+      "diff": {
+        "sessionId": {
+          "db": "c4faa65ef4df",
+          "expected": "c9bdd28d515f"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\c4faa65ef4df.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-dc00200b03e4\\c9bdd28d515f.jsonl"
+        }
+      }
+    },
+    {
+      "id": "8d37cb6c344fde10a549c851ca0741a6cb47ff5f3e3b41d71b1c244f31aac3ce",
+      "skillName": "report-driven-batch-fix",
+      "sessionId": "0cb1cd624159",
+      "sourceLine": "193",
+      "diff": {
+        "sessionId": {
+          "db": "c8bb99431935",
+          "expected": "0cb1cd624159"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-c7a7a6d2f43b\\c8bb99431935.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-c7a7a6d2f43b\\0cb1cd624159.jsonl"
+        }
+      }
+    },
+    {
+      "id": "dfbad5a6d9e98e8839bda2c6988e0c25fbebf9a53896a4c6d7514e60bf3a077f",
+      "skillName": "windows-safe-delete-pack-workaround",
+      "sessionId": "0cb1cd624159",
+      "sourceLine": "263",
+      "diff": {
+        "sessionId": {
+          "db": "c8bb99431935",
+          "expected": "0cb1cd624159"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-c7a7a6d2f43b\\c8bb99431935.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-c7a7a6d2f43b\\0cb1cd624159.jsonl"
+        }
+      }
+    },
+    {
+      "id": "721e5e72eb5371cb34912c6ff1affd336800fb7ad9b0c7282b8a9ca1ba6f7542",
+      "skillName": "frontend-design",
+      "sessionId": "508f9767fd4a",
+      "sourceLine": "667",
+      "diff": {
+        "sessionId": {
+          "db": "3d27f903182b",
+          "expected": "508f9767fd4a"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-1384a773cd00\\3d27f903182b.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-1384a773cd00\\508f9767fd4a.jsonl"
+        }
+      }
+    },
+    {
+      "id": "3911a6146672556ede2a8c7a0a7e82b1aa8532e1bf66195b0f37e436cbb4f45f",
+      "skillName": "find-skills",
+      "sessionId": "a8d7255ede8d",
+      "sourceLine": "9",
+      "diff": {
+        "sessionId": {
+          "db": "2d7c5abed4c4",
+          "expected": "a8d7255ede8d"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-1384a773cd00\\2d7c5abed4c4.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-1384a773cd00\\a8d7255ede8d.jsonl"
+        }
+      }
+    },
+    {
+      "id": "8f92273bfe50e43bcdabaea46c24f34ac7f92b6f810902643add564d520b1751",
+      "skillName": "frontend-design",
+      "sessionId": "a8d7255ede8d",
+      "sourceLine": "135",
+      "diff": {
+        "sessionId": {
+          "db": "2d7c5abed4c4",
+          "expected": "a8d7255ede8d"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-1384a773cd00\\2d7c5abed4c4.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-1384a773cd00\\a8d7255ede8d.jsonl"
+        }
+      }
+    },
+    {
+      "id": "d8cd1493b8febb82956d7b35306efe63e330857bca77dc02e2cb84d5e02c2c7e",
+      "skillName": "css-state-probe-cdp",
+      "sessionId": "a8d7255ede8d",
+      "sourceLine": "150",
+      "diff": {
+        "sessionId": {
+          "db": "2d7c5abed4c4",
+          "expected": "a8d7255ede8d"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-1384a773cd00\\2d7c5abed4c4.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-1384a773cd00\\a8d7255ede8d.jsonl"
+        }
+      }
+    },
+    {
+      "id": "a06d62181f6b849c2239dba6b3a21ac568819d29160cf01fe0a449015a07f997",
+      "skillName": "browser-smoke-test",
+      "sessionId": "7043e59d1135",
+      "sourceLine": "152",
+      "diff": {
+        "sessionId": {
+          "db": "c1804a0ddeaa",
+          "expected": "7043e59d1135"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-fdf34d64984c\\c1804a0ddeaa.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-fdf34d64984c\\7043e59d1135.jsonl"
+        }
+      }
+    },
+    {
+      "id": "b7fc7acfcf8f1d5410320c01ef14cb87c62d4e306b14ed8ed783ef622a95610c",
+      "skillName": "github-api-push-when-git-blocked",
+      "sessionId": "f1fb6f2798ed",
+      "sourceLine": "151",
+      "diff": {
+        "sessionId": {
+          "db": "a94ed568391e",
+          "expected": "f1fb6f2798ed"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-56bb19b38f1e\\a94ed568391e.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-56bb19b38f1e\\f1fb6f2798ed.jsonl"
+        }
+      }
+    },
+    {
+      "id": "eb622db7390eaa5d1c64a50876da668d1c7f371f6efdd86ce34032eb577d3d39",
+      "skillName": "design-pitfall-cn",
+      "sessionId": "e866eace4404",
+      "sourceLine": "135",
+      "diff": {
+        "sessionId": {
+          "db": "26cfdbff841f",
+          "expected": "e866eace4404"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\d-Code-github.io\\26cfdbff841f.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\d-Code-github.io\\e866eace4404.jsonl"
+        }
+      }
+    },
+    {
+      "id": "d13d99a5d172e081625e92a1276cb55d2a31221015742002f304927a3ee1eb94",
+      "skillName": "design-pitfall-cn",
+      "sessionId": "35af97340f97",
+      "sourceLine": "33",
+      "diff": {
+        "sessionId": {
+          "db": "f4a4edea9755",
+          "expected": "35af97340f97"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\d-Code-github.io\\f4a4edea9755.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\d-Code-github.io\\35af97340f97.jsonl"
+        }
+      }
+    },
+    {
+      "id": "86b84da190a5541e496305f89b6560259901984d39d4c5070c2ef0ddf6d70fde",
+      "skillName": "github-api-push-when-git-blocked",
+      "sessionId": "2ec2353dfef0",
+      "sourceLine": "390",
+      "diff": {
+        "sessionId": {
+          "db": "1cee84261b22",
+          "expected": "2ec2353dfef0"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-9401205fd3b0\\1cee84261b22.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-9401205fd3b0\\2ec2353dfef0.jsonl"
+        }
+      }
+    },
+    {
+      "id": "a2a5b565b39badb2266605ed71500212f31c5e9c0e6f2afa8ccb85d0fc456400",
+      "skillName": "vue-ui-audit-headless",
+      "sessionId": "c89fb5a0a059",
+      "sourceLine": "1053",
+      "diff": {
+        "sessionId": {
+          "db": "67aec8c42746",
+          "expected": "c89fb5a0a059"
+        },
+        "sourcePath": {
+          "db": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-41f07dca217b\\67aec8c42746.jsonl",
+          "expected": "C:\\Users\\<user>\\.workbuddy\\projects\\ws-41f07dca217b\\c89fb5a0a059.jsonl"
+        }
+      }
+    }
+  ],
+  "expectedRequests": [
+    {
+      "skillName": "ardot-design-core",
+      "sessionId": "ae6995011c70",
+      "sourceLine": "187",
+      "project": "ws-96a9a697130a"
+    },
+    {
+      "skillName": "ardot-design-core",
+      "sessionId": "ae6995011c70",
+      "sourceLine": "191",
+      "project": "ws-96a9a697130a"
+    },
+    {
+      "skillName": "ardot-design-core",
+      "sessionId": "ae6995011c70",
+      "sourceLine": "206",
+      "project": "ws-96a9a697130a"
+    },
+    {
+      "skillName": "ardot-design-core",
+      "sessionId": "ae6995011c70",
+      "sourceLine": "227",
+      "project": "ws-96a9a697130a"
+    },
+    {
+      "skillName": "eli5",
+      "sessionId": "8f2660bfae6e",
+      "sourceLine": "15",
+      "project": "ws-772bcebc9e78"
+    },
+    {
+      "skillName": "ardot-design-core",
+      "sessionId": "8dfeaa4bdbcd",
+      "sourceLine": "1",
+      "project": "ws-e4b58f79965b"
+    },
+    {
+      "skillName": "eli5",
+      "sessionId": "49dce71d62f0",
+      "sourceLine": "3",
+      "project": "ws-07ab021f4997"
+    },
+    {
+      "skillName": "eli5",
+      "sessionId": "09c70b0a6874",
+      "sourceLine": "3",
+      "project": "ws-53aeb46a3e0f"
+    }
+  ]
+}

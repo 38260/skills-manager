@@ -1,0 +1,383 @@
+{
+  "generatedAt": "2026-10-18T06:21:01.945Z",
+  "parserVersion": 8,
+  "tools": [
+    {
+      "tool": "codex",
+      "files": 90,
+      "parseErrors": 0,
+      "expected": 81,
+      "actual": 110,
+      "expectedCounts": {
+        "document/unknown/returned": 40,
+        "request/unknown/failed": 20,
+        "request/unknown/unknown": 21
+      },
+      "actualCounts": {
+        "request/unknown/failed": 23,
+        "document/unknown/returned": 59,
+        "request/unknown/unknown": 28
+      },
+      "stale": [
+        {
+          "skillName": "product-research",
+          "kind": "request",
+          "trigger": "unknown",
+          "status": "failed",
+          "sessionId": "657debd9f269",
+          "sourceLine": "17",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "ponytail",
+          "kind": "request",
+          "trigger": "unknown",
+          "status": "failed",
+          "sessionId": "657debd9f269",
+          "sourceLine": "17",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "playwright",
+          "kind": "request",
+          "trigger": "unknown",
+          "status": "unknown",
+          "sessionId": "5fc862a355e4",
+          "sourceLine": "33",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "design-taste-frontend",
+          "kind": "request",
+          "trigger": "unknown",
+          "status": "unknown",
+          "sessionId": "5fc862a355e4",
+          "sourceLine": "25",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "playwright",
+          "kind": "request",
+          "trigger": "unknown",
+          "status": "unknown",
+          "sessionId": "5fc862a355e4",
+          "sourceLine": "25",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "ponytail",
+          "kind": "request",
+          "trigger": "unknown",
+          "status": "unknown",
+          "sessionId": "5fc862a355e4",
+          "sourceLine": "17",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "ponytail",
+          "kind": "request",
+          "trigger": "unknown",
+          "status": "failed",
+          "sessionId": "fbf8398b1b2a",
+          "sourceLine": "17",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "computer-use",
+          "kind": "document",
+          "trigger": "unknown",
+          "status": "returned",
+          "sessionId": "4c1b765dc9ed",
+          "sourceLine": "866",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "ponytail",
+          "kind": "document",
+          "trigger": "unknown",
+          "status": "returned",
+          "sessionId": "6ee3ff63c47d",
+          "sourceLine": "37",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "skills",
+          "kind": "request",
+          "trigger": "unknown",
+          "status": "unknown",
+          "sessionId": "6ee3ff63c47d",
+          "sourceLine": "19",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "ponytail",
+          "kind": "request",
+          "trigger": "unknown",
+          "status": "unknown",
+          "sessionId": "a2f5062ee5de",
+          "sourceLine": "134",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "plugin-management",
+          "kind": "request",
+          "trigger": "unknown",
+          "status": "unknown",
+          "sessionId": "a2f5062ee5de",
+          "sourceLine": "18",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "playwright",
+          "kind": "document",
+          "trigger": "unknown",
+          "status": "returned",
+          "sessionId": "605bebda937b",
+          "sourceLine": "31",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "design-taste-frontend",
+          "kind": "document",
+          "trigger": "unknown",
+          "status": "returned",
+          "sessionId": "605bebda937b",
+          "sourceLine": "16",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "codex-with-chatgpt",
+          "kind": "document",
+          "trigger": "unknown",
+          "status": "returned",
+          "sessionId": "67ab88bc2bea",
+          "sourceLine": "4203",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "codex-with-chatgpt",
+          "kind": "document",
+          "trigger": "unknown",
+          "status": "returned",
+          "sessionId": "67ab88bc2bea",
+          "sourceLine": "377",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "codex-with-chatgpt",
+          "kind": "document",
+          "trigger": "unknown",
+          "status": "returned",
+          "sessionId": "67ab88bc2bea",
+          "sourceLine": "39",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "codex-bridge-chatgpt",
+          "kind": "document",
+          "trigger": "unknown",
+          "status": "returned",
+          "sessionId": "817585882e4c",
+          "sourceLine": "13",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "computer-use",
+          "kind": "document",
+          "trigger": "unknown",
+          "status": "returned",
+          "sessionId": "a2ed91ba7895",
+          "sourceLine": "778",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "computer-use",
+          "kind": "document",
+          "trigger": "unknown",
+          "status": "returned",
+          "sessionId": "a2ed91ba7895",
+          "sourceLine": "637",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "claude-vision-skill",
+          "kind": "document",
+          "trigger": "unknown",
+          "status": "returned",
+          "sessionId": "a2ed91ba7895",
+          "sourceLine": "14",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "skill-installer",
+          "kind": "document",
+          "trigger": "unknown",
+          "status": "returned",
+          "sessionId": "4f63381cfa3c",
+          "sourceLine": "32",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "presentations",
+          "kind": "document",
+          "trigger": "unknown",
+          "status": "returned",
+          "sessionId": "8f674439cdae",
+          "sourceLine": "34",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "presentations",
+          "kind": "document",
+          "trigger": "unknown",
+          "status": "returned",
+          "sessionId": "a8898172ac07",
+          "sourceLine": "23",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "documents",
+          "kind": "document",
+          "trigger": "unknown",
+          "status": "returned",
+          "sessionId": "a8898172ac07",
+          "sourceLine": "24",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "documents",
+          "kind": "document",
+          "trigger": "unknown",
+          "status": "returned",
+          "sessionId": "9d90689c67c0",
+          "sourceLine": "29",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "pdf-converter",
+          "kind": "document",
+          "trigger": "unknown",
+          "status": "returned",
+          "sessionId": "a4ebc61bc098",
+          "sourceLine": "23",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "presentations",
+          "kind": "document",
+          "trigger": "unknown",
+          "status": "returned",
+          "sessionId": "a4ebc61bc098",
+          "sourceLine": "15",
+          "sourceMissing": true
+        },
+        {
+          "skillName": "figma",
+          "kind": "document",
+          "trigger": "unknown",
+          "status": "returned",
+          "sessionId": "881dd5abefc1",
+          "sourceLine": "13",
+          "sourceMissing": true
+        }
+      ],
+      "missing": []
+    },
+    {
+      "tool": "dsh",
+      "files": 38,
+      "parseErrors": 0,
+      "expected": 14,
+      "actual": 14,
+      "expectedCounts": {
+        "invocation/unknown/returned": 7,
+        "invocation/automatic/returned": 2,
+        "invocation/manual/returned": 2,
+        "request/manual/pending": 3
+      },
+      "actualCounts": {
+        "invocation/automatic/returned": 2,
+        "request/manual/pending": 3,
+        "invocation/manual/returned": 2,
+        "invocation/unknown/returned": 7
+      },
+      "stale": [],
+      "missing": []
+    },
+    {
+      "tool": "zcode",
+      "files": 1,
+      "parseErrors": 0,
+      "expected": 12,
+      "actual": 12,
+      "expectedCounts": {
+        "invocation/unknown/returned": 11,
+        "request/manual/pending": 1
+      },
+      "actualCounts": {
+        "invocation/unknown/returned": 11,
+        "request/manual/pending": 1
+      },
+      "stale": [],
+      "missing": []
+    },
+    {
+      "tool": "qoder",
+      "files": 68,
+      "parseErrors": 0,
+      "expected": 9,
+      "actual": 9,
+      "expectedCounts": {
+        "invocation/unknown/returned": 6,
+        "invocation/manual/returned": 1,
+        "invocation/automatic/returned": 1,
+        "request/manual/pending": 1
+      },
+      "actualCounts": {
+        "invocation/unknown/returned": 6,
+        "request/manual/pending": 1,
+        "invocation/automatic/returned": 1,
+        "invocation/manual/returned": 1
+      },
+      "stale": [],
+      "missing": []
+    },
+    {
+      "tool": "workbuddy",
+      "files": 501,
+      "parseErrors": 0,
+      "expected": 89,
+      "actual": 89,
+      "expectedCounts": {
+        "invocation/manual/returned": 9,
+        "invocation/unknown/returned": 70,
+        "request/manual/pending": 8,
+        "invocation/automatic/returned": 2
+      },
+      "actualCounts": {
+        "invocation/manual/returned": 9,
+        "invocation/unknown/returned": 70,
+        "request/manual/pending": 8,
+        "invocation/automatic/returned": 2
+      },
+      "stale": [],
+      "missing": []
+    },
+    {
+      "tool": "workbuddy_ai",
+      "files": 94,
+      "parseErrors": 0,
+      "expected": 22,
+      "actual": 22,
+      "expectedCounts": {
+        "invocation/unknown/returned": 22
+      },
+      "actualCounts": {
+        "invocation/unknown/returned": 22
+      },
+      "stale": [],
+      "missing": []
+    }
+  ],
+  "suspiciousNames": []
+}

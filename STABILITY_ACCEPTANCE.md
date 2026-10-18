@@ -92,7 +92,7 @@
 - `stability-cancel-still-running.png`：取消之后仍保留克隆进度和取消按钮。
 - `stability-cancel-after-release.png`：断开测试连接后才恢复安装入口。
 
-目录：`C:/Users/luckyzyb/.codex/visualizations/2026/10/17/01a14c40-0685-7123-a487-cc31a7148cf0/`。
+目录：`C:/Users/<user>/.codex/visualizations/2026/10/17/e22bfc70121c/`。
 
 ## 工作区与交付
 
@@ -122,3 +122,20 @@
 本次修复截图位于前述可视化目录：`stability-fixed-cancel.png`、`stability-fixed-snapshot-preview.png`、`stability-fixed-snapshot-cleaned.png`。截图仅包含本轮隔离数据。
 
 工作区原有修改逐一核对保留；只暂存本次增量，未将原有 `library` 来源预览、`server` 启动检查等改动纳入提交。本轮隔离服务、数据、源码/构建副本与浏览器标签页已清理。
+
+## 远端 CI 首次实跑（2026-10-18 09:35）
+
+此前「远端 CI 未实跑」的限制已消除。排查发现：本仓库是 **fork**，Actions 在
+fork 上默认不触发，仓库 `actions/runs` 总数为 0，与代码无关。
+
+处理与结果：
+
+1. `.github/workflows/frontend.yml` 增加 `workflow_dispatch`，便于在 Actions
+   页面手动触发（提交 `fa8705e`）。
+2. 通过 API 启用工作流后手动派发一次（run [39086550358](https://github.com/38260/skills-manager/actions/runs/39086550358)）：
+   - **Lint and build**（ubuntu-latest）：成功 —— 覆盖新增的 backend/electron/tests
+     JS lint 与 `tsc -b` 构建。
+   - **Backend and UI tests**（windows-latest）：成功 —— `test:backend`、
+     `test:ui`、`test:electron` 三个脚本在干净 runner 上全部通过。
+
+未执行项不变：Electron 便携版打包验收、真实客户端日志链路。

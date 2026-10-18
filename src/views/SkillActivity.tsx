@@ -13,9 +13,10 @@ import { useDialogFocus } from "../hooks/useDialogFocus";
 
 const field = "min-w-0 rounded-lg border border-border-subtle bg-surface px-3 py-2 text-[13px] text-primary outline-none focus:border-accent focus:ring-1 focus:ring-accent";
 const button = "inline-flex items-center justify-center gap-2 rounded-lg border border-border-subtle px-3 py-2 text-[13px] text-secondary outline-none hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-40";
-// 每页条数：列表是表格形态，一条一行；50 行会把页面撑到三千多像素，
-// 窄窗口下详情栏被顶到很远的地方。20 行既够扫、又能让详情与列表同屏。
-const pageSize = 20;
+// 每页条数：列表是表格形态，一条一行。50 行会把页面撑到三千多像素、详情被甩到最底下；
+// 20 行又太短，扫两页才够看一轮来源。30 行配合单行时间（行高约 56px）约 1700px，
+// 详情栏已吸顶，滚动时始终同屏。
+const pageSize = 30;
 // 扫描进度通知的刷新节流：后端约 250ms 推一次，节流到这里不会漏掉最终结果（另有 5s 兜底定时）。
 const ACTIVITY_REFRESH_THROTTLE_MS = 1200;
 const initialFilters = { tool: "", kind: "", trigger: "", status: "", skillName: "", project: "", from: "", to: "" };

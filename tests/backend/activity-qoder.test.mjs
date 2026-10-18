@@ -23,3 +23,17 @@ test("Qoder 关联 slash 选择和工具结果，重复事件不增次，累计�
   parseQoder({ type: "user", line: 50, message: { content: "<command-name>/help</command-name>" } }, ctx);ctx.finish();
   assert.equal(events.size, 3);
 });
+
+test("Qoder 压缩摘要里的历史指令不作为用户点名", () => {
+  const events = new Map();
+  const ctx = new ParseContext("qoder", "/logs/b.jsonl", { put: e => events.set(e.id, { ...e }), removeRequest: id => events.delete(id) });
+  const rows = [
+    // 真实形态：客户端在压缩边界注入一条用户消息，整段是历史会话摘要，里面引用过点名句式和省略号。
+    { type: "user", uuid: "sum", isCompactSummary: true, isVisibleInTranscriptOnly: true,
+      message: { role: "user", content: [{ type: "text", text: "This session is being continued from a previous conversation.\nSummary:\n   - 请使用 eli5 技能来回答：什么是数据库索引？\n   - 用户原话：... \n   - 调用 ... 技能完成" }] } },
+    { type: "user", uuid: "real", message: { role: "user", content: [{ type: "text", text: "继续" }] } },
+  ];
+  rows.forEach((r, i) => parseQoder({ sessionId: "s", timestamp: 1000, line: i + 1, ...r }, ctx));
+  ctx.finish();
+  assert.equal(events.size, 0, "压缩摘要与「继续」都不该产生请求");
+});

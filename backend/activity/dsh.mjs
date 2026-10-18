@@ -15,6 +15,13 @@ export function parseDsh(row, ctx) {
   if (row.type === "user/message" && data.source?.kind === "user") {
     ctx.user(data.content, { ...row, id: data.id });
   }
+  // 从技能菜单点选技能时 DSH 不调用 skill 工具，而是把技能正文注入成一条消息；
+  // source.name 即被点选的技能，属于用户的显式选择，注入完成即视为已返回。
+  if (row.type === "user/message" && data.source?.kind === "skill-invocation") {
+    const name = data.source.name;
+    ctx.user("", { ...row, id: data.id }, [{ name, requestable: false }]);
+    ctx.call({ id: data.id, name, status: "returned", row });
+  }
   if (row.type === "tool/call" && data.name === "skill") {
     const args = object(data.arguments);
     ctx.call({ id: data.callId, name: args.name, row });
