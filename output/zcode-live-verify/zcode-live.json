@@ -1,0 +1,152 @@
+{
+  "generatedAt": "2026-10-18T08:19:19.744Z",
+  "tool": "zcode",
+  "parserVersion": 9,
+  "client": "ZCode 3.15.3 桌面端",
+  "model": "新供应商/LongCat-2.5-Preview (https://api.longcat.chat/openai/v1)",
+  "note": "用户主目录已脱敏为 <user>；会话 ID 截断为前 8 位",
+  "cases": [
+    {
+      "key": "explicit-chip",
+      "note": "GUI / 菜单选 $animation-vocabulary 芯片",
+      "sessionId": "sess_bcc8d62c",
+      "workspace": "D:\\AIWorkSpace\\test",
+      "userText": "[$animation-vocabulary](C:\\\\Users\\\\<user>\\\\.agents\\\\skills\\\\animation-vocabulary\\\\SKILL.md)  popover 打开时那种弹一下再落定的效果叫什么？只回答术语和一句解释。",
+      "skillToolCalls": [
+        {
+          "input": {
+            "skill": "animation-vocabulary",
+            "args": "popover 打开时那种弹一下再落定的效果叫什么？只回答术语和一句解释。"
+          },
+          "status": "completed"
+        }
+      ],
+      "managerEvents": [
+        {
+          "skillName": "animation-vocabulary",
+          "kind": "invocation",
+          "trigger": "manual",
+          "status": "returned",
+          "evidence": "user_selection"
+        }
+      ]
+    },
+    {
+      "key": "auto-choice",
+      "note": "要求自动选择",
+      "sessionId": "sess_8a81acee",
+      "workspace": "D:\\AIWorkSpace\\test",
+      "userText": "请自动选择技能，帮我判断：鼠标悬停时卡片轻微上浮、松手落回的效果该叫什么？只回答术语和一句解释。",
+      "skillToolCalls": [
+        {
+          "input": {
+            "skill": "animation-vocabulary",
+            "args": "鼠标悬停时卡片轻微上浮、松手落回的效果"
+          },
+          "status": "completed"
+        }
+      ],
+      "managerEvents": [
+        {
+          "skillName": "animation-vocabulary",
+          "kind": "invocation",
+          "trigger": "automatic",
+          "status": "returned",
+          "evidence": "user_auto_choice"
+        }
+      ]
+    },
+    {
+      "key": "named-not-executed",
+      "note": "点名但要求不执行",
+      "sessionId": "sess_a0122777",
+      "workspace": "D:\\AIWorkSpace\\test",
+      "userText": "请使用 animation-vocabulary 技能回答：什么是 Rubber-banding？但这次只说明你会怎么用这个技能，不要实际调用任何工具或技能。",
+      "skillToolCalls": [],
+      "managerEvents": [
+        {
+          "skillName": "animation-vocabulary",
+          "kind": "request",
+          "trigger": "manual",
+          "status": "pending",
+          "evidence": "user_selection"
+        }
+      ]
+    },
+    {
+      "key": "mention-negation",
+      "note": "仅询问技能描述",
+      "sessionId": "sess_52d08ba3",
+      "workspace": "D:\\AIWorkSpace\\test",
+      "userText": "animation-vocabulary 这个技能是做什么的？只回答它的描述，不要调用任何技能。",
+      "skillToolCalls": [],
+      "managerEvents": []
+    },
+    {
+      "key": "implicit",
+      "note": "普通术语问题，未点名",
+      "sessionId": "sess_e24ebca1",
+      "workspace": "D:\\AIWorkSpace\\test",
+      "userText": "我在写设计 prompt，想描述「列表滚到头还能继续拉、松手又弹回来」那种手感，专业术语叫什么？只回答术语和一句解释。",
+      "skillToolCalls": [],
+      "managerEvents": []
+    }
+  ],
+  "counts": [
+    {
+      "kind": "invocation",
+      "trigger": "unknown",
+      "status": "returned",
+      "n": 10
+    },
+    {
+      "kind": "request",
+      "trigger": "manual",
+      "status": "pending",
+      "n": 3
+    },
+    {
+      "kind": "invocation",
+      "trigger": "automatic",
+      "status": "returned",
+      "n": 2
+    },
+    {
+      "kind": "invocation",
+      "trigger": "manual",
+      "status": "returned",
+      "n": 2
+    }
+  ],
+  "total": 17,
+  "usageAnimationVocabulary": {
+    "n": 3,
+    "last": 1792310180978
+  },
+  "otherTools": [
+    {
+      "tool": "codex",
+      "n": 113
+    },
+    {
+      "tool": "dsh",
+      "n": 14
+    },
+    {
+      "tool": "qoder",
+      "n": 9
+    },
+    {
+      "tool": "workbuddy",
+      "n": 89
+    },
+    {
+      "tool": "workbuddy_ai",
+      "n": 22
+    },
+    {
+      "tool": "zcode",
+      "n": 17
+    }
+  ]
+}
