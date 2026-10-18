@@ -20,15 +20,13 @@ export class ParseContext {
     this.tool = tool; this.filename = filename; this.sink = sink;
     this.sessionId = path.basename(filename); this.project = null;
     this.calls = new Map(); this.selections = new Map(); this.autoChoice = false;
-    // 这一轮是否已经出现过用户消息：用来区分「Agent 自己挑的」和「日志里根本没有用户上下文」。
-    // 两者都不是「用户点名」，但前者是自动触发（可解释），后者才算来源未知。
-    this.sawUserTurn = false;
     this.recognized = 0; this.errors = 0;
   }
   user(content, row, selections = []) {
     this.flushRequests();
-    this.sawUserTurn = true;
-    const text = userInstructionText(contentText(content));
+    // 示例代码与引用不作为当前指令；不保存原始消息。
+    const text = userInstructionText(contentText(content)).replace(/```[\s\S]*?(?:```|$)|~~~[\s\S]*?(?:~~~|$)/g, "")
+      .replace(/^\s*>.*$/gm, "");
     // 只接受明确的「用户点名」写法：
     //   Codex / DSH 的 `$技能名`（必须出现在消息开头，避免和 shell 变量混淆）
     //   通用的 `/skill 技能名`
@@ -37,11 +35,19 @@ export class ParseContext {
       ?? /^\s*\/skill\s+([\w.:-]+)(?=\s|$)/u.exec(text)
       ?? /@skill:([\w.:-]+)/u.exec(text);
     if (explicit) selections = [...selections, { name: explicit[1] }];
+    // 自然语言只接受正向使用指令和明确的技能名，普通提及、否定与提问不作点名证据。
+    for (const pattern of [
+      /(?:^|\n)\s*(?:(?:请(?:你|帮我)?|麻烦(?:你)?|帮我)\s*)?(?:使用|调用|启用|用)\s*(?:技能\s*[:：]?\s*[`"'“‘]?([\w.:-]+)|[`"'“‘]?([\w.:-]+)[`"'”’]?\s*(?:技能|skill\b))/gi,
+      /(?:^|\n)\s*(?:please\s+)?(?:use|invoke|call)\s+(?:the\s+)?(?:skill\s+[`"']?([\w.:-]+)|[`"']?([\w.:-]+)[`"']?\s+skill\b)/gi,
+    ]) {
+      for (const match of text.matchAll(pattern)) selections = [...selections, { name: match[1] || match[2] }];
+    }
     const command = /<command-name>\/([\w.:-]+)<\/command-name>/u.exec(text);
     if (command) selections = [...selections, { name: command[1], requestable: false }];
     this.autoChoice = /^(?:请)?(?:自行|自动)选择(?:合适的)?技能|^(?:please\s+)?(?:automatically choose|choose appropriate) skills\b/i.test(text.trim());
     for (const selection of selections) if (typeof selection.name === "string" && selection.name.trim()) {
       const name = selection.name.trim();
+      if (this.selections.has(nameKey(name))) continue;
       const identity = row.id || row.uuid || `${this.sessionId}:${row.timestamp ?? row.time}:${row.line}`;
       const request = this.event({ id: `request:${identity}`, name, skillPath: selection.path, kind: "request", status: "pending", row });
       request.trigger = "manual"; request.evidence = "user_selection";
@@ -54,11 +60,10 @@ export class ParseContext {
   }
   event({ id, name, skillPath, kind = "invocation", status = "pending", row }) {
     const selection = this.selections.get(nameKey(name));
-    // 判定顺序：用户点名 → 手动；用户明确让它自己挑、或这一轮有用户消息但没点名这个技能 →
-    // 自动（Agent 自己选的）；日志里连用户消息都没有（归档/片段）才算来源未知。
-    const trigger = selection ? "manual" : this.autoChoice || this.sawUserTurn ? "automatic" : "unknown";
+    // 有用户消息不等于已确认 Agent 自主选择；缺少明确点名或自动选择指令时保留未知。
+    const trigger = selection ? "manual" : this.autoChoice ? "automatic" : "unknown";
     const evidence = selection ? "user_selection" : this.autoChoice ? "user_auto_choice"
-      : this.sawUserTurn ? "agent_choice" : kind === "invocation" ? "skill_call" : "document_read";
+      : kind === "invocation" ? "skill_call" : "document_read";
     return {
       id: eventId(this.tool, id || `${this.filename}:${row.line}`, name), tool: this.tool,
       skillName: name, skillPath: skillPath ?? null, timestamp: time(row.timestamp ?? row.time),

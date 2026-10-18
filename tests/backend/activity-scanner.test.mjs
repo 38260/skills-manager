@@ -19,6 +19,31 @@ function fixture(t) {
 const line = value => JSON.stringify(value) + "\n";
 const call = id => ({ type: "function_call", sessionId: "s", timestamp: 1000, callId: id, name: "Skill", arguments: '{"skill":"design"}' });
 
+test("判定修复后未变化日志重新解析，旧推断修正而记录数与明确证据保持", async t => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "activity-trigger-rescan-"));
+  const usage = path.join(directory, "usage"), logs = path.join(directory, "logs");
+  fs.mkdirSync(logs);
+  let store = new UsageStore(usage);
+  t.after(() => { store.close(); fs.rmSync(directory, { recursive: true, force: true }); });
+  store.initialize(defaultSources(directory, {}));
+  for (const source of store.sources()) store.configure(source.tool, source.path, false);
+  store.configure("workbuddy", logs, true);
+  fs.writeFileSync(path.join(logs, "demo.jsonl"), [
+    { type: "message", role: "user", content: "请使用 design 技能处理界面" }, call("c1"),
+    { type: "message", role: "user", content: "处理界面" }, call("c2"),
+    { type: "message", role: "user", content: "请自动选择合适的技能完成任务" }, call("c3"),
+  ].map(line).join(""));
+  await scanSources(store);
+  const ids = store.query().items.map(event => event.id).sort();
+  store.db.exec("UPDATE events SET trigger='automatic',evidence='agent_choice' WHERE evidence<>'user_auto_choice'");
+  store.db.prepare("UPDATE scanned_files SET parser_version=?").run(PARSER_VERSION - 1);
+  store.close(); store = new UsageStore(usage);
+  assert.equal((await scanSources(store)).parsed, 1, "内容未改变的旧版本缓存必须重扫");
+  assert.deepEqual(store.query().items.map(event => event.id).sort(), ids);
+  assert.deepEqual(store.query().counts, { invocation: 3, document: 0, request: 0, manual: 1, automatic: 1, unknown: 1 });
+  assert.equal((await scanSources(store)).parsed, 0, "同版本重复扫描保持幂等");
+});
+
 test("扫描去重、变化文件刷新、半行恢复、重写与目录联接，来源丢失保留历史", async t => {
   const { directory, store } = fixture(t), logs = path.join(directory, "logs"), linked = path.join(directory, "linked");
   fs.mkdirSync(logs); fs.symlinkSync(logs, linked, "junction");

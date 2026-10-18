@@ -20,7 +20,7 @@ test("WorkBuddy 只统计顶层调用，关联重复文件与结果，触发方�
     rows.forEach((r, i) => parseWorkbuddy({ sessionId: "s", timestamp: 1000, line: i + 1, ...r }, ctx)); ctx.finish();
   }
   assert.equal(events.size, 3);
-  assert.deepEqual([...events.values()].map(e => [e.trigger, e.status]), [["manual", "returned"], ["automatic", "failed"], ["automatic", "pending"]]);
+  assert.deepEqual([...events.values()].map(e => [e.trigger, e.status]), [["manual", "returned"], ["automatic", "failed"], ["unknown", "pending"]]);
   assert.ok(!JSON.stringify([...events.values()]).includes("private"));
 });
 

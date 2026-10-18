@@ -26,9 +26,8 @@ test("Codex 区分手动与自动选择；确认读取后才计数，不计打�
   ];
   const events = parse(parseCodex, "codex", rows);
   assert.equal(events.length, 3);
-  // 第三条是「读到 SKILL.md 但结果未返回」的 request 记录：这一轮有用户消息（"继续"）却没点名，
-  // 按新契约判「自动触发（Agent 自选）」，不再是来源未知 —— 旧契约「非点名即 unknown」正是本次要修的。
-  assert.deepEqual(events.map(e => [e.kind, e.trigger, e.status]), [["document", "manual", "returned"], ["invocation", "automatic", "failed"], ["request", "automatic", "pending"]]);
+  // “继续”没有提供本次调用的触发证据，不继承上一轮的自动选择指令。
+  assert.deepEqual(events.map(e => [e.kind, e.trigger, e.status]), [["document", "manual", "returned"], ["invocation", "automatic", "failed"], ["request", "unknown", "pending"]]);
   assert.equal(parse(parseCodex, "codex", [...rows, ...rows]).length, 3);
   assert.deepEqual(documentPaths("exec_command", { cmd: 'echo "cat /skills/ui/SKILL.md"' }), []);
   assert.deepEqual(documentPaths("exec_command", { cmd: 'if false; then cat /skills/ui/SKILL.md; fi' }), []);
@@ -37,8 +36,6 @@ test("Codex 区分手动与自动选择；确认读取后才计数，不计打�
   assert.ok(!JSON.stringify(events).includes("private contents"));
 });
 
-// 契约收窄后的边界：只有「本轮完全没有用户消息」才算来源未知（例如归档片段、只剩工具调用的日志）。
-// 这条守住 unknown 不会被一并改掉 —— 前三类测试的 fixture 都带用户消息，覆盖不到这里。
 test("没有用户消息的日志片段仍判为来源未知", () => {
   const events = parse(parseCodex, "codex", [
     codex({ type: "function_call", call_id: "call1", name: "Skill", arguments: '{"skill":"review"}' }),
@@ -46,4 +43,33 @@ test("没有用户消息的日志片段仍判为来源未知", () => {
   ]);
   assert.equal(events.length, 1);
   assert.deepEqual([events[0].kind, events[0].trigger, events[0].status], ["invocation", "unknown", "returned"]);
+});
+
+test("明确的自然语言点名是手动；普通任务、否定、引用与仅提及保持未知", () => {
+  const invoke = (message, skill = "pdf") => parse(parseCodex, "codex", [
+    codex({ type: "message", role: "user", id: "u", content: message }),
+    codex({ type: "function_call", call_id: "c", name: "Skill", arguments: JSON.stringify({ skill }) }),
+    codex({ type: "function_call_output", call_id: "c", output: "Process exited with code 0" }),
+  ]).find(event => event.callId === "c");
+  for (const message of ["请使用 pdf 技能处理文档", "请调用技能 pdf", "帮我用 `pdf` 技能读文件",
+    "Please use the pdf skill", "Invoke skill pdf", "$pdf 读取文档", "请用 @skill:pdf 读取文档"]) {
+    const event = invoke(message);
+    assert.deepEqual([event.trigger, event.evidence], ["manual", "user_selection"], message);
+  }
+  for (const message of ["处理文档", "继续", "pdf 技能支持什么？", "如何使用 pdf 技能？",
+    "不要使用 pdf 技能", "请不要调用技能 pdf", "Do not use the pdf skill", "use the document",
+    "示例：\n```text\n请使用 pdf 技能\n```", "> 请使用 pdf 技能", "这是 pdf-converter 的说明"]) {
+    const event = invoke(message);
+    assert.deepEqual([event.trigger, event.evidence], ["unknown", "skill_call"], message);
+  }
+  assert.equal(invoke("请使用 pdf-converter 技能", "pdf-converter").trigger, "manual");
+  assert.equal(invoke("请使用 pdf-converter 技能", "pdf").trigger, "unknown", "名称必须完整匹配");
+  assert.equal(invoke("请自动选择合适的技能处理文档").trigger, "automatic");
+});
+
+test("自然语言点名的重复识别保留客户端提供的技能路径", () => {
+  const ctx = new ParseContext("codex", "/logs/demo.jsonl", { put() {} });
+  ctx.user("请使用 pdf 技能", { line: 1 }, [{ name: "pdf", path: "/skills/pdf/SKILL.md" }]);
+  assert.equal(ctx.selections.size, 1);
+  assert.equal(ctx.selections.get("pdf").request.skillPath, "/skills/pdf/SKILL.md");
 });

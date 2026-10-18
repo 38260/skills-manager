@@ -43,6 +43,10 @@ export class UsageStore {
       CREATE TABLE IF NOT EXISTS scanned_files (tool TEXT,path TEXT,fingerprint TEXT,errors INTEGER NOT NULL DEFAULT 0,
         parser_version INTEGER NOT NULL DEFAULT 0,
         PRIMARY KEY(tool,path));`);
+    // 旧版 agent_choice 只依据“存在用户消息”推断，证据不足；不删记录，重扫时可补回明确证据。
+    this.db.prepare(`UPDATE events SET trigger='unknown',
+      evidence=CASE WHEN kind='invocation' THEN 'skill_call' ELSE 'document_read' END
+      WHERE trigger='automatic' AND evidence='agent_choice'`).run();
     this.insert = this.db.prepare(`INSERT INTO events(${columns.join(",")}) VALUES(${columns.map(() => "?").join(",")})
       ON CONFLICT(id) DO UPDATE SET
         status=CASE WHEN excluded.status IN ('returned','failed') OR events.status IN ('pending','unknown') THEN excluded.status ELSE events.status END,
@@ -77,12 +81,18 @@ export class UsageStore {
     this.db.prepare("UPDATE sources SET state=?,lastScan=COALESCE(?,lastScan),files=?,processed=?,errors=?,detail=? WHERE tool=?")
       .run(state, values.lastScan ?? null, values.files ?? 0, values.processed ?? 0, values.errors ?? 0, values.detail ?? null, tool);
   }
-  query(filter = {}) {
+  /**
+   * 把筛选条件编译成 WHERE 子句。facetOf 里的键表示「这一维自身的筛选先不参与」：
+   * 统计条和类型页签要显示各类型/各触发方式的总数，若把自身的筛选也算进去，
+   * 点「已确认加载」后其余几项就会变成 0，数字会随点击漂移。
+   * 校验不受影响：跳过只是不进 WHERE，合法性检查照旧执行。
+   */
+  compile(filter = {}, skip = []) {
     const where = [], args = [];
     for (const [key, choices] of [["tool", TOOLS], ["kind", KINDS], ["trigger", TRIGGERS], ["status", STATUSES]]) {
       if (filter[key]) {
         if (!choices.includes(filter[key])) throw new Error("无效的筛选条件");
-        where.push(`${key}=?`); args.push(filter[key]);
+        if (!skip.includes(key)) { where.push(`${key}=?`); args.push(filter[key]); }
       }
     }
     for (const key of ["skillName", "project"]) if (filter[key]) {
@@ -93,13 +103,19 @@ export class UsageStore {
       if (!Number.isSafeInteger(filter[key]) || filter[key] < 0) throw new Error("无效的筛选时间");
       where.push(`timestamp ${op} ?`); args.push(filter[key]);
     }
-    const clause = where.length ? ` WHERE ${where.join(" AND ")}` : "";
+    return { clause: where.length ? ` WHERE ${where.join(" AND ")}` : "", args };
+  }
+  query(filter = {}) {
+    const { clause, args } = this.compile(filter);
     const total = this.db.prepare(`SELECT COUNT(*) AS n FROM events${clause}`).get(...args).n;
     const pageSize = Math.min(100, Math.max(1, Number.isSafeInteger(filter.pageSize) ? filter.pageSize : 50));
     const page = Math.min(Math.max(1, Math.ceil(total / pageSize)), Math.max(1, Number.isSafeInteger(filter.page) ? filter.page : 1));
     const items = this.db.prepare(`SELECT * FROM events${clause} ORDER BY timestamp DESC,id LIMIT ? OFFSET ?`).all(...args, pageSize, (page - 1) * pageSize);
+    // 统计口径：类型与触发方式都按「其余筛选条件」聚合，与当前选中的类型页签/触发方式无关，
+    // 这样统计条与页签上的数字是固定值，点击只改变列表内容，不改变这些数字。
+    const facet = this.compile(filter, ["kind", "trigger"]);
     const counts = { invocation: 0, document: 0, request: 0, manual: 0, automatic: 0, unknown: 0 };
-    for (const row of this.db.prepare(`SELECT kind,trigger,COUNT(*) AS n FROM events${clause} GROUP BY kind,trigger`).all(...args)) {
+    for (const row of this.db.prepare(`SELECT kind,trigger,COUNT(*) AS n FROM events${facet.clause} GROUP BY kind,trigger`).all(...facet.args)) {
       counts[row.kind] += row.n;
       if (row.kind !== "request") counts[row.trigger] += row.n;
     }

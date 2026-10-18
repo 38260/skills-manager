@@ -33,8 +33,8 @@ test("DSH 逐帧读取、触发方式、结果关联和截断前缀保留", asyn
   });
   ctx.finish();
   assert.equal(events.size, 3);
-  // 第三条：这一轮有用户消息但没点名该技能 → 自动触发（Agent 自选），不再是来源未知。
-  assert.deepEqual([...events.values()].map(e => [e.trigger, e.status]), [["manual", "returned"], ["automatic", "failed"], ["automatic", "pending"]]);
+  // “继续”不足以判定触发来源。
+  assert.deepEqual([...events.values()].map(e => [e.trigger, e.status]), [["manual", "returned"], ["automatic", "failed"], ["unknown", "pending"]]);
   fs.writeFileSync(filename, Buffer.concat(frames));
   for await (const item of readRecords(filename, { compressed: true })) parseDsh(item.row, ctx);
   assert.equal(events.size, 3);
