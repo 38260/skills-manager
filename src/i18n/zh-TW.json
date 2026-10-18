@@ -1270,6 +1270,8 @@
     "snippetTruncated": "片段過長，已截斷顯示。",
     "snippetCompressed": "壓縮日誌，顯示解碼後的記錄。",
     "snippetDatabase": "SQLite 來源，顯示對應的 part 記錄。",
+    "snippetExpand": "展開原文",
+    "snippetCollapse": "收合",
     "openLog": "跳轉到日誌",
     "snippetReasons": {
       "missing": "來源檔案已不存在或已被移動。",

@@ -15,6 +15,21 @@ interface Props {
   className?: string;
 }
 
+const SNIPPET_PREVIEW = 260;
+
+// Codex 的单行日志可达数千字符；默认截取技能名附近的一段，完整原文按需展开。
+function previewLine(text: string, skillName: string) {
+  if (text.length <= SNIPPET_PREVIEW) return { text, clipped: false };
+  let index = skillName ? text.indexOf(skillName) : -1;
+  if (index < 0) index = text.indexOf("SKILL.md");
+  let start = index > 80 ? index - 80 : 0;
+  start = Math.min(start, text.length - SNIPPET_PREVIEW);
+  return {
+    text: `${start > 0 ? "…" : ""}${text.slice(start, start + SNIPPET_PREVIEW)}${start + SNIPPET_PREVIEW < text.length ? "…" : ""}`,
+    clipped: true,
+  };
+}
+
 /**
  * 单条调用记录的详情。两处复用：调用记录页右栏（完整）与技能详情页签内（compact）。
  * 分区沿用参考图：识别依据 / 记录信息 / 来源文件，末尾给出状态免责说明与技能详情入口。
@@ -41,6 +56,16 @@ export function ActivityDetailPanel({ record, compact = false, onOpenSkill, clas
   const excerptLoading = !fresh;
   const snippetRef = useRef<HTMLDivElement | null>(null);
   const focusRef = useRef<HTMLDivElement | null>(null);
+  // 展开状态跟着记录 id 走，切换记录时无需在 effect 里清空。
+  const [expandedLines, setExpandedLines] = useState<{ id: string; keys: Set<string> } | null>(null);
+
+  function toggleLine(key: string) {
+    setExpandedLines(previous => {
+      const keys = new Set(previous?.id === record.id ? previous.keys : []);
+      if (keys.has(key)) keys.delete(key); else keys.add(key);
+      return { id: record.id, keys };
+    });
+  }
 
   // 长 JSON 行会换行，切换记录后把高亮行滚到靠上的位置，保留少量上下文。
   useEffect(() => {
@@ -153,16 +178,33 @@ export function ActivityDetailPanel({ record, compact = false, onOpenSkill, clas
                 <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all px-2.5 py-2 font-mono text-[11px] leading-[18px] text-secondary">{excerpt.lines[0]?.text ?? ""}</pre>
               ) : (
                 <div ref={snippetRef} className="max-h-56 overflow-y-auto overflow-x-hidden py-1 font-mono text-[11px] leading-[18px]">
-                  {excerpt.lines.map((line, index) => (
-                    <div
-                      key={`${line.label}:${index}`}
-                      ref={line.label === excerpt.focus ? focusRef : undefined}
-                      className={cn("flex gap-2 px-2 py-0.5", line.label === excerpt.focus && "bg-accent-bg")}
-                    >
-                      <span className={cn("w-9 shrink-0 select-none text-right tabular-nums", line.label === excerpt.focus ? "font-medium text-accent-dark dark:text-accent-light" : "text-muted")}>{line.label}</span>
-                      <span className="min-w-0 whitespace-pre-wrap break-all text-secondary">{line.text}</span>
-                    </div>
-                  ))}
+                  {excerpt.lines.map((line, index) => {
+                    const key = `${line.label}:${index}`;
+                    const expanded = expandedLines?.id === record.id && expandedLines.keys.has(key);
+                    const long = line.text.length > SNIPPET_PREVIEW;
+                    const preview = expanded ? { text: line.text } : previewLine(line.text, record.skillName);
+                    return (
+                      <div
+                        key={key}
+                        ref={line.label === excerpt.focus ? focusRef : undefined}
+                        className={cn("flex gap-2 px-2 py-0.5", line.label === excerpt.focus && "bg-accent-bg")}
+                      >
+                        <span className={cn("w-9 shrink-0 select-none text-right tabular-nums", line.label === excerpt.focus ? "font-medium text-accent-dark dark:text-accent-light" : "text-muted")}>{line.label}</span>
+                        <div className="min-w-0 flex-1">
+                          <span className="whitespace-pre-wrap break-all text-secondary">{preview.text}</span>
+                          {long && (
+                            <button
+                              type="button"
+                              onClick={() => toggleLine(key)}
+                              className="ml-1 whitespace-nowrap rounded text-[10.5px] text-accent-dark underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-accent dark:text-accent-light"
+                            >
+                              {expanded ? t("activity.snippetCollapse") : t("activity.snippetExpand")}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

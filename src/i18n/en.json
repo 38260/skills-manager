@@ -1355,6 +1355,8 @@
     "snippetTruncated": "Excerpt truncated.",
     "snippetCompressed": "Compressed log; showing the decoded record.",
     "snippetDatabase": "SQLite source; showing the matching part record.",
+    "snippetExpand": "Show full line",
+    "snippetCollapse": "Collapse",
     "openLog": "Jump to log",
     "snippetReasons": {
       "missing": "The source file no longer exists or has moved.",
