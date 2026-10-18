@@ -67,10 +67,29 @@ line 14  user/message  source.kind=skill-invocation  <skill_content name="animat
 - 为降低风险，第一个用例之后把 DSH 的访问模式从「工作区内修改」改成「仅可查看」，其余 4 个用例在只读策略下运行（日志里的 runtime-context 也记录了 `file policy: read-only`）。**这是我在本轮改掉的客户端设置，仍是只读方向；如需恢复成原来的「工作区内修改」，在输入框下方「访问模式」里改回即可。**
 - Skills Manager 侧只做了查看与筛选，没有执行安装、卸载、分类修改或更新检查；后端为本轮加载新解析器重启过 2 次。
 
+## 复测（2026-10-18 14:15–14:20，解析器 8）
+
+为确认 D6 修复稳定，重新用电脑操控跑了 3 个新会话（模型仍是 `Deepseek-V4.1-Flash · x0.00 · Free now`）：
+
+| 用例 | 原始日志 | 活动库 | 结果 |
+| --- | --- | --- | --- |
+| 菜单点选 `animation-vocabulary` | line 14 `source.kind=skill-invocation`，无 `skill` 工具调用 | `invocation / manual / returned`，`evidence=user_selection` | 通过 |
+| 点名但要求不执行 | 0 个 `tool/call`、0 条注入 | 仅 1 条 `request / manual / pending` | 通过 |
+| 要求自动选择 | line 24 `tool/call skill {"name":"animation-vocabulary"}` | `invocation / automatic / returned`，`evidence=user_auto_choice` | 通过 |
+
+- DSH 计数 11 → **14**（手动 1→2、自动 1→2、未知 7 不变、请求 2→3）
+- `animation-vocabulary` 使用 3 → **5**（+菜单点选 +自动选择；未执行的那条只记请求，没加使用）
+- 连续两次 `scan_skill_activity`：仍 14 条，全库重复 ID 0
+- API `get_skill_activity`（tool=dsh）：`{invocation:11, document:0, request:3, manual:2, automatic:2, unknown:7}`，技能名只有 `animation-vocabulary`、`diagnose-windows-sandbox-acl`、`pdf-converter`，无异常名字
+- 会话：`session-ca49478a-…`（点选）、`session-f7b3cbf0-…`（点名未执行）、`session-5089d8d9-…`（自动选择）
+
+**新发现（不是 Skills Manager 的问题）**：DSH 的「访问模式」是**按会话生效**的，新建会话会退回默认的「工作区内修改」。上一节把会话改成只读之后，再点「新建会话」，第一个复测用例其实是在 `workspace-write` 策略下跑的（日志 `runtime-context` 记着 `file policy: workspace-write`）。已核实该工作区 `D:\AIWorkSpace\test` 在测试时段内没有任何文件变动；后两个用例改为「先建会话、再设只读」，日志里是 `read-only`。
+
 ## 证据文件
 
 - `dsh-live.json`：5 个用例的原始日志要点（用户消息、`skill` 工具调用、注入消息）+ 活动库记录 + 最终计数
-- `api-dsh.json`：DSH 筛选后的 `get_skill_activity` 结果
+- `api-dsh.json`：首轮 DSH 筛选的 `get_skill_activity` 结果
+- `api-dsh-retest.json`：复测后 DSH 筛选的 `get_skill_activity` 结果
 - `usage-all.json`：最终 `get_skill_usage`
 - `collect-dsh-evidence.mjs`：证据汇总脚本
 
