@@ -15,7 +15,9 @@ function localService(): Plugin {
     apply: "serve",
     configureServer(server) {
       const entry = path.join(path.dirname(fileURLToPath(import.meta.url)), "backend", "server.mjs");
-      child = spawn(process.execPath, [entry, "--port", servicePort], {
+      // 后端用了 node:sqlite，Node 每次启动都往这个终端打一条 ExperimentalWarning；
+      // 它不是错误，只屏蔽这一类告警，其它告警照常显示。
+      child = spawn(process.execPath, ["--disable-warning=ExperimentalWarning", entry, "--port", servicePort], {
         cwd: path.dirname(entry),
         stdio: "inherit",
         env: process.env,
