@@ -1,26 +1,44 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
-import { spawn } from "node:child_process";
+import { spawn, execFile } from "node:child_process";
 import { unzipSync } from "fflate";
 import { inside, skillName, metadata, files, tree, hashDirectory, copySkill, skillDirectories, canonical, readJson, writeJson, redact } from "./files.mjs";
 
 // 安装／更新取消登记：key → { cancelled, child }。requestCancel 中止进行中的 git 进程。
 const cancels = new Map();
 export function registerCancel(key) { const entry = { cancelled: false, child: null }; cancels.set(key, entry); return entry; }
-export function requestCancel(key) {
+export async function requestCancel(key) {
   const entry = cancels.get(key);
   if (!entry) return false;
   entry.cancelled = true;
-  try { entry.child?.kill(); } catch {}
+  try { if (entry.child) await (entry.stopping ??= terminateGit(entry.child)); }
+  catch (error) { entry.cancelled = false; entry.stopping = null; throw error; }
   return true;
 }
 export function releaseCancel(key) { cancels.delete(key); }
 
-export async function git(directory, args, hooks = {}) {
-  if (hooks.cancel?.cancelled) throw new Error("操作已取消");
+const cancellationError = () => Object.assign(new Error("操作已取消"), { code: "CANCELLED", kind: "cancelled" });
+
+async function terminateGit(child) {
+  if (!child.pid || child.exitCode !== null || child.signalCode !== null) return Promise.resolve();
+  // Git 的传输子进程也持有连接和管道，仅终止主进程不会触发 close。
+  if (process.platform !== "win32") {
+    process.kill(-child.pid, "SIGTERM");
+    return Promise.resolve();
+  }
   return new Promise((resolve, reject) => {
-    const child = spawn("git", ["-C", directory, ...args], { windowsHide: true, env: { ...process.env, GIT_TERMINAL_PROMPT: "0" } });
+    execFile("taskkill.exe", ["/PID", String(child.pid), "/T", "/F"], { windowsHide: true, timeout: 5000 }, (error, _stdout, stderr) => {
+      if (error && child.exitCode === null && child.signalCode === null) reject(new Error(`无法终止 Git 操作：${redact(stderr || error.message)}`));
+      else resolve();
+    });
+  });
+}
+
+export async function git(directory, args, hooks = {}) {
+  if (hooks.cancel?.cancelled) throw cancellationError();
+  return new Promise((resolve, reject) => {
+    const child = spawn("git", ["-C", directory, ...args], { windowsHide: true, detached: process.platform !== "win32", env: { ...process.env, GIT_TERMINAL_PROMPT: "0" } });
     if (hooks.cancel) hooks.cancel.child = child;
     let stdout = "", stderr = "";
     child.stdout?.on("data", chunk => { stdout += chunk; });
@@ -29,11 +47,11 @@ export async function git(directory, args, hooks = {}) {
       stderr += text;
       if (hooks.onProgress) for (const line of text.split(/[\r\n]+/)) if (line.trim()) hooks.onProgress(line.trim());
     });
-    const timer = setTimeout(() => child.kill(), 600000);
+    const timer = setTimeout(() => { terminateGit(child).catch(reject); }, 600000);
     child.on("error", error => { clearTimeout(timer); reject(new Error(redact(error.message))); });
     child.on("close", code => {
       clearTimeout(timer);
-      if (hooks.cancel?.cancelled) { reject(new Error("操作已取消")); return; }
+      if (hooks.cancel?.cancelled) { reject(cancellationError()); return; }
       if (code === 0) resolve(stdout.trim());
       else reject(new Error(redact(stderr || `git 退出码 ${code}`)));
     });
@@ -100,7 +118,7 @@ export class Library {
     const temporary=this.temporary();
     try {
       await git(temporary,["clone",...(branch?["--branch",branch]:[]),"--",url,"repo"],hooks);
-      const repository=path.join(temporary,"repo"),revision=await git(repository,["rev-parse","HEAD"]);
+      const repository=path.join(temporary,"repo"),revision=await git(repository,["rev-parse","HEAD"],hooks);
       let directory=subpath?inside(repository,subpath):repository;
       if(!["SKILL.md","skill.md"].some(name=>fs.existsSync(path.join(directory,name)))) {
         const wanted=skill.source_type==="skillssh"?skill.source_ref.split("/").slice(2).join("/"):skill.name;
@@ -132,7 +150,7 @@ export class Library {
     const temporary=this.temporary();
     try {
       await git(temporary,["clone","--",repoUrl,"repo"],hooks);
-      const repository=path.join(temporary,"repo"),revision=await git(repository,["rev-parse","HEAD"]);
+      const repository=path.join(temporary,"repo"),revision=await git(repository,["rev-parse","HEAD"],hooks);
       const matches=skillDirectories(repository).filter(dir=>metadata(dir).name===skillId||path.basename(dir)===skillId);
       if(matches.length!==1) throw new Error(matches.length?`仓库中有多个匹配 ${skillId} 的技能`:`仓库中没有找到技能 ${skillId}`);
       hooks.onPhase?.("installing");
@@ -208,8 +226,8 @@ export class Library {
     if(!preview||!fs.existsSync(tempDir)) throw new Error("安装预览已失效，请重新获取");
     const repository=path.join(tempDir,"repo");
     const root=preview.subpath?inside(repository,preview.subpath):repository;
-    const revision=await git(repository,["rev-parse","HEAD"]);
     try {
+      const revision=await git(repository,["rev-parse","HEAD"],hooks);
       let index=0;
       for(const item of items) {
         const directory=inside(root,item.rel_path);

@@ -143,8 +143,8 @@ test("取消登记：受理置标记，释放后返回未受理",async()=>{
   const {registerCancel,requestCancel,releaseCancel}=await import("../../backend/library.mjs");
   const entry=registerCancel("cancel-key");
   assert.equal(entry.cancelled,false);
-  assert.equal(requestCancel("cancel-key"),true,"已登记的安装应受理取消");
+  assert.equal(await requestCancel("cancel-key"),true,"已登记的安装应受理取消");
   assert.equal(entry.cancelled,true);
   releaseCancel("cancel-key");
-  assert.equal(requestCancel("cancel-key"),false,"已释放的安装不应再受理取消");
+  assert.equal(await requestCancel("cancel-key"),false,"已释放的安装不应再受理取消");
 });

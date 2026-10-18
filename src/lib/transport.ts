@@ -2,6 +2,7 @@
 // 调用、事件与错误形状在两种模式下保持一致，业务代码无感知。
 import { invoke as tauriInvoke } from "@tauri-apps/api/core";
 import { listen as tauriListen, type Event, type UnlistenFn } from "@tauri-apps/api/event";
+import type { ErrorKind } from "./error";
 
 /** 桌面外壳（Tauri）内运行时为 true；纯浏览器环境直接访问本地服务。 */
 export const isTauri =
@@ -11,6 +12,7 @@ export const isTauri =
 interface ServiceError {
   ok: false;
   code: string;
+  kind?: ErrorKind;
   message: string;
 }
 
@@ -40,7 +42,7 @@ async function invokeOverHttp<T>(
   if (payload && payload.ok) return payload.data;
   const error = new Error(payload?.message ?? `本地服务调用失败（${command}）`);
   if (payload && !payload.ok) {
-    (error as Error & { code?: string }).code = payload.code;
+    Object.assign(error, { code: payload.code, kind: payload.kind });
   }
   throw error;
 }

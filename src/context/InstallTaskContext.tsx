@@ -141,9 +141,13 @@ export function InstallTaskProvider({ children }: { children: ReactNode }) {
       dismissTask();
     } catch (error) {
       const message = getErrorMessage(error, t("common.error"));
-      setGitError(message);
-      if (getErrorKind(error) === "cancelled") toast.info(t("install.toast.cancelled"));
-      else toast.error(message);
+      if (getErrorKind(error) === "cancelled") {
+        setGitError(null);
+        toast.info(t("install.toast.cancelled"));
+      } else {
+        setGitError(message);
+        toast.error(message);
+      }
       dismissTask();
     } finally {
       setGitLoading(false);

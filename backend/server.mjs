@@ -337,7 +337,7 @@ async function handleInvoke(request, response, commandName) {
     pendingRestart = false;
     sendJson(response, 200, { ok: true, data: data ?? null }, restartAfterFlush ? performRestart : undefined);
   } catch (error) {
-    sendJson(response, 200, { ok: false, code: error.code || "ERROR", message: redact(error.message || String(error)) });
+    sendJson(response, 200, { ok: false, code: error.code || "ERROR", kind: error.kind, message: redact(error.message || String(error)) });
   }
 }
 
