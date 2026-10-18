@@ -89,3 +89,45 @@ test("服务命令按记录 id 读取片段，未知记录直接报错", async t
   assert.match(result.lines[0].text, /"seq":1/);
   await assert.rejects(() => service.commands.get_skill_activity_excerpt.call({ id: "unknown" }), /找不到这条调用记录/);
 });
+
+test("完整长行先解码再提取，4000 字符之后的目标命令仍能展示", async t => {
+  const root = fixture(t), file = path.join(root, "late-evidence.jsonl");
+  const command = 'Get-Content "C:\\skills\\ponytail\\SKILL.md"\nWrite-Output done';
+  fs.writeFileSync(file, JSON.stringify({ metadata: "x".repeat(6000), type: "response_item", payload: {
+    type: "function_call", name: "exec_command", call_id: "call-1", arguments: JSON.stringify({ cmd: command }),
+  } }) + "\n");
+  const result = await activityExcerpt({ tool: "codex", sourcePath: file, sourceLine: "1", skillName: "ponytail" });
+  assert.equal(result.truncated, true);
+  assert.equal(result.lines[0].summary.content, command);
+  assert.equal(result.lines[0].summary.toolName, "exec_command");
+  assert.equal(result.lines[0].summary.format, "command");
+  assert.equal(result.lines[0].summary.parsed, true);
+  assert.equal(result.lines[0].summary.truncated, false);
+});
+
+test("解码后仍很长的脚本围绕目标技能展示，损坏原文明确回退", async t => {
+  const root = fixture(t), file = path.join(root, "script.jsonl");
+  fs.writeFileSync(file, JSON.stringify({ type: "response_item", payload: {
+    type: "custom_tool_call", name: "functions.exec", input: `${"x".repeat(7000)}\nGet-Content ponytail/SKILL.md\n${"y".repeat(3000)}`,
+  } }) + "\n{broken-json\n");
+  const result = await activityExcerpt({ tool: "codex", sourcePath: file, sourceLine: "1", skillName: "ponytail" });
+  assert.match(result.lines[0].summary.content, /Get-Content ponytail\/SKILL.md/);
+  assert.equal(result.lines[0].summary.truncated, true);
+  assert.equal(result.lines[1].summary.parsed, false);
+  assert.equal(result.lines[1].summary.content, "{broken-json");
+});
+
+test("压缩与 SQLite 日志同样返回可读证据", async t => {
+  const root = fixture(t), file = path.join(root, "dsh.jsonl.zstd");
+  fs.writeFileSync(file, zstdCompressSync(Buffer.from(JSON.stringify({ type: "tool/call", data: { name: "skill", callId: "c", arguments: '{"name":"ponytail"}' } }) + "\n")));
+  const result = await activityExcerpt({ tool: "dsh", sourcePath: file, sourceLine: "1" });
+  assert.equal(result.lines[0].summary.toolName, "skill");
+  assert.match(result.lines[0].summary.content, /ponytail/);
+  const dbFile = path.join(root, "parts.sqlite"), db = new DatabaseSync(dbFile);
+  db.exec("CREATE TABLE part(id TEXT PRIMARY KEY,data TEXT)");
+  db.prepare("INSERT INTO part VALUES(?,?)").run("p", JSON.stringify({ type: "tool", tool: "Skill", state: { input: { skill: "ponytail" } } }));
+  db.close();
+  const part = await activityExcerpt({ tool: "zcode", sourcePath: dbFile, sourceLine: "part:p" });
+  assert.equal(part.lines[0].summary.toolName, "Skill");
+  assert.match(part.lines[0].summary.content, /ponytail/);
+});

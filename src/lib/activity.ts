@@ -41,7 +41,16 @@ export interface ActivityExcerpt {
   sourceLine: string;
   /** 高亮行：普通日志是行号，ZCode 是 part:<id>。 */
   focus: string;
-  lines: { label: string; text: string }[];
+  lines: { label: string; text: string; summary?: ActivityEvidence }[];
+  truncated: boolean;
+}
+export interface ActivityEvidence {
+  role: "call" | "result" | "user" | "assistant" | "record";
+  toolName: string | null;
+  callId: string | null;
+  format: "command" | "text" | "json";
+  parsed: boolean;
+  content: string;
   truncated: boolean;
 }
 export const getActivity = (query: ActivityQuery) => invoke<ActivityResult>("get_skill_activity", { ...query });

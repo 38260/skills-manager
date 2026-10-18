@@ -2,6 +2,7 @@ import fs from "node:fs";
 import readline from "node:readline";
 import { DatabaseSync } from "node:sqlite";
 import { readRecords } from "./readers.mjs";
+import { evidenceSummary, summarizeRaw } from "./evidence.mjs";
 
 // 详情里只展示目标行周围的一小段：既能看清触发证据，也不会把整份会话日志读进内存。
 const CONTEXT_LINES = 2;
@@ -21,7 +22,7 @@ function unavailable(event, reason, extra = {}) {
   };
 }
 
-async function lineWindow(filename, target) {
+async function lineWindow(filename, target, event) {
   const start = Math.max(1, target - CONTEXT_LINES), end = target + CONTEXT_LINES;
   const stream = fs.createReadStream(filename, { encoding: "utf8" });
   const reader = readline.createInterface({ input: stream, crlfDelay: Infinity });
@@ -33,7 +34,7 @@ async function lineWindow(filename, target) {
       number++;
       if (number < start) continue;
       if (raw.length > MAX_LINE_CHARS) truncated = true;
-      lines.push({ label: String(number), text: clip(raw) });
+      lines.push({ label: String(number), text: clip(raw), summary: summarizeRaw(raw, event) });
       if (number >= end) break;
     }
   } finally {
@@ -43,7 +44,7 @@ async function lineWindow(filename, target) {
   return { lines, found: lines.some(line => line.label === String(target)), truncated };
 }
 
-async function compressedWindow(filename, target) {
+async function compressedWindow(filename, target, event) {
   const start = Math.max(1, target - CONTEXT_LINES), end = target + CONTEXT_LINES;
   const lines = [];
   let truncated = false;
@@ -54,13 +55,13 @@ async function compressedWindow(filename, target) {
     delete row.line;
     const text = record.error ? `[无法解析的日志行：${record.error}]` : JSON.stringify(row);
     if (text.length > MAX_LINE_CHARS) truncated = true;
-    lines.push({ label: String(record.line), text: clip(text) });
+    lines.push({ label: String(record.line), text: clip(text), summary: record.error ? summarizeRaw(text, event) : evidenceSummary(row, event) });
     if (record.line >= end) break;
   }
   return { lines, found: lines.some(line => line.label === String(target)), truncated };
 }
 
-function zcodeWindow(filename, partId) {
+function zcodeWindow(filename, partId, event) {
   const db = new DatabaseSync(filename, { readOnly: true, timeout: 3000 });
   try {
     // 与扫描器一致：只读事务里取快照，活跃数据库的 WAL 由 SQLite 合并。
@@ -69,8 +70,9 @@ function zcodeWindow(filename, partId) {
     db.exec("COMMIT;");
     if (!row) return { lines: [], found: false, truncated: false };
     let text = String(row.data ?? "");
+    const summary = summarizeRaw(text, event);
     try { text = JSON.stringify(JSON.parse(text), null, 2); } catch { /* 非 JSON 的 part 原样展示。 */ }
-    return { lines: [{ label: `part:${partId}`, text: clip(text, MAX_DATABASE_CHARS) }], found: true, truncated: text.length > MAX_DATABASE_CHARS };
+    return { lines: [{ label: `part:${partId}`, text: clip(text, MAX_DATABASE_CHARS), summary }], found: true, truncated: text.length > MAX_DATABASE_CHARS };
   } finally { db.close(); }
 }
 
@@ -92,7 +94,7 @@ export async function activityExcerpt(event) {
     const partId = sourceLine.slice("part:".length);
     if (!partId) return unavailable(event, "not_found", { kind: "zcode", lineKind: "part" });
     try {
-      const window = zcodeWindow(sourcePath, partId);
+      const window = zcodeWindow(sourcePath, partId, event);
       if (!window.found) return unavailable(event, "not_found", { kind: "zcode", lineKind: "part" });
       return {
         available: true, kind: "zcode", lineKind: "part", sourcePath, sourceLine,
@@ -107,7 +109,7 @@ export async function activityExcerpt(event) {
   if (!Number.isSafeInteger(target) || target < 1) return unavailable(event, "not_found", { kind: sourcePath.endsWith(".zstd") ? "zstd" : "jsonl" });
   const compressed = sourcePath.endsWith(".zstd");
   try {
-    const window = compressed ? await compressedWindow(sourcePath, target) : await lineWindow(sourcePath, target);
+    const window = compressed ? await compressedWindow(sourcePath, target, event) : await lineWindow(sourcePath, target, event);
     const kind = compressed ? "zstd" : "jsonl";
     if (!window.found) return unavailable(event, "not_found", { kind });
     return {

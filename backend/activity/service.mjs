@@ -92,7 +92,7 @@ export class ActivityService {
       get_skill_activity_excerpt: { call: async args => {
         const id = String(args.id ?? "");
         if (!id || id.length > 256) throw new Error("无效的调用记录");
-        const event = this.store.db.prepare("SELECT tool,sourcePath,sourceLine FROM events WHERE id=?").get(id);
+        const event = this.store.db.prepare("SELECT tool,sourcePath,sourceLine,skillName,skillPath,callId FROM events WHERE id=?").get(id);
         if (!event) throw new Error("找不到这条调用记录");
         return activityExcerpt(event);
       } },
