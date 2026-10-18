@@ -1,0 +1,18 @@
+{
+  "generatedAt": "2026-10-18T03:12:33.466Z",
+  "isolatedHome": "D:\\AIWorkSpace\\Codex\\SkillManager\\skills-manager\\output\\workbuddy-live-verify\\restart-check\\home",
+  "port": 14399,
+  "sourceDb": "C:/Users/<user>/.skills-manager-activity/usage.db",
+  "persistedTotal": 88,
+  "persistedCounts": {
+    "invocation": 77,
+    "document": 0,
+    "request": 11,
+    "manual": 5,
+    "automatic": 0,
+    "unknown": 72
+  },
+  "directTotal": 88,
+  "equalsSource": true,
+  "serverLog": "(node:3604) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n[skills-manager] 本地服务已启动：http://127.0.0.1:14399（技能库：D:\\AIWorkSpace\\Codex\\SkillManager\\skills-manager\\output\\workbuddy-live-verify\\restart-check\\home\\.skills-manager）"
+}

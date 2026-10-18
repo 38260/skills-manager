@@ -1,0 +1,156 @@
+{
+  "generatedAt": "2026-10-18T03:13:01.768Z",
+  "tool": "workbuddy",
+  "note": "原始日志来自 WorkBuddy 5.8.3；路径中的用户名已脱敏。事件为测试后实时库快照。",
+  "cases": [
+    {
+      "key": "explicit",
+      "title": "显式选择技能（UI 技能芯片）",
+      "expected": "manual invocation",
+      "sessionId": "df7a41a6-b5c4-407f-8585-47dd78f3a528",
+      "rawLog": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AIWorkSpace-Codex-SkillManager\\df7a41a6-b5c4-407f-8585-47dd78f3a528.jsonl",
+      "workspace": "D:/AIWorkSpace/Codex/SkillManager",
+      "query": "@skill:\"C:\\\\Users\\\\<user>\\\\.workbuddy\\\\skills\\\\eli5\\\\SKILL.md\" 用最简单的比喻解释什么是数据库索引，三句话以内。",
+      "functionCalls": [
+        "Skill",
+        "widget_guidelines",
+        "show_widget"
+      ],
+      "skillCalls": [
+        {
+          "line": 7,
+          "callId": "call_00_izSRRz7JTQhsumVbm5Yd0469",
+          "args": "{\"skill\": \"eli5\", \"args\": \"数据库索引\"}",
+          "result": "completed"
+        }
+      ],
+      "managerEvents": [
+        {
+          "skillName": "tool",
+          "kind": "request",
+          "trigger": "manual",
+          "status": "pending",
+          "evidence": "user_selection",
+          "sourceLine": "3",
+          "callId": "request:01a14cea-82ae-7b5f-a264-b38698a37417"
+        },
+        {
+          "skillName": "eli5",
+          "kind": "invocation",
+          "trigger": "unknown",
+          "status": "returned",
+          "evidence": "skill_call",
+          "sourceLine": "7",
+          "callId": "call_00_izSRRz7JTQhsumVbm5Yd0469"
+        }
+      ]
+    },
+    {
+      "key": "autoChoice",
+      "title": "明确要求 Agent 自选技能",
+      "expected": "automatic invocation",
+      "sessionId": "8e4bfd6d-4919-4714-bdc1-d1484bb68b77",
+      "rawLog": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AIWorkSpace-Codex-SkillManager\\8e4bfd6d-4919-4714-bdc1-d1484bb68b77.jsonl",
+      "workspace": "D:/AIWorkSpace/Codex/SkillManager",
+      "query": "请自动选择技能，帮我查一下今天最新的 AI 新闻，给我三条并附来源。",
+      "functionCalls": [
+        "Skill",
+        "Bash"
+      ],
+      "skillCalls": [
+        {
+          "line": 7,
+          "callId": "call_00_85edf0vOXCDjjvRhpzhu0991",
+          "args": "{\"skill\": \"aihot\"}",
+          "result": "completed"
+        }
+      ],
+      "managerEvents": [
+        {
+          "skillName": "aihot",
+          "kind": "invocation",
+          "trigger": "unknown",
+          "status": "returned",
+          "evidence": "skill_call",
+          "sourceLine": "7",
+          "callId": "call_00_85edf0vOXCDjjvRhpzhu0991"
+        }
+      ]
+    },
+    {
+      "key": "negative",
+      "title": "仅提及/否定使用",
+      "expected": "no invocation and no false request",
+      "sessionId": "a1d1eb24-3536-4c5c-9704-f9db704ca4bf",
+      "rawLog": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AIWorkSpace-Codex-SkillManager\\a1d1eb24-3536-4c5c-9704-f9db704ca4bf.jsonl",
+      "workspace": "D:/AIWorkSpace/Codex/SkillManager",
+      "query": "eli5 这个技能是做什么的？只回答它的描述，不要调用任何技能。",
+      "functionCalls": [
+        "Read"
+      ],
+      "skillCalls": [],
+      "managerEvents": []
+    },
+    {
+      "key": "namedNotRun",
+      "title": "点名但未执行",
+      "expected": "pending request only",
+      "sessionId": "f8046e60-a570-404e-916c-4a7f44f64c00",
+      "rawLog": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Workbuddy-2026-10-18-10-59-26\\f8046e60-a570-404e-916c-4a7f44f64c00.jsonl",
+      "workspace": "D:/AI/Workbuddy/2026-10-18-10-59-26",
+      "query": "请使用 eli5 技能来回答：什么是数据库索引？但这次只说明你会怎么用这个技能，不要实际调用任何工具或技能。",
+      "functionCalls": [],
+      "skillCalls": [],
+      "managerEvents": []
+    },
+    {
+      "key": "plainNews",
+      "title": "普通任务未使用技能",
+      "expected": "no skill event",
+      "sessionId": "44d63bc7-4747-4e72-b8f6-17f9dd535748",
+      "rawLog": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Workbuddy-2026-10-18-11-01-59\\44d63bc7-4747-4e72-b8f6-17f9dd535748.jsonl",
+      "workspace": "D:/AI/Workbuddy/2026-10-18-11-01-59",
+      "query": "帮我查一下今天最新的 AI 新闻，给我三条并附来源。",
+      "functionCalls": [
+        "WebSearch",
+        "WebSearch",
+        "WebSearch"
+      ],
+      "skillCalls": [],
+      "managerEvents": []
+    },
+    {
+      "key": "implicit",
+      "title": "普通任务隐式触发技能",
+      "expected": "invocation with trigger unknown",
+      "sessionId": "231351f0-740a-449f-aa5c-74b738e3d128",
+      "rawLog": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Workbuddy-2026-10-18-11-03-02\\231351f0-740a-449f-aa5c-74b738e3d128.jsonl",
+      "workspace": "D:/AI/Workbuddy/2026-10-18-11-03-02",
+      "query": "给五岁小孩解释一下什么是量子纠缠，三句话以内。",
+      "functionCalls": [
+        "Skill",
+        "Write",
+        "present_files"
+      ],
+      "skillCalls": [
+        {
+          "line": 7,
+          "callId": "call_00_h3s4PsMpeR55gx1iCaeH9059",
+          "args": "{\"skill\": \"eli5\", \"args\": \"给五岁小孩解释量子纠缠，三句话以内\"}",
+          "result": "completed"
+        }
+      ],
+      "managerEvents": [
+        {
+          "skillName": "eli5",
+          "kind": "invocation",
+          "trigger": "unknown",
+          "status": "returned",
+          "evidence": "skill_call",
+          "sourceLine": "7",
+          "callId": "call_00_h3s4PsMpeR55gx1iCaeH9059"
+        }
+      ]
+    }
+  ]
+}
