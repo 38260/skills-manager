@@ -36,6 +36,8 @@ on:
       - 'tailwind.config.js'
       - 'postcss.config.js'
       - '.github/workflows/frontend.yml'
+  # 允许在 Actions 页面手动触发：fork 首次启用流水线、或只想跑一次测试时用得上。
+  workflow_dispatch:
 
 permissions:
   contents: read
