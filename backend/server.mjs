@@ -6,7 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Store } from "./store.mjs";
 import { ActivityService } from "./activity/service.mjs";
-import { Library, registerCancel, releaseCancel } from "./library.mjs";
+import { Library, registerCancel, releaseCancel, requestCancel } from "./library.mjs";
 import { presetCommands } from "./presets.mjs";
 import { toolCommands } from "./tools-settings.mjs";
 import { scanCommands } from "./scan.mjs";
@@ -117,7 +117,13 @@ const commands = {
     finally { releaseCancel(key); }
   }, mutating: true },
   cancel_git_preview: { call: args => { library.cancelGitPreview(args.tempDir); } },
-  cancel_install: { call: args => requestCancel(args.key) },
+  cancel_install: { call: args => {
+    const key = String(args.key ?? "");
+    if (!key) throw new Error("缺少取消标识，无法取消安装");
+    // requestCancel 返回 false 表示该 key 没有进行中的安装（已完成或已释放）：
+    // 前端据此区分「已受理取消」与「已经完成」，不再把两种情况都当成功。
+    return requestCancel(key);
+  } },
   batch_import_folder: { call: args => library.batchImportFolder(args.folderPath, data => broadcast("batch-import-progress", data)), mutating: true },
 
   // ── 技能更新与维护 ──
@@ -131,8 +137,10 @@ const commands = {
     if (failed.length) throw new Error(`有 ${failed.length} 个技能检查更新失败：${failed.join("; ")}`);
   }, mutating: true },
   update_skill: { call: async args => {
+    // hooks 同时承担进度广播与取消登记：不传下去时「取消更新」只是登记了一个没人用的 key，
+    // git 进程照旧跑完。
     const hooks = gitHooks(`update:${args.skillId}`);
-    try { return await library.update(args.skillId, args.approvedRemovals ?? null); }
+    try { return await library.update(args.skillId, args.approvedRemovals ?? null, hooks); }
     finally { releaseCancel(`update:${args.skillId}`); }
   }, mutating: true },
   reimport_local_skill: { call: args => library.reimport(args.skillId, args.approvedRemovals ?? null), mutating: true },

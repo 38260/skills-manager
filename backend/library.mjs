@@ -268,10 +268,10 @@ export class Library {
     return [sourceRevision,hashDirectory(staged),this.risks(skill,staged),hashDirectory(skill.central_path),
       skill.targets.filter(target=>target.mode==="copy").map(target=>[target.target_path,fs.existsSync(target.target_path)?hashDirectory(target.target_path):null])];
   }
-  async update(id,approvedRemovals) {
+  async update(id,approvedRemovals,hooks={}) {
     if(this.snapshots?.restoring.has(id)) throw new Error("该技能正在恢复，请等待完成");
     if(this.updates.has(id)) return this.updates.get(id);
-    const operation=this.performUpdate(id,approvedRemovals,false).finally(()=>this.updates.delete(id)); this.updates.set(id,operation);return operation;
+    const operation=this.performUpdate(id,approvedRemovals,false,hooks).finally(()=>this.updates.delete(id)); this.updates.set(id,operation);return operation;
   }
   async reimport(id,approvedRemovals) {
     if(this.snapshots?.restoring.has(id)) throw new Error("该技能正在恢复，请等待完成");
@@ -284,8 +284,8 @@ export class Library {
     if(this.updates.has(id)) return this.updates.get(id);
     const operation=this.performUpdate(id,approvedRemovals,true).finally(()=>this.updates.delete(id)); this.updates.set(id,operation);return operation;
   }
-  async performUpdate(id,approved,local) {
-    const skill=this.store.skill(id),source=await this.source(skill);
+  async performUpdate(id,approved,local,hooks={}) {
+    const skill=this.store.skill(id),source=await this.source(skill,hooks);
     const staged=inside(this.store.skillsDirectory,".update-"+crypto.randomUUID());
     try {
       copySkill(source.directory,staged);

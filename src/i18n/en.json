@@ -637,7 +637,10 @@
       "done": "Done",
       "cancelled": "Installation cancelled",
       "timeout": "Installation timed out — check your network",
-      "view": "View"
+      "view": "View",
+      "cancelling": "Cancelling installation…",
+      "alreadyFinished": "Installation already finished",
+      "cancelFailed": "Could not cancel the installation"
     },
     "progress": {
       "title": "Installing",

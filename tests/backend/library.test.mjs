@@ -111,3 +111,14 @@ test("技能元数据写入失败同样撤销整个安装",async t=>{
   assert.equal(fs.existsSync(path.join(store.skillsDirectory,"example")),false);
   assert.deepEqual(fs.existsSync(manifestsDir)?fs.readdirSync(manifestsDir):[],[]);
 });
+
+// 取消登记的值语义是前端区分「已取消／已完成」的唯一依据，单独固定下来。
+test("取消登记：受理置标记，释放后返回未受理",async()=>{
+  const {registerCancel,requestCancel,releaseCancel}=await import("../../backend/library.mjs");
+  const entry=registerCancel("cancel-key");
+  assert.equal(entry.cancelled,false);
+  assert.equal(requestCancel("cancel-key"),true,"已登记的安装应受理取消");
+  assert.equal(entry.cancelled,true);
+  releaseCancel("cancel-key");
+  assert.equal(requestCancel("cancel-key"),false,"已释放的安装不应再受理取消");
+});

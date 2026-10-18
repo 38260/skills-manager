@@ -461,9 +461,16 @@ export function InstallSkills() {
   };
 
   const handleCancelInstall = (cancelKey: string) => {
-    api.cancelInstall(cancelKey).catch(() => {
-      // Ignore race: install may have completed before cancel request arrives.
-    });
+    // 三个结果都要有明确反馈：已受理取消 / 安装已经结束 / 取消请求本身失败。
+    // 旧实现用 catch 静默吞掉错误，用户点「取消」后什么都看不到。
+    api.cancelInstall(cancelKey).then(
+      (accepted) => {
+        toast.info(t(accepted ? "install.toast.cancelling" : "install.toast.alreadyFinished"));
+      },
+      (error: unknown) => {
+        toast.error(getErrorMessage(error, t("install.toast.cancelFailed")));
+      }
+    );
   };
 
   const handleImportDiscovered = async (sourcePath: string, name: string) => {

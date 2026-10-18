@@ -594,7 +594,10 @@
       "done": "完成",
       "cancelled": "安裝已取消",
       "timeout": "安裝逾時 — 請檢查網路連線",
-      "view": "檢視"
+      "view": "檢視",
+      "cancelling": "正在取消安裝…",
+      "alreadyFinished": "安裝已完成，無需取消",
+      "cancelFailed": "取消失敗，請稍後重試"
     },
     "progress": {
       "title": "正在安裝",

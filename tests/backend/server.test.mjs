@@ -334,3 +334,15 @@ test("Preset 工具开关读写，重导入与分离来源维护本地技能", a
   const reimportAfterDetach = await service.invoke("reimport_local_skill", { skillId: skill.id });
   assert.equal(reimportAfterDetach.body.ok, false, "分离来源后不应可重导入");
 });
+
+// 取消安装曾经必失败：cancel_install 引用了未导入的 requestCancel，接口直接报
+// requestCancel is not defined，前端又把错误吞掉，用户点「取消」没有任何反馈。
+test("取消安装：无进行中安装时明确返回未受理，缺参数报结构化错误",async t=>{
+  const {invoke}=await startServer(t);
+  const unknown=await invoke("cancel_install",{key:"https://example.com/repo.git"});
+  assert.equal(unknown.body.ok,true,`取消接口失败：${unknown.body.message}`);
+  assert.equal(unknown.body.data,false,"没有进行中的安装时应返回 false（已结束）");
+  const missing=await invoke("cancel_install",{});
+  assert.equal(missing.body.ok,false);
+  assert.match(missing.body.message,/取消标识/);
+});

@@ -637,7 +637,10 @@
       "done": "完成",
       "cancelled": "安装已取消",
       "timeout": "安装超时 — 请检查网络连接",
-      "view": "查看"
+      "view": "查看",
+      "cancelling": "正在取消安装…",
+      "alreadyFinished": "安装已完成，无需取消",
+      "cancelFailed": "取消失败，请稍后重试"
     },
     "progress": {
       "title": "正在安装",
