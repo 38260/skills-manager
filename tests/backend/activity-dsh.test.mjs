@@ -56,3 +56,22 @@ test("DSH 早期版本 0 的会话按同一结构解析", () => {
   const [event] = [...events.values()];
   assert.deepEqual([event.skillName, event.trigger, event.project], ["legacy-skill", "manual", "/legacy"]);
 });
+
+test("DSH 菜单点选注入的 skill-invocation 记为手动调用", () => {
+  const events = new Map();
+  const sink = { put: row => events.set(row.id, { ...row }), removeRequest: id => events.delete(id) };
+  const ctx = new ParseContext("dsh", "/logs/session.v4.jsonl.zstd", sink);
+  const rows = [
+    { type: "session", version: 4, id: "s", cwd: "/demo" },
+    // 真实 DSH：菜单点选后用户消息以 /技能名 开头，技能正文由客户端注入，全程没有 skill 工具调用。
+    { type: "user/message", data: { id: "u1", source: { kind: "user" }, content: "/animation-vocabulary  popover 回弹效果叫什么？" } },
+    { type: "user/message", data: { id: "u2", source: { kind: "skill-catalog" }, content: "<available_skills>- `animation-vocabulary`: glossary</available_skills>" } },
+    { type: "user/message", data: { id: "m1", source: { kind: "skill-invocation", name: "animation-vocabulary", form: "instructions" }, content: '<skill_content name="animation-vocabulary">正文</skill_content>' } },
+  ];
+  rows.forEach((row, index) => parseDsh({ time: 1000 + index, line: index + 1, ...row }, ctx));
+  ctx.finish();
+  assert.equal(events.size, 1, "注入的技能正文只记一次调用");
+  const [event] = [...events.values()];
+  assert.deepEqual([event.skillName, event.kind, event.trigger, event.status, event.evidence],
+    ["animation-vocabulary", "invocation", "manual", "returned", "user_selection"]);
+});
