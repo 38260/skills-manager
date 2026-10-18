@@ -13,7 +13,7 @@
 
 | 阶段 | 验收点 | 状态 |
 | --- | --- | --- |
-| Q1 | 显式要求使用技能，核对真实工具调用、`manual`、记录类型和计数 | 待测 |
+| Q1 | 显式要求使用技能，核对真实工具调用、`manual`、记录类型和计数 | 通过 |
 | Q2 | 不点名技能的审查请求，核对隐式选择和实际分类 | 待测 |
 | Q3 | 明确要求自行选择技能，核对 `automatic` 分类 | 待测 |
 | Q4 | 点名但未执行、普通提及与重复扫描，核对误报和去重 | 待测 |
@@ -24,3 +24,10 @@
 - `request` 表示用户请求但尚无调用证据；技能库使用次数应只累加非 `request` 记录。
 - `manual` 需要明确点名证据；`automatic` 需要明确自主选择指令；仅观察到调用而没有触发证据时应为 `unknown`。
 - 同一条工具调用重扫后 ID 和计数必须稳定。历史记录与本轮记录按会话和时间区分。
+
+## Q1 显式调用结果
+
+- 在现有 Qoder SkillManager 会话中明确要求使用 `web-design-guidelines`，对 `src/views/SkillActivity.tsx` 做只读审查；Qoder 界面显示任务成功，并给出 3 条审查发现。
+- 原始日志包含一次 `Skill` 工具调用，参数 `skill=web-design-guidelines`，随后有对应工具结果；不能仅凭答复文本判定调用。
+- 定向扫描 Qoder 的 66 个日志文件，重新解析 1 个，错误 0。数据库新增 1 条 `invocation / manual / returned`，证据为 `user_selection`；同名 Qoder 记录在测试前为 0。
+- 当前服务接口 `get_skill_activity` 的 Qoder + 技能筛选返回 1 条；该条没有可验证技能路径，严格归属为空，按唯一技能名匹配到库中技能。`get_skill_usage` 显示该技能总使用次数 2：Qoder 调用 1 条，另有 Codex 读取技能文档 1 条。总次数是跨 Agent 口径，不能直接视为 Qoder 调用数。
