@@ -16,7 +16,7 @@ const cancelledError = () => Object.assign(new Error("扫描已取消"), { code:
 // 解析器版本：修复解析缺陷后 +1。缓存里记录了写入时的版本，版本不一致的文件会重新读取一次，
 // 否则旧的错误计数会一直复用（文件内容没变 → 走缓存），来源会永远停在"部分读取"。
 // v1：DSH 接受日志版本 0；WorkBuddy 的 Skill 参数兼容 command 键。
-export const PARSER_VERSION = 8;   // 8：Qoder 压缩摘要（isCompactSummary）不再当成用户点名。
+export const PARSER_VERSION = 9;   // 9：ZCode 桌面端 `[$技能名](SKILL.md)` 芯片识别为显式点名。
 
 async function discover(source, cancelled) {
   const files = [], visited = new Set();

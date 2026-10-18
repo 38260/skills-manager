@@ -34,6 +34,12 @@ function attachedSkillSelections(content) {
 function explicitSelection(text) {
   const dollar = /^\s*\$([\w.:-]+)(?=\s|$)/u.exec(text);
   if (dollar) return { name: dollar[1] };
+  // ZCode 桌面端把技能芯片序列化成 `[$技能名](...\SKILL.md)`，开头的方括号会让上面的 `$` 锚定失效。
+  const chip = /^\s*\[\$([\w.:-]+)\]\(([^)]+)\)/u.exec(text);
+  if (chip) {
+    const path = chip[2].trim();
+    return { name: skillFromPath(path) || chip[1], path };
+  }
   const command = /^\s*\/skill\s+([\w.:-]+)(?=\s|$)/u.exec(text);
   if (command) return { name: command[1] };
   // WorkBuddy 的技能芯片写成带引号的 SKILL.md 路径，技能名要从父目录推导。
@@ -60,6 +66,7 @@ export class ParseContext {
       .replace(/^\s*>.*$/gm, "");
     // 只接受明确的「用户点名」写法：
     //   Codex / DSH 的 `$技能名`（必须出现在消息开头，避免和 shell 变量混淆）
+    //   ZCode 桌面端芯片 `[$技能名](...\SKILL.md)`
     //   通用的 `/skill 技能名`
     //   WorkBuddy / WorkBuddy AI 的 `@skill:技能名` 或 `@skill:"...\SKILL.md"`
     const explicit = explicitSelection(text);
