@@ -1,0 +1,92 @@
+{
+  "generatedAt": "2026-10-18T03:32:32.008Z",
+  "expectedTotal": 84,
+  "beforeTotal": 91,
+  "removed": 7,
+  "afterTotal": 84,
+  "stale": [
+    {
+      "id": "f3525456628275ab96cb2aa1821d4cd484a864fc2d92e7f1e655bccf7cf99fa4",
+      "kind": "request",
+      "trigger": "manual",
+      "status": "pending",
+      "skillName": "tool",
+      "sessionId": "df7a41a6-b5c4-407f-8585-47dd78f3a528",
+      "sourceLine": "3",
+      "sourcePath": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AIWorkSpace-Codex-SkillManager\\df7a41a6-b5c4-407f-8585-47dd78f3a528.jsonl"
+    },
+    {
+      "id": "3a1adc98d9e6376f837787a69f0f2f01b1489a7280bb2454c7ddc528641c5758",
+      "kind": "request",
+      "trigger": "manual",
+      "status": "pending",
+      "skillName": "C:\\\\Users\\\\<user>\\\\.workbuddy\\\\skills\\\\eli5\\\\SKILL.md",
+      "sessionId": "df7a41a6-b5c4-407f-8585-47dd78f3a528",
+      "sourceLine": "3",
+      "sourcePath": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AIWorkSpace-Codex-SkillManager\\df7a41a6-b5c4-407f-8585-47dd78f3a528.jsonl"
+    },
+    {
+      "id": "226c7bac085c1b268af8b13e820abc6da41d14e5a3b943f99b6ee14aa2f72279",
+      "kind": "request",
+      "trigger": "manual",
+      "status": "pending",
+      "skillName": "tool",
+      "sessionId": "67c2555f-7b96-4822-87be-5a7422b26ad0",
+      "sourceLine": "665",
+      "sourcePath": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AIWorkSpace-WbAI-UI-Test\\67c2555f-7b96-4822-87be-5a7422b26ad0.jsonl"
+    },
+    {
+      "id": "e5562557f99243d93cb2aa983d120a8fb9de3932b8eb2159db9c093069e8ae40",
+      "kind": "request",
+      "trigger": "manual",
+      "status": "pending",
+      "skillName": "tool",
+      "sessionId": "d41ac4db-1363-480d-8e2f-e03b7caffd03",
+      "sourceLine": "132",
+      "sourcePath": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AIWorkSpace-WbAI-UI-Test\\d41ac4db-1363-480d-8e2f-e03b7caffd03.jsonl"
+    },
+    {
+      "id": "f397e8e223eb4493d3d3dc004b5f90b668b50badf4be883024d2e95c7b669431",
+      "kind": "request",
+      "trigger": "manual",
+      "status": "pending",
+      "skillName": "tool",
+      "sessionId": "67bc52da-9313-4b85-afac-715de4f546b1",
+      "sourceLine": "1",
+      "sourcePath": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Workbuddy-2026-09-14-21-39-49\\67bc52da-9313-4b85-afac-715de4f546b1.jsonl"
+    },
+    {
+      "id": "cb6f77599f817b0ed7c88d21109ef0c79a1aad472b94c5696b6d703c48d62ab4",
+      "kind": "request",
+      "trigger": "manual",
+      "status": "pending",
+      "skillName": "tool",
+      "sessionId": "15a5c762-5e06-47f5-af56-69879b05d1ca",
+      "sourceLine": "15",
+      "sourcePath": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Workbuddy-2026-08-31-11-42-48\\15a5c762-5e06-47f5-af56-69879b05d1ca.jsonl"
+    },
+    {
+      "id": "0c620b604bbb9ffc470ba1e3dd81bb282e3b2bf2acb2ac275b2557a3779d129d",
+      "kind": "request",
+      "trigger": "manual",
+      "status": "pending",
+      "skillName": "tool",
+      "sessionId": "15a5c762-5e06-47f5-af56-69879b05d1ca",
+      "sourceLine": "1",
+      "sourcePath": "C:\\Users\\<user>\\.workbuddy\\projects\\d-AI-Workbuddy-2026-08-31-11-42-48\\15a5c762-5e06-47f5-af56-69879b05d1ca.jsonl"
+    }
+  ],
+  "expectedCounts": {
+    "invocation/manual/returned": 7,
+    "invocation/unknown/returned": 69,
+    "request/manual/pending": 7,
+    "invocation/automatic/returned": 1
+  },
+  "actualCounts": {
+    "invocation/unknown/returned": 69,
+    "request/manual/pending": 7,
+    "invocation/automatic/returned": 1,
+    "invocation/manual/returned": 7
+  },
+  "matches": true
+}
