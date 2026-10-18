@@ -104,13 +104,14 @@ export function ActivityTable({ items, selectedId, onSelect, onOpenSkill, loadin
                   <button
                     type="button"
                     onClick={event => { event.stopPropagation(); onOpenSkill(skillId); }}
-                    className="block max-w-full truncate rounded text-left text-[13px] font-medium leading-5 text-primary underline-offset-2 outline-none hover:text-accent-dark hover:underline focus-visible:text-accent-dark focus-visible:underline focus-visible:ring-2 focus-visible:ring-accent dark:hover:text-accent-light dark:focus-visible:text-accent-light"
-                    title={record.skillName}
+                    className="block max-w-full cursor-pointer truncate rounded text-left text-[13px] font-medium leading-5 text-accent-dark underline decoration-accent/40 underline-offset-2 outline-none hover:decoration-current focus-visible:ring-2 focus-visible:ring-accent dark:text-accent-light"
+                    title={record.managedSkillId ? t("activity.openSkill") : t("activity.openSkillByNameHint")}
+                    aria-label={`${record.skillName} · ${t("activity.openSkill")}`}
                   >
                     {record.skillName}
                   </button>
                 ) : (
-                  <span className="block truncate text-[13px] font-medium leading-5 text-primary" title={record.skillName}>{record.skillName}</span>
+                  <span className="block truncate text-[13px] font-medium leading-5 text-primary" title={`${record.skillName} · ${t("activity.unlinked")}`}>{record.skillName}</span>
                 )}
                 <span className="block truncate text-[11.5px] leading-4 text-tertiary" title={record.project || undefined}>{record.project || t("activity.noProject")}</span>
               </span>

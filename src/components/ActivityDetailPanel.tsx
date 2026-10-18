@@ -81,7 +81,13 @@ export function ActivityDetailPanel({ record, compact = false, onOpenSkill, clas
           {record.skillName.charAt(0).toUpperCase()}
         </span>
         <div className="min-w-0">
-          <h3 className="truncate text-[14px] font-semibold leading-5 text-primary" title={record.skillName}>{record.skillName}</h3>
+          <h3 className="truncate text-[14px] font-semibold leading-5 text-primary" title={record.skillName}>
+            {!compact && skillId && onOpenSkill ? <button type="button" onClick={() => onOpenSkill(skillId)}
+              title={matchedByName ? t("activity.openSkillByNameHint") : t("activity.openSkill")}
+              className="max-w-full truncate rounded text-left text-accent-dark underline decoration-accent/40 underline-offset-2 outline-none hover:decoration-current focus-visible:ring-2 focus-visible:ring-accent dark:text-accent-light">
+              {record.skillName}
+            </button> : record.skillName}
+          </h3>
           <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
             <span className="inline-flex items-center gap-1 text-[12px] text-secondary">
               <AgentIcon agentKey={toolIconKeys[record.tool] ?? record.tool} displayName={toolNames[record.tool]} className="h-3.5 w-3.5" />

@@ -1350,6 +1350,7 @@
     "unlinked": "未关联技能库；原始调用记录仍然保留。",
     "statusNote": "“已返回”表示工具已返回结果，不代表整个任务成功。",
     "evidenceLocation": "调用位置",
+    "backToRecords": "返回调用记录",
     "evidenceLine": "第 {{position}} 行",
     "evidencePart": "记录 ID：{{position}}",
     "evidenceAction": "动作",

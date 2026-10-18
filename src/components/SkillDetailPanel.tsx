@@ -31,6 +31,7 @@ import { SkillStructureSection } from "./SkillStructureSection";
 import { ActivityRecordList } from "./ActivityRecordList";
 import { openExternal } from "../lib/desktop";
 import { getActivity, type ActivityEvent } from "../lib/activity";
+import { useDialogFocus } from "../hooks/useDialogFocus";
 
 type ContentTab = "doc" | "sourceDiff" | "activity";
 
@@ -182,6 +183,8 @@ function SkillDetailPanelContent({
   const sourceRequestIdRef = useRef(0);
   const forceSourceRefreshRef = useRef(false);
   const skillId = skill.id;
+  // 详情覆盖原页面，关闭后焦点回到入口，调用记录的筛选、分页和滚动保持原样。
+  useDialogFocus(true, shellRef, onClose);
   const tocPrefix = `skill-${skill.id}`;
   const supportsSourceDiff =
     skill.source_type === "git"
@@ -648,7 +651,7 @@ function SkillDetailPanelContent({
         className="absolute inset-0 z-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div ref={shellRef} className="skill-detail-shell absolute inset-0 z-10 flex min-h-0 flex-col overflow-hidden border-l border-border-subtle bg-surface">
+      <div ref={shellRef} role="dialog" aria-modal="true" aria-label={skill.display_name || skill.name} tabIndex={-1} className="skill-detail-shell absolute inset-0 z-10 flex min-h-0 flex-col overflow-hidden border-l border-border-subtle bg-surface outline-none">
         {/* 页头：滚动时保持可访问；正文下滑后收成紧凑形态 */}
         <header
           inert={drawerOpen && compact}
@@ -665,7 +668,7 @@ function SkillDetailPanelContent({
                 <ArrowLeft className="h-3.5 w-3.5" />
                 {/* 详情是全局弹层，从哪打开就关回哪：在技能库页叫「返回技能库」，
                     从调用记录 / 工作台打开时只是个关闭动作，写「返回技能库」会让人以为会跳走。 */}
-                {location.pathname === "/my-skills" ? t("mySkills.detail.back") : t("mySkills.detail.backGeneric")}
+                {location.pathname === "/skill-activity" ? t("activity.backToRecords") : location.pathname === "/my-skills" ? t("mySkills.detail.back") : t("mySkills.detail.backGeneric")}
           </button>
           <div className={cn("skill-detail-heading-row flex min-w-0 items-start justify-between gap-6 transition-all duration-200", scrolled ? "mt-1" : "mt-2.5")}>
             <div className="flex min-w-0 flex-1 items-start gap-3.5">

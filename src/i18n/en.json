@@ -1350,6 +1350,7 @@
     "unlinked": "Not linked to the library. The original activity is retained.",
     "statusNote": "Returned means the tool returned a result, not that the overall task succeeded.",
     "evidenceLocation": "Call location",
+    "backToRecords": "Back to activity",
     "evidenceLine": "Line {{position}}",
     "evidencePart": "Record ID: {{position}}",
     "evidenceAction": "Action",
