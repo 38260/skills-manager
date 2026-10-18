@@ -67,6 +67,16 @@ test("失败不写入成功缓存，刷新失败保留之前成功结果且之�
   fail=false;await library.skillSourcePreview(skill.id,true);assert.equal(calls,4);
 });
 
+test("已检测到新的远端 revision 时立即失效旧缓存，不等待 TTL",async t=> {
+  const {store,library,source,skill}=await fixture(t),original=library.source.bind(library);let calls=0;
+  t.mock.method(library,"source",async (...args)=>{calls++;return original(...args);});
+  await library.skillSourcePreview(skill.id);
+  fs.writeFileSync(path.join(source,"SKILL.md"),"---\nname: example\n---\nnew detected origin");
+  store.run("UPDATE skills SET remote_revision=? WHERE id=?","new-detected-revision",skill.id);
+  const next=await library.skillSourcePreview(skill.id);
+  assert.equal(calls,2);assert.match(next.document.content,/new detected origin/);
+});
+
 test("来源读取期间中心库改变时拒绝混用版本并清理正在读取的资源",async t=> {
   const {library,skill}=await fixture(t),original=library.source.bind(library);let release,cleaned=false;
   const wait=new Promise(resolve=>{release=resolve;});

@@ -188,7 +188,13 @@ export class Store {
   skills() {
     return this.all("SELECT * FROM skills ORDER BY name").map(row => this.skillFromRow(row));
   }
-  skill(id) { const skill = this.skills().find(skill => skill.id === id); if (!skill) throw new Error("技能不存在"); return skill; }
+  // 按 id 只取一行。旧实现是「重建整张技能表再 find」，在逐技能循环里会退化成 O(N²)：
+  // 实测 52 个技能逐个检查更新要 41ms/个，其中绝大部分是重复重建（每次读 53 个 SKILL.md + 上百条查询）。
+  skill(id) {
+    const row = this.get("SELECT * FROM skills WHERE id=?", id);
+    if (!row) throw new Error("技能不存在");
+    return this.skillFromRow(row);
+  }
   skillsForPreset(id) {
     return this.all("SELECT s.* FROM skills s JOIN scenario_skills ss ON ss.skill_id=s.id WHERE ss.scenario_id=? ORDER BY s.name", id).map(row => this.skillFromRow(row));
   }

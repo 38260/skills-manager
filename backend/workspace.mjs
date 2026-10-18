@@ -25,6 +25,35 @@ function latestModifiedMs(directory) {
   return latest;
 }
 
+// 目录内容哈希的进程内缓存。
+// 打开一次工作区，每个技能都要算内容指纹，而部署模式默认是 symlink/junction（本地副本与中心是
+// 同一个物理目录），于是同一个目录会被反复整读：实测 claude_code 的 skills 根 23 个技能 / 857 个
+// 文件 / 120MB，只哈希一遍就要 620ms，一次请求里要读两遍以上。
+// 这里用「文件数 + 总字节 + mtime 的最大值/和」做前置指纹：指纹没变就直接复用上次的哈希
+// （stat 一遍实测约 85ms，是整读的 1/7 左右）。外部改动会刷新 mtime，指纹随之失效。
+// 注意：写入类操作（安装 / 同步 / 备份）不使用这个缓存，仍然现算，保证落盘判定用的是新鲜内容。
+const directoryHashCache = new Map();
+export function cachedDirectoryHash(directory) {
+  let canonicalPath;
+  try { canonicalPath = canonical(directory); } catch { return hashDirectory(directory); }
+  let listing;
+  try { listing = files(directory); } catch { return hashDirectory(directory); }
+  let bytes = 0, maxMtime = 0, sumMtime = 0;
+  for (const file of listing) {
+    bytes += file.size;
+    let modified = 0;
+    try { modified = fs.statSync(file.full).mtimeMs; } catch { /* 读不到就按 0 计 */ }
+    if (modified > maxMtime) maxMtime = modified;
+    sumMtime += modified;
+  }
+  const fingerprint = `${listing.length}:${bytes}:${Math.round(maxMtime)}:${Math.round(sumMtime)}`;
+  const cached = directoryHashCache.get(canonicalPath);
+  if (cached && cached.fingerprint === fingerprint) return cached.hash;
+  const hash = hashDirectory(directory);
+  directoryHashCache.set(canonicalPath, { fingerprint, hash });
+  return hash;
+}
+
 // 递归读取一个技能根目录：识别含 SKILL.md 的目录，跳过隐藏目录与嵌入的 bundle skills 子树。
 export function readSkillsRoot(root, { enabled, agent, agentDisplayName, recursive = true, includeSyncState = true }) {
   const skills = [];
@@ -49,7 +78,7 @@ export function readSkillsRoot(root, { enabled, agent, agentDisplayName, recursi
           description: info.description, author: info.author, author_source: info.author_source,
           path: full, files: listTopLevelFiles(full), enabled, agent, agent_display_name: agentDisplayName,
           tags: [], in_center: false, sync_status: "project_only", center_skill_id: null,
-          content_hash: includeSyncState ? hashDirectory(full) : null,
+          content_hash: includeSyncState ? cachedDirectoryHash(full) : null,
           last_modified_at: includeSyncState ? latestModifiedMs(full) : null,
         });
         continue;
@@ -64,10 +93,22 @@ export function readSkillsRoot(root, { enabled, agent, agentDisplayName, recursi
   return skills.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
 }
 
-function matchesBySourceRef(managed, skillPath) {
+function matchesBySourceRef(managed, skillPath, canonicalPath) {
   if (!managed.source_ref) return false;
   if (managed.source_ref === skillPath) return true;
-  try { return canonical(managed.source_ref) === canonical(skillPath); } catch { return false; }
+  try { return cachedCanonical(managed.source_ref) === canonicalPath; } catch { return false; }
+}
+
+// canonical() 就是 realpathSync：匹配循环里按「每个已纳管技能 × 每个工作区技能」调用会形成
+// 上千次系统调用（53 × 23 实测贡献数百毫秒）。路径在一次读取内不会变，按请求缓存即可
+// （withCenterState 进入时重置，不跨请求复用）。
+let canonicalCache = new Map();
+function cachedCanonical(filename) {
+  const key = filename;
+  if (canonicalCache.has(key)) return canonicalCache.get(key);
+  const value = canonical(filename);
+  canonicalCache.set(key, value);
+  return value;
 }
 
 function uniqueMatch(candidates, hash) {
@@ -80,7 +121,8 @@ function uniqueMatch(candidates, hash) {
 
 // 中心匹配优先级：source_ref 直连 > 唯一内容指纹 > 中心目录名 > slug 化名称；后两者用指纹消歧。
 export function matchCenterSkill(info, managedSkills) {
-  const byRef = managedSkills.filter(skill => matchesBySourceRef(skill, info.path));
+  const canonicalPath = cachedCanonical(info.path);
+  const byRef = managedSkills.filter(skill => matchesBySourceRef(skill, info.path, canonicalPath));
   if (byRef.length === 1) return byRef[0];
   if (info.content_hash) {
     const byHash = managedSkills.filter(skill => skill.content_hash === info.content_hash);
@@ -108,13 +150,19 @@ export function classifySyncStatus(info, managed, liveHash) {
 }
 
 export function withCenterState(skills, store) {
+  // canonical 缓存按「一次读取」为生命周期：路径可能被重链/卸载，跨请求不复用。
+  canonicalCache = new Map();
   const managedSkills = store.skills();
   const tagsMap = new Map(managedSkills.map(skill => [skill.id, skill.tags]));
+  // 按物理目录（canonical）缓存实时指纹，并且**先把 readSkillsRoot 已经算好的工作区指纹放进去**：
+  // symlink/junction 部署时工作区副本与中心是同一个物理目录，不做这一步等于把同一个目录整读两次。
   const liveHashes = new Map();
   const liveHash = directory => {
-    if (!liveHashes.has(directory)) liveHashes.set(directory, hashDirectory(directory));
-    return liveHashes.get(directory);
+    const key = cachedCanonical(directory);
+    if (!liveHashes.has(key)) liveHashes.set(key, cachedDirectoryHash(directory));
+    return liveHashes.get(key);
   };
+  for (const info of skills) if (info.content_hash) liveHashes.set(cachedCanonical(info.path), info.content_hash);
   for (const info of skills) {
     const match = matchCenterSkill(info, managedSkills);
     info.in_center = !!match;

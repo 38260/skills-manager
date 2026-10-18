@@ -523,7 +523,7 @@ export class Library {
     return (await this.skillSourcePreview(id)).diff;
   }
   sourcePreviewKey(skill) {
-    return JSON.stringify([skill.id,hashDirectory(skill.central_path),skill.source_type,skill.source_ref,skill.source_ref_resolved,skill.source_branch,skill.source_subpath,skill.source_revision,skill.name]);
+    return JSON.stringify([skill.id,hashDirectory(skill.central_path),skill.source_type,skill.source_ref,skill.source_ref_resolved,skill.source_branch,skill.source_subpath,skill.source_revision,skill.remote_revision,skill.name]);
   }
   async skillSourcePreview(id,forceRefresh=false) {
     const skill=this.store.skill(id);
