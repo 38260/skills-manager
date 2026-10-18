@@ -34,6 +34,7 @@ import { OperationResults, type OperationReport, type OperationItem } from "../c
 import { getSkillDisplayNames, matchSkillSearch } from "../lib/skillSearch";
 import { SkillRecovery } from "../components/SkillRecovery";
 import { readLibraryViewState, writeLibraryViewState, restoreLibraryScroll } from "../lib/libraryViewState";
+import { sortLibrarySkills, type LibrarySortMode } from "../lib/librarySort";
 import { toast } from "sonner";
 import { cn } from "../utils";
 import { useApp } from "../context/AppContext";
@@ -189,6 +190,7 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
     refreshProjects,
   } = useApp();
   const [viewMode, setViewMode] = useState<"grid" | "list">(initialView.viewMode);
+  const [sortMode, setSortMode] = useState<LibrarySortMode>("default");
   const [showCreatePreset, setShowCreatePreset] = useState(false);
   const [filterMode, setFilterMode] = useState<"all" | "enabled" | "available">(initialView.filterMode);
   const [sourceFilters, setSourceFilters] = useState<Set<string>>(() => new Set(initialView.sourceFilters));
@@ -377,24 +379,8 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
       return true;
     });
 
-    // Always sort enabled skills first; within enabled group, use custom sort order
-    if (viewedPreset) {
-      result.sort((a, b) => {
-        const aEnabled = a.preset_ids.includes(viewedPreset.id) ? 0 : 1;
-        const bEnabled = b.preset_ids.includes(viewedPreset.id) ? 0 : 1;
-        if (aEnabled !== bEnabled) return aEnabled - bEnabled;
-        // Within same group, use preset sort order
-        const aOrder = presetSkillOrder.indexOf(a.id);
-        const bOrder = presetSkillOrder.indexOf(b.id);
-        if (aOrder !== -1 && bOrder !== -1) return aOrder - bOrder;
-        if (aOrder !== -1) return -1;
-        if (bOrder !== -1) return 1;
-        return a.name.localeCompare(b.name);
-      });
-    }
-
-    return result;
-  }, [skills, skillDisplayNames, search, sourceFilters, tagFilters, filterMode, viewedPreset, presetSkillOrder]);
+    return sortLibrarySkills(result, sortMode, usage, viewedPreset?.id ?? null, presetSkillOrder);
+  }, [skills, skillDisplayNames, search, sourceFilters, tagFilters, filterMode, viewedPreset, presetSkillOrder, sortMode, usage]);
 
   const {
     isMultiSelect, setIsMultiSelect,
@@ -432,7 +418,7 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
       const { active, over } = event;
-      if (!over || active.id === over.id || !viewedPreset) return;
+      if (!over || active.id === over.id || !viewedPreset || sortMode !== "default") return;
 
       // Only reorder enabled skills (they are always at the front)
       const enabledSkills = filtered.filter((s) => s.preset_ids.includes(viewedPreset.id));
@@ -454,10 +440,10 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
         await api.getPresetSkillOrder(viewedPreset.id).then(setPresetSkillOrder).catch(() => {});
       }
     },
-    [filtered, viewedPreset]
+    [filtered, viewedPreset, sortMode]
   );
 
-  const canDrag = !!viewedPreset;
+  const canDrag = !!viewedPreset && sortMode === "default";
 
   const refreshGitStatus = useCallback(async () => {
     try {
@@ -1144,6 +1130,17 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
               </button>
             ))}
           </div>
+
+          <select
+            aria-label={t("mySkills.sort.label")}
+            value={sortMode}
+            onChange={(event) => setSortMode(event.target.value as LibrarySortMode)}
+            className="app-input w-auto shrink-0"
+          >
+            <option value="default">{t("mySkills.sort.default")}</option>
+            <option value="usage-desc">{t("mySkills.sort.usageDesc")}</option>
+            <option value="usage-asc">{t("mySkills.sort.usageAsc")}</option>
+          </select>
 
           {/* 新建 Preset：入口从侧边栏搬到这里（侧边栏只在 ≥2 个 Preset 时显示该段） */}
           <button

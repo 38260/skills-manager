@@ -279,6 +279,12 @@
       "saved": "技能資訊已更新",
       "custom": "自訂"
     },
+    "sort": {
+      "label": "技能排序",
+      "default": "預設排序",
+      "usageDesc": "呼叫次數：由高到低",
+      "usageAsc": "呼叫次數：由低到高"
+    },
     "usage": {
       "count": "呼叫 {{count}} 次",
       "never": "從未使用",

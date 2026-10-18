@@ -277,6 +277,12 @@
       "saved": "Skill info updated",
       "custom": "Custom"
     },
+    "sort": {
+      "label": "Sort skills",
+      "default": "Default order",
+      "usageDesc": "Usage: high to low",
+      "usageAsc": "Usage: low to high"
+    },
     "usage": {
       "count": "{{count}} calls",
       "never": "Never used",

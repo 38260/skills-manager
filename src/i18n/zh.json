@@ -277,6 +277,12 @@
       "saved": "技能信息已更新",
       "custom": "自定义"
     },
+    "sort": {
+      "label": "技能排序",
+      "default": "默认排序",
+      "usageDesc": "调用次数：从高到低",
+      "usageAsc": "调用次数：从低到高"
+    },
     "usage": {
       "count": "调用 {{count}} 次",
       "never": "从未使用",
