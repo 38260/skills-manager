@@ -112,6 +112,32 @@ test("技能元数据写入失败同样撤销整个安装",async t=>{
   assert.deepEqual(fs.existsSync(manifestsDir)?fs.readdirSync(manifestsDir):[],[]);
 });
 
+for(const phase of ["copy","hash"]) test(`安装${phase}阶段失败清理暂存目录并允许重试`,async t=>{
+  const {source,store,library}=fixture(t);
+  fs.writeFileSync(path.join(source,"second.txt"),"keep source content");
+  if(phase==="copy") {
+    const original=fs.copyFileSync;let copied=0;
+    t.mock.method(fs,"copyFileSync",(...args)=>{
+      if(++copied===2)throw Object.assign(new Error("复制时磁盘已满"),{code:"ENOSPC"});
+      return original(...args);
+    });
+  } else {
+    const original=fs.readFileSync;
+    t.mock.method(fs,"readFileSync",(filename,...args)=>{
+      if(String(filename).includes(".install-"))throw Object.assign(new Error("指纹读取失败"),{code:"EIO"});
+      return original(filename,...args);
+    });
+  }
+  await assert.rejects(library.installLocal(source),phase==="copy"?/磁盘已满/:/指纹读取失败/);
+  t.mock.restoreAll();
+  assert.equal(store.skills().length,0);
+  assert.deepEqual(fs.readdirSync(store.skillsDirectory),[],"失败不能留下暂存目录或技能副本");
+  assert.equal(fs.readFileSync(path.join(source,"second.txt"),"utf8"),"keep source content");
+  const installed=await library.installLocal(source);
+  assert.equal(store.skills().length,1);
+  assert.equal(fs.readFileSync(path.join(installed.central_path,"second.txt"),"utf8"),"keep source content");
+});
+
 // 取消登记的值语义是前端区分「已取消／已完成」的唯一依据，单独固定下来。
 test("取消登记：受理置标记，释放后返回未受理",async()=>{
   const {registerCancel,requestCancel,releaseCancel}=await import("../../backend/library.mjs");

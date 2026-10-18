@@ -144,15 +144,19 @@ export class Library {
     let destination=inside(this.store.skillsDirectory,name);
     if(fs.existsSync(destination)) destination=inside(this.store.skillsDirectory,name+"-"+crypto.randomBytes(4).toString("hex"));
     const staged=inside(this.store.skillsDirectory,".install-"+crypto.randomUUID());
-    copySkill(directory,staged);
-    const id=crypto.randomUUID(),now=Date.now(),hash=hashDirectory(staged);
+    const id=crypto.randomUUID(),now=Date.now();
+    let installed=false;
     // 安装是一个整体操作：数据库记录、技能目录、安装清单、技能元数据任一失败都要一起撤销。
     // 旧实现只在「数据库里没有该 id」时才删目录，而插入在清单写入之前已经成功，
     // 于是失败后留下「记录在、目录在」的半成品，重装还会再生成一份同名技能。
     const manifest=inside(path.join(this.store.directory,"install-manifests"),`${id}.json`);
     const metadataFile=inside(path.join(this.store.skillsDirectory,".skills-manager","skills"),`${id}.json`);
     try {
+      // 暂存复制和指纹读取也可能失败，必须进入同一回滚范围。
+      copySkill(directory,staged);
+      const hash=hashDirectory(staged);
       fs.renameSync(staged,destination);
+      installed=true;
       this.store.run("INSERT INTO skills(id,name,description,source_type,source_ref,source_ref_resolved,source_subpath,source_branch,source_revision,remote_revision,central_path,content_hash,enabled,created_at,updated_at,status,update_status) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         id,meta.name||name,meta.description,source.source_type||"import",source.source_ref,source.source_ref_resolved,source.source_subpath,source.source_branch,source.source_revision,source.source_revision,destination,hash,true,now,now,"ok",["git","skillssh"].includes(source.source_type)?"up_to_date":"local_only");
       this.saveManifest(id,destination); this.store.saveMetadata(id);this.changed();return this.store.skill(id);
@@ -164,7 +168,7 @@ export class Library {
         () => {if(fs.existsSync(manifest))fs.unlinkSync(manifest);},
         () => {if(fs.existsSync(metadataFile))fs.unlinkSync(metadataFile);},
         () => {if(fs.existsSync(staged))fs.rmSync(staged,{recursive:true,force:true});},
-        () => {if(fs.existsSync(destination))fs.rmSync(destination,{recursive:true,force:true});},
+        () => {if(installed&&fs.existsSync(destination))fs.rmSync(destination,{recursive:true,force:true});},
       ]) {try{rollback();}catch{}}
       throw error;
     }
