@@ -1,0 +1,106 @@
+{
+  "verifiedOn": "2026-10-19",
+  "backend": {
+    "failed": 0,
+    "passed": 130
+  },
+  "ui": {
+    "failed": 0,
+    "passed": 34
+  },
+  "electron": {
+    "failed": 0,
+    "passed": 1
+  },
+  "build": "passed",
+  "lint": "passed",
+  "sidebarChecks": [
+    {
+      "name": "目录、项目结构、项目来源显示为三个页签",
+      "ok": true
+    },
+    {
+      "name": "默认只展示目录，未堆叠文件结构和来源",
+      "ok": true
+    },
+    {
+      "name": "文件结构页可用，正文位置保持",
+      "ok": true
+    },
+    {
+      "name": "来源信息和原有来源操作保留",
+      "ok": true
+    },
+    {
+      "name": "Home 与方向键支持页签切换",
+      "ok": true
+    },
+    {
+      "name": "方向键同步选中状态和键盘焦点",
+      "ok": true
+    },
+    {
+      "name": "目录仍能定位正文对应章节",
+      "ok": true
+    },
+    {
+      "name": "非文档主区禁用目录并展示有效侧栏内容",
+      "ok": true
+    },
+    {
+      "name": "返回正文恢复原目录页签",
+      "ok": true
+    },
+    {
+      "name": "部署开关入口保留",
+      "ok": true
+    },
+    {
+      "name": "窄窗口抽屉复用同一组页签和来源信息",
+      "ok": true
+    },
+    {
+      "name": "Esc 仅关闭信息抽屉，保留技能详情",
+      "ok": true
+    },
+    {
+      "name": "关闭详情后回到原技能库",
+      "ok": true
+    }
+  ],
+  "agentChecks": [
+    {
+      "name": "网格默认仅显示 Codex、Qoder、WorkBuddy，顺序固定",
+      "ok": true
+    },
+    {
+      "name": "其余三个 Agent 汇总为 +3",
+      "ok": true
+    },
+    {
+      "name": "点击 +X 展开全部，未误开技能详情",
+      "ok": true
+    },
+    {
+      "name": "展开后前三个图标仍保持指定顺序",
+      "ok": true
+    },
+    {
+      "name": "展开区 Agent 可以执行真实隔离部署",
+      "ok": true
+    },
+    {
+      "name": "展开区 Agent 可以卸载并恢复可用状态",
+      "ok": true
+    },
+    {
+      "name": "收起恢复三个指定图标和 +3",
+      "ok": true
+    },
+    {
+      "name": "列表视图同样只显示三个指定图标",
+      "ok": true
+    }
+  ],
+  "scope": "当前工作区与隔离演示库；Windows EXE 未重新打包"
+}

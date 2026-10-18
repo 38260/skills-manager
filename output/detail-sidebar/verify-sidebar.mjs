@@ -29,7 +29,8 @@ async page => {
   await page.waitForFunction(() => {
     const heading = [...document.querySelectorAll(".skill-detail-main h2")].find(element => element.textContent === "章节 6");
     const main = document.querySelector(".skill-detail-main");
-    return heading && Math.abs(heading.getBoundingClientRect().top - main.getBoundingClientRect().top) < 160;
+    const selected = [...document.querySelectorAll('.skill-detail-sidebar button[aria-current="true"]')].some(element => element.textContent === "章节 6");
+    return heading && selected && Math.abs(heading.getBoundingClientRect().top - main.getBoundingClientRect().top) < 160;
   });
   check("目录仍能定位正文对应章节", true);
   await page.screenshot({ path: "output/playwright/detail-sidebar-toc.png" });
