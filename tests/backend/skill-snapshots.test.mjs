@@ -211,3 +211,38 @@ test("快照占用统计与清理：预览可回收量，执行后保留最近�
   assert.ok(fs.existsSync(skill.central_path));
   assert.equal(store.skill(skill.id).id, skill.id);
 });
+
+test("快照占用、预览与回收量包含真实元数据字节且执行时重新计量", async t => {
+  const { snapshots, skill } = await fixture(t);
+  const captures = [];
+  fs.mkdirSync(path.join(skill.central_path, "references"));
+  const binary = Buffer.from([0, 0xff, 0x80, 1, 2]);
+  fs.writeFileSync(path.join(skill.central_path, "references", "data.bin"), binary);
+  for (let version = 1; version <= 3; version++) {
+    const document = `---\nname: example\n---\n版本 ${version}\n`;
+    fs.writeFileSync(path.join(skill.central_path, "SKILL.md"), document);
+    const captured = snapshots.capture(skill.id, "before_update");
+    const metadata = path.join(snapshots.directory, captured.snapshot_id, "snapshot.json");
+    const expected = Buffer.byteLength(document) + binary.length + fs.statSync(metadata).size;
+    assert.equal(captured.size_bytes, expected);
+    captures.push({ ...captured, expected, metadata });
+    await new Promise(resolve => setTimeout(resolve, 5));
+  }
+  const total = captures.reduce((sum, item) => sum + item.expected, 0);
+  const usage = snapshots.usage();
+  assert.equal(usage.total_bytes, total);
+  assert.equal(usage.by_skill[0].size_bytes, total);
+  const plan = snapshots.planCleanup({ keepLatest: 2 });
+  assert.equal(plan.reclaim_bytes, captures[0].expected);
+
+  // 合法 JSON 的末尾空白也占空间，执行时要复核实际回收量。
+  fs.appendFileSync(captures[0].metadata, " \n");
+  const before = snapshots.usage().total_bytes;
+  assert.equal(before, total + 2);
+  const cleaned = snapshots.cleanup({ snapshotIds: [captures[0].snapshot_id], keepLatest: 2 });
+  assert.equal(cleaned.deleted, 1);
+  assert.equal(cleaned.reclaim_bytes, captures[0].expected + 2);
+  assert.equal(before - snapshots.usage().total_bytes, cleaned.reclaim_bytes);
+  assert.equal(fs.existsSync(path.dirname(captures[0].metadata)), false);
+  assert.equal(snapshots.list().length, 2);
+});

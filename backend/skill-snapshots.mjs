@@ -21,6 +21,14 @@ function safePath(root, relative, allowLeafLink = false) {
   return target;
 }
 
+// 按实际文件逻辑大小计量，包含 snapshot.json；不跟随符号链接。
+function storedBytes(directory) {
+  return fs.readdirSync(directory, { withFileTypes: true }).reduce((total, item) => {
+    const filename = safePath(directory, item.name);
+    return total + (item.isDirectory() ? storedBytes(filename) : item.isFile() ? fs.statSync(filename).size : 0);
+  }, 0);
+}
+
 function sourceWithoutCredentials(value) {
   if (typeof value !== "string") return value;
   if (/^(https?|ssh):\/\//i.test(value)) {
@@ -93,7 +101,7 @@ export class SkillSnapshots {
   summary(record) {
     return { snapshot_id: record.snapshot_id, skill_id: record.skill.id, name: record.skill.alias || record.skill.name,
       reason: record.reason, created_at: record.created_at, file_count: record.entries.filter(entry => !entry.directory).length,
-      size_bytes: record.entries.reduce((total, entry) => total + (entry.size || 0), 0),
+      size_bytes: storedBytes(safePath(this.directory, record.snapshot_id)),
       deleted: !this.store.get("SELECT id FROM skills WHERE id=?", record.skill.id) };
   }
 
