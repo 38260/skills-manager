@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
+import { execFile } from "node:child_process";
 import { git as runGit } from "./library.mjs";
 import { files, hashDirectory, inside } from "./files.mjs";
 
@@ -152,14 +153,21 @@ export function backupCommands(store, emit) {
   }
 
   // 记录本地与远端有差异的技能目录到 pending_conflicts。
-  async function recordConflicts(theirsCommit) {
-    const diff = await tryGit(["diff", "--name-only", "HEAD", theirsCommit, "--", "."]);
+  async function recordConflicts(theirsRef) {
+    // 记录具体提交而不是 upstream 引用：引用会随下一次 fetch 移动，等用户点「解决冲突」时
+    // 取到的可能已经不是当初检测到的那个版本（副本目录名也会变成 "-origin/" 这种）。
+    const theirsCommit = (await tryGit(["rev-parse", "-q", "--verify", `${theirsRef}^{commit}`])) ?? theirsRef;
+    // 与 extractTheirs 同理：默认输出会把含中文的路径写成 "\"shared/\350\265\204..."，
+    // 按 "/" 取首段会得到 `"shared` 这种伪目录名，冲突项因此对不上真实技能。
+    const diff = await tryGit(["-c", "core.quotepath=false", "diff", "-z", "--name-only", "HEAD", theirsCommit, "--", "."]);
     if (!diff) return;
     const dirs = new Set();
-    for (const line of diff.split(/\r?\n/)) {
-      const entry = line.trim();
-      if (!entry || entry === ".gitignore" || entry.startsWith(".git")) continue;
-      dirs.add(entry.split("/")[0]);
+    for (const entry of diff.split("\0")) {
+      if (!entry || entry === ".gitignore") continue;
+      const dir = entry.split("/")[0];
+      // 点开头的是仓库内元数据（.git*、.skills-manager 等），不对应可恢复的技能目录。
+      if (dir.startsWith(".")) continue;
+      dirs.add(dir);
     }
     for (const dir of dirs) {
       const skillId = store.matchSkill(dir) ?? dir;
@@ -191,15 +199,34 @@ export function backupCommands(store, emit) {
       new_conflicts: [], pending_total: conflicts, old_client_warning: null, legacy_fallback: true };
   }
 
-  function extractTheirs(theirsCommit, dirRel, destination) {
-    const listing = runGit(repoDir(), ["ls-tree", "-r", "--name-only", theirsCommit, "--", dirRel]);
-    for (const line of listing.split(/\r?\n/)) {
-      const entry = line.trim();
-      if (!entry) continue;
-      const content = runGit(repoDir(), ["show", `${theirsCommit}:${entry}`]);
-      const target = inside(destination, path.relative(dirRel, entry));
+  // `git show` 取文件内容：stdout 按 Buffer 直接落盘。走字符串会把非 UTF-8 字节替换成
+  // U+FFFD，图片／压缩包这类二进制文件被还原成坏文件。
+  function gitBuffer(args, limit = 256 * 1024 * 1024) {
+    return new Promise((resolve, reject) => {
+      execFile("git", ["-C", repoDir(), ...args], {
+        encoding: "buffer", windowsHide: true, maxBuffer: limit,
+        env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+      }, (error, stdout, stderr) => {
+        if (error) {
+          const detail = Buffer.isBuffer(stderr) ? stderr.toString("utf8") : String(stderr || "");
+          reject(new Error(redactMessage(detail.trim() || `git 退出码 ${error.code ?? 1}`)));
+          return;
+        }
+        resolve(stdout);
+      });
+    });
+  }
+
+  // 「两份都保留」：把远端版本的整个技能目录写到目标目录。
+  // ls-tree 必须用 -z：默认输出会把中文与空格路径转义成 "\346\212\200..." 形态，
+  // 按行切分后再去 show 这些路径一律取不到内容。分隔符是 NUL，按 NUL 切即可。
+  async function extractTheirs(theirsCommit, dirRel, destination) {
+    const listing = await runGit(repoDir(), ["-c", "core.quotepath=false", "ls-tree", "-r", "-z", "--name-only", theirsCommit, "--", dirRel]);
+    for (const name of listing.split("\0")) {
+      if (!name) continue;
+      const target = inside(destination, path.relative(dirRel, name));
       fs.mkdirSync(path.dirname(target), { recursive: true });
-      fs.writeFileSync(target, Buffer.from(content, "binary"));
+      fs.writeFileSync(target, await gitBuffer(["show", `${theirsCommit}:${name}`]));
     }
   }
 
@@ -299,7 +326,7 @@ export function backupCommands(store, emit) {
       } else if (args.action === "keep_both") {
         const target = path.join(repoDir(), `${dirName}-from-remote-${record.theirs_commit.slice(0, 7)}`);
         fs.mkdirSync(target, { recursive: true });
-        extractTheirs(record.theirs_commit, dirRel, target);
+        await extractTheirs(record.theirs_commit, dirRel, target);
       } // keep_local：保持本地内容不变
       await commit(`解决备份冲突（${args.action}）：${dirName}`);
       store.run("DELETE FROM pending_conflicts WHERE skill_id=?", args.skillId);

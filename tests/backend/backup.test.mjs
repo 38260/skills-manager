@@ -211,3 +211,60 @@ test("two-device sync with conflict resolution and clone guard", async t => {
   assert.match(fs.readFileSync(path.join(dir3, "repo", "skills", "shared", "SKILL.md"), "utf8"), /远端独有内容/, "克隆后采用远端内容");
   assert.match(fs.readFileSync(path.join(kept, "shared", "SKILL.md"), "utf8"), /本地独有版本/, "本地版本保留在副本目录");
 });
+
+// 「两份都保留」曾经必失败：extractTheirs 把异步 git() 的返回值当字符串用，
+// 报 listing.split is not a function；即便改成 await，走 UTF-8 字符串也会破坏二进制、
+// 且 ls-tree 默认转义中文路径导致取不到内容。这里同时覆盖中文名与二进制内容。
+test("keep_both 冲突处理保留远端版本的中文文件名与二进制内容", async t => {
+  const { invoke, directory, skillsDir } = await startServer(t);
+  const binary = Buffer.from([0x00, 0x01, 0xff, 0xfe, 0x80, 0x81, 0x0a, 0x00, 0x42]);
+  writeSkill(skillsDir, "shared", "原始内容");
+  fs.writeFileSync(path.join(skillsDir, "shared", "图片.bin"), binary);
+  await invoke("git_backup_init", {});
+
+  const remote = path.join(directory, "remote.git");
+  git(path.join(directory, "repo", "skills"), ["init", "--bare", "-b", "main", remote]);
+  const remoteUrl = `file://${remote.replace(/\\/g, "/")}`;
+  await invoke("git_backup_set_remote", { url: remoteUrl });
+  assert.equal((await invoke("git_backup_sync", { message: "首份备份" })).body.data.pushed, true);
+
+  // 设备二：新增中文目录与中文文件名、改写二进制文件后推送
+  const dir2 = path.join(directory, "device2");
+  fs.mkdirSync(path.join(dir2, ".skills-manager"), { recursive: true });
+  fs.writeFileSync(path.join(dir2, ".skills-manager", "repo-config.json"), JSON.stringify({ repo_path: path.join(dir2, "repo") }));
+  const { backupCommands } = await import("../../backend/backup.mjs");
+  const device2 = backupCommands(new Store({ home: dir2 }), () => {});
+  await device2.git_backup_clone.call({ url: remoteUrl, setAside: [] });
+  const remoteSkill = path.join(dir2, "repo", "skills", "shared");
+  fs.writeFileSync(path.join(remoteSkill, "SKILL.md"), "---\nname: shared\n---\n设备二修改\n");
+  fs.mkdirSync(path.join(remoteSkill, "参考资料"), { recursive: true });
+  fs.writeFileSync(path.join(remoteSkill, "参考资料", "说明.md"), "远端中文内容\n");
+  const remoteBinary = Buffer.from([0xff, 0x00, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46]);
+  fs.writeFileSync(path.join(remoteSkill, "图片.bin"), remoteBinary);
+  await device2.git_backup_sync.call({ message: "设备二改中文与二进制" });
+
+  // 设备一本地也改 → 冲突，按「两份都保留」解决
+  fs.writeFileSync(path.join(skillsDir, "shared", "SKILL.md"), "---\nname: shared\n---\n设备一修改\n");
+  const conflict = await invoke("git_backup_sync", { message: "设备一修改" });
+  assert.equal(conflict.body.ok, false);
+  const conflicts = (await invoke("git_backup_pending_conflicts", {})).body.data;
+  assert.equal(conflicts.length, 1, `应记录一条待解决冲突，实际：${JSON.stringify(conflicts.map(item => item.skill_id))}`);
+  const resolved = await invoke("git_backup_resolve_conflict", { skillId: conflicts[0].skill_id, action: "keep_both" });
+  assert.equal(resolved.body.ok, true, `keep_both 失败：${resolved.body.message}`);
+
+  const copies = fs.readdirSync(skillsDir).filter(name => name.startsWith("shared-from-remote-"));
+  assert.equal(copies.length, 1, "应生成一份远端副本目录");
+  const copy = path.join(skillsDir, copies[0]);
+  assert.match(copies[0], /^shared-from-remote-[0-9a-f]{7}$/);
+  // 本地内容保持不动
+  assert.match(fs.readFileSync(path.join(skillsDir, "shared", "SKILL.md"), "utf8"), /设备一修改/);
+  // 远端副本：中文目录与文件名、二进制字节都要与远端完全一致
+  assert.match(fs.readFileSync(path.join(copy, "SKILL.md"), "utf8"), /设备二修改/);
+  assert.equal(fs.readFileSync(path.join(copy, "参考资料", "说明.md"), "utf8"), "远端中文内容\n");
+  assert.deepEqual([...fs.readFileSync(path.join(copy, "图片.bin"))], [...remoteBinary], "二进制文件应逐字节一致");
+  assert.equal(((await invoke("git_backup_pending_conflicts", {})).body.data).length, 0);
+  // 解决后可以继续同步推送
+  const after = await invoke("git_backup_sync", { message: "两份都保留后同步" });
+  assert.equal(after.body.ok, true, `解决后同步失败：${after.body.message}`);
+  assert.equal(after.body.data.pushed, true);
+});
