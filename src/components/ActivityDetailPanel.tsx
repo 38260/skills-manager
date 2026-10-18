@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ExternalLink, FileSearch, FolderSearch, FileText, FolderOpen, RefreshCw } from "lucide-react";
 import { cn } from "../utils";
@@ -39,6 +39,16 @@ export function ActivityDetailPanel({ record, compact = false, onOpenSkill, clas
   const excerpt = fresh?.data ?? null;
   const excerptError = fresh?.error ?? "";
   const excerptLoading = !fresh;
+  const snippetRef = useRef<HTMLDivElement | null>(null);
+  const focusRef = useRef<HTMLDivElement | null>(null);
+
+  // 长 JSON 行会换行，切换记录后把高亮行滚到靠上的位置，保留少量上下文。
+  useEffect(() => {
+    const container = snippetRef.current, focus = focusRef.current;
+    if (!container || !focus) return;
+    const offset = focus.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop;
+    container.scrollTop = Math.max(0, offset - 54);
+  }, [excerpt]);
 
   async function revealFile(path: string) {
     setOpenError("");
@@ -142,11 +152,15 @@ export function ActivityDetailPanel({ record, compact = false, onOpenSkill, clas
               {excerpt.lineKind === "part" ? (
                 <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all px-2.5 py-2 font-mono text-[11px] leading-[18px] text-secondary">{excerpt.lines[0]?.text ?? ""}</pre>
               ) : (
-                <div className="max-h-56 overflow-auto py-1 font-mono text-[11px] leading-[18px]">
+                <div ref={snippetRef} className="max-h-56 overflow-y-auto overflow-x-hidden py-1 font-mono text-[11px] leading-[18px]">
                   {excerpt.lines.map((line, index) => (
-                    <div key={`${line.label}:${index}`} className={cn("flex min-w-max gap-2 px-2 py-0.5", line.label === excerpt.focus && "bg-accent-bg")}>
+                    <div
+                      key={`${line.label}:${index}`}
+                      ref={line.label === excerpt.focus ? focusRef : undefined}
+                      className={cn("flex gap-2 px-2 py-0.5", line.label === excerpt.focus && "bg-accent-bg")}
+                    >
                       <span className={cn("w-9 shrink-0 select-none text-right tabular-nums", line.label === excerpt.focus ? "font-medium text-accent-dark dark:text-accent-light" : "text-muted")}>{line.label}</span>
-                      <span className="whitespace-pre text-secondary">{line.text}</span>
+                      <span className="min-w-0 whitespace-pre-wrap break-all text-secondary">{line.text}</span>
                     </div>
                   ))}
                 </div>
