@@ -149,6 +149,9 @@ function formatUsageTime(value: number | null) {
     : `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
+// 调用统计的刷新节流：后端扫描进度通知约 250ms 一次，逐次重查会把技能库页拖烫。
+const USAGE_REFRESH_THROTTLE_MS = 1200;
+
 export function MySkills() {
   const { viewedPreset, loading } = useApp();
   const { t } = useTranslation();
@@ -287,10 +290,17 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
   useEffect(() => {
     let disposed = false;
     let unlisten: (() => void) | undefined;
-    void listen("skill-activity-changed", () => setUsageRevision(value => value + 1)).then(stop => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    // 扫描期间后端约每 250ms 推一次进度，逐次重查调用统计会让技能库页持续发烫；
+    // 与调用记录页同样节流到 1.2s。
+    const schedule = () => {
+      if (timer) return;
+      timer = setTimeout(() => { timer = null; setUsageRevision(value => value + 1); }, USAGE_REFRESH_THROTTLE_MS);
+    };
+    void listen("skill-activity-changed", schedule).then(stop => {
       if (disposed) stop(); else unlisten = stop;
     }).catch(() => { /* 统计不是关键路径，事件连接失败时保持上一次结果。 */ });
-    return () => { disposed = true; unlisten?.(); };
+    return () => { disposed = true; unlisten?.(); if (timer) clearTimeout(timer); };
   }, []);
 
   // Prune tag filters whose pill disappeared (e.g. its last skill was deleted),
@@ -605,7 +615,7 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
         next.add(skill.id);
         return next;
       });
-      void (async () => {
+      return (async () => {
         try {
           await api.deleteManagedSkill(skill.id);
           if (selectedSkill?.id === skill.id) closeSkillDetail();
@@ -1974,7 +1984,7 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
         message={t("mySkills.deleteConfirm", { name: skillToDelete?.name || "" })}
         onClose={() => setSkillToDelete(null)}
         onConfirm={async () => {
-          if (skillToDelete) handleDeleteSkill(skillToDelete);
+          if (skillToDelete) await handleDeleteSkill(skillToDelete);
         }}
       />
       <ConfirmDialog

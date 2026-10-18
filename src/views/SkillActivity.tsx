@@ -175,18 +175,22 @@ export function SkillActivity() {
   const pages = result ? Math.max(1, Math.ceil(result.total / result.pageSize)) : 1;
   const problems = sources.filter(source => source.enabled && ["partial", "missing", "denied", "error"].includes(source.state));
   const enabledSourceCount = sources.filter(source => source.enabled).length;
+  // 「全部记录」用三类之和，而不是 result.total：total 带当前类型筛选，
+  // 选中某个类型页签后它会变成该类型的条数，统计条上的数字看起来就像在漂。
+  // 后端 counts 已按「除类型/触发方式之外的条件」聚合，因此这里求和的口径是稳定的。
+  const allCount = result ? result.counts.invocation + result.counts.document + result.counts.request : undefined;
   const stats = [
-    { key: "total", label: t("activity.statsAll"), value: result?.total },
+    { key: "total", label: t("activity.statsAll"), value: allCount },
     { key: "invocation", label: t("activity.kinds.invocation"), value: result?.counts.invocation },
     { key: "document", label: t("activity.kinds.document"), value: result?.counts.document },
     { key: "request", label: t("activity.kinds.request"), value: result?.counts.request },
   ];
   const kindTabs = useMemo(() => ([
-    { key: "", label: t("activity.statsAll"), count: result?.total ?? 0 },
+    { key: "", label: t("activity.statsAll"), count: allCount ?? 0 },
     { key: "invocation", label: t("activity.kinds.invocation"), count: result?.counts.invocation ?? 0 },
     { key: "document", label: t("activity.kinds.document"), count: result?.counts.document ?? 0 },
     { key: "request", label: t("activity.kinds.request"), count: result?.counts.request ?? 0 },
-  ]), [result, t]);
+  ]), [allCount, result, t]);
   const emptyText = t(problems.length ? "activity.checkSources" : "activity.empty");
 
   return <div className="app-page">
