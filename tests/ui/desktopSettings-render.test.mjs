@@ -45,7 +45,7 @@ test("实际设置页面只显示宿主可执行的操作并保留启动自动�
       assert.equal(markup.includes(`placeholder="${translations.settings.proxyUrlPlaceholder}"`), native, `${runtime}: proxy editor`);
       assert.equal(markup.includes(`aria-label="${translations.settings.trayIcon_on}"`), native, `${runtime}: tray switch`);
       assert.ok(markup.includes(translations.settings.autoUpdate.applyLabel), `${runtime}: working startup auto-update remains available`);
-      if (!native) assert.ok(markup.includes("已保存的偏好会保留"), `${runtime}: unsupported settings explain preservation`);
+      if (!native) assert.ok(markup.includes(translations.settings[runtime === "electron" ? "desktopCloseUnavailable" : "browserCloseUnavailable"]), `${runtime}: unsupported settings explain the actual host behavior`);
     } finally {
       fs.unlinkSync(modulePath);
     }
