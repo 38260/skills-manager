@@ -165,3 +165,49 @@ test("snapshot scope excludes app credentials and permits placeholder examples",
   assert.throws(() => snapshots.capture(skill.id, "before_delete"), /凭据文件/);
   assert.ok(fs.existsSync(path.join(skill.central_path, ".env")));
 });
+
+// 快照是技能目录的完整复制：需要能看到总占用、按技能分组，并在清理前预览、
+// 清理时保证每个技能最近 N 个恢复点不被删（即使前端传了它们的 ID）。
+test("快照占用统计与清理：预览可回收量，执行后保留最近恢复点", async t => {
+  const { snapshots, source, store, skill, root } = await fixture(t);
+  const captured = [];
+  for (const version of ["二", "三", "四"]) {
+    fs.writeFileSync(path.join(source, "SKILL.md"), `---\nname: example\ndescription: version ${version}\n---\n版本${version}\n`);
+    await snapshots.capture(skill.id, "before_update");
+    captured.push(snapshots.list()[0].snapshot_id);
+    await new Promise(resolve => setTimeout(resolve, 5));
+  }
+  assert.equal(snapshots.list().length, 3);
+
+  const usage = snapshots.usage();
+  assert.equal(usage.total_count, 3);
+  assert.equal(usage.skill_count, 1);
+  assert.equal(usage.by_skill[0].skill_id, skill.id);
+  assert.equal(usage.by_skill[0].count, 3);
+  assert.ok(usage.total_bytes > 0, "总占用应大于 0");
+  assert.equal(usage.by_skill[0].size_bytes, usage.total_bytes);
+
+  // 按技能筛选预览：只影响该技能。
+  const preview = snapshots.planCleanup({ keepLatest: 2, skillId: skill.id });
+  assert.equal(preview.keep_latest, 2);
+  assert.equal(preview.removable.length, 1, "3 个快照、每个技能保留 2 个时应只有 1 个可删");
+  assert.equal(preview.removable[0].snapshot_id, captured[0], "最旧的快照应被列为可删");
+  assert.ok(preview.reclaim_bytes > 0);
+
+  // 即使显式要求删最近的两个，也必须拒绝。
+  const guarded = snapshots.cleanup({ snapshotIds: [captured[2], captured[1]], keepLatest: 2 });
+  assert.equal(guarded.deleted, 0);
+  assert.equal(guarded.failed.length, 2);
+  assert.equal(snapshots.list().length, 3, "最近恢复点不能被删除");
+
+  // 正常清理：只删预览里的那一份。
+  const cleaned = snapshots.cleanup({ snapshotIds: [captured[0]], keepLatest: 2 });
+  assert.equal(cleaned.deleted, 1);
+  assert.equal(cleaned.failed.length, 0);
+  assert.ok(cleaned.reclaim_bytes > 0);
+  assert.equal(snapshots.list().length, 2);
+  assert.ok(!fs.existsSync(path.join(root, "app", "skill-snapshots", captured[0])), "被清理的快照目录应删除");
+  // 技能本体与最近恢复点不受影响。
+  assert.ok(fs.existsSync(skill.central_path));
+  assert.equal(store.skill(skill.id).id, skill.id);
+});

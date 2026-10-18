@@ -6,6 +6,10 @@ export function skillOperationCommands(library) {
   library.snapshots ??= new SkillSnapshots(library);
   return {
     get_skill_snapshots: { call: () => library.snapshots.list() },
+    // 快照占用与清理：先看总量/按技能分组，再预览、再执行，执行时复核「最近恢复点」不被删。
+    get_snapshot_usage: { call: () => library.snapshots.usage() },
+    preview_snapshot_cleanup: { call: args => library.snapshots.planCleanup({ keepLatest: args.keepLatest, skillId: args.skillId ?? null }) },
+    cleanup_snapshots: { call: args => library.snapshots.cleanup({ snapshotIds: args.snapshotIds, keepLatest: args.keepLatest, skillId: args.skillId ?? null }), mutating: true },
     restore_skill_snapshot: { call: args => library.snapshots.restore(args.snapshotId), mutating: true },
     retry_skill_deployments: { call: args => library.retryDeployments(args.skillId, args.tools), mutating: true },
     get_skill_source_preview: { call: args => library.skillSourcePreview(args.skillId, args.forceRefresh === true) },

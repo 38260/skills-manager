@@ -103,6 +103,63 @@ export class SkillSnapshots {
       .sort((a, b) => b.created_at - a.created_at);
   }
 
+  // 快照是技能目录的完整复制，没有上限就会一直占空间。这里只统计，不删任何东西。
+  usage() {
+    const snapshots = this.list();
+    const bySkill = new Map();
+    for (const item of snapshots) {
+      const entry = bySkill.get(item.skill_id) ?? { skill_id: item.skill_id, name: item.name, count: 0, size_bytes: 0, latest_at: 0 };
+      entry.count += 1;
+      entry.size_bytes += item.size_bytes || 0;
+      entry.latest_at = Math.max(entry.latest_at, item.created_at || 0);
+      entry.name = item.name;
+      bySkill.set(item.skill_id, entry);
+    }
+    return { total_bytes: snapshots.reduce((total, item) => total + (item.size_bytes || 0), 0),
+      total_count: snapshots.length, skill_count: bySkill.size,
+      by_skill: [...bySkill.values()].sort((a, b) => b.size_bytes - a.size_bytes) };
+  }
+
+  // 清理预览：每个技能保留最近 keepLatest 个恢复点，其余列为可删除项，不落任何删除动作。
+  planCleanup({ keepLatest = 2, skillId = null } = {}) {
+    const keep = Math.max(1, Math.min(20, Number(keepLatest) || 2));
+    // list() 已按 created_at 倒序，因此每个技能的前 keep 个就是最近的恢复点。
+    const seen = new Map();
+    const removable = [];
+    for (const item of this.list()) {
+      if (skillId && item.skill_id !== skillId) continue;
+      const index = seen.get(item.skill_id) ?? 0;
+      seen.set(item.skill_id, index + 1);
+      if (index < keep) continue;
+      // 正在恢复的技能不动：清理与恢复并发时删掉源快照会让恢复读到半截内容。
+      if (this.restoring.has(item.skill_id)) continue;
+      removable.push({ snapshot_id: item.snapshot_id, skill_id: item.skill_id, name: item.name, reason: item.reason,
+        created_at: item.created_at, file_count: item.file_count, size_bytes: item.size_bytes });
+    }
+    return { keep_latest: keep, skill_id: skillId || null, removable,
+      reclaim_bytes: removable.reduce((total, item) => total + (item.size_bytes || 0), 0) };
+  }
+
+  // 执行清理：只删预览里列出、且执行时仍不是最近恢复点的快照（预览与执行之间可能有新快照）。
+  cleanup({ snapshotIds = [], keepLatest = 2, skillId = null } = {}) {
+    const plan = this.planCleanup({ keepLatest, skillId });
+    const planned = new Map(plan.removable.map(item => [item.snapshot_id, item]));
+    const requested = Array.isArray(snapshotIds) && snapshotIds.length ? snapshotIds : plan.removable.map(item => item.snapshot_id);
+    let deleted = 0, reclaimed = 0;
+    const failed = [];
+    for (const id of requested) {
+      if (!validId(id) || !planned.has(id)) { failed.push({ snapshot_id: String(id), message: "该快照是最近的恢复点或已不存在，已跳过" }); continue; }
+      try {
+        fs.rmSync(safePath(this.directory, id), { recursive: true, force: true });
+        deleted += 1;
+        reclaimed += planned.get(id).size_bytes || 0;
+      } catch (error) {
+        failed.push({ snapshot_id: String(id), message: redact(error.message) });
+      }
+    }
+    return { deleted, reclaim_bytes: reclaimed, failed, keep_latest: plan.keep_latest };
+  }
+
   capture(id, reason) {
     const row = this.store.get("SELECT * FROM skills WHERE id=?", id);
     if (!row || !validId(id)) throw new Error("技能不存在");
