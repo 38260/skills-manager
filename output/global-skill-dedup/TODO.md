@@ -14,7 +14,7 @@
 ## TODO
 
 - [x] 0. 保存内容指纹、部署绑定及工作区基线，确认副本与中央库一致。
-- [ ] 1. `dashi-ppt`：移走 `.codex/skills/dashi-ppt`，保留 `.agents/skills/dashi-ppt` 共享入口。
+- [x] 1. `dashi-ppt`：移走 `.codex/skills/dashi-ppt`，保留 `.agents/skills/dashi-ppt` 共享入口。
 - [ ] 2. `archify`：将 `.agents/skills/archify` 改为指向中央库的 Junction。
 - [ ] 3. `design-taste-frontend`：将 `.agents/skills/design-taste-frontend` 改为 Junction。
 - [ ] 4. `web-design-guidelines`：将 `.agents/skills/web-design-guidelines` 改为 Junction。
@@ -52,3 +52,5 @@ node --disable-warning=ExperimentalWarning output/global-skill-dedup/verify.mjs 
 基线已保存：五组共 780 个有效文件逐一比对一致，保存 53 条既有部署绑定、10 个用户已修改文件的指纹及原有未跟踪文件清单。验证脚本语法检查通过，真实快照目录已确认被 Git 忽略。
 
 当前对话携带的是启动时的技能清单，入口调整后的界面识别需由新对话验收；不自动重启用户应用。
+
+- 步骤 1：原 Codex 副本完整移入同盘备份；577 个技能文件的内容及原文件标识验证通过。旧入口已不存在，`.agents/skills/dashi-ppt/SKILL.md` 仍可读取且解析到中央库。
