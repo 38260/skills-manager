@@ -62,7 +62,7 @@ async function startServer(t) {
 }
 
 test("git-source update regression: install, upstream change, check, update, relations preserved", async t => {
-  const { invoke, directory, skillsDir, home } = await startServer(t);
+  const { invoke, directory, home } = await startServer(t);
 
   // 上游仓库：一个可更新的技能
   const upstream = path.join(directory, "upstream", "skills-repo");

@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { readSkillsRoot, withCenterState, matchCenterSkill, classifySyncStatus, replaceWorkspaceCopy } from "./workspace.mjs";
 import { slugify } from "./scan.mjs";
-import { files, inside, copySkill, canonical, hashDirectory } from "./files.mjs";
+import { inside, copySkill, canonical, hashDirectory } from "./files.mjs";
 
 // 项目工作区命令：项目 CRUD、项目技能读取、导入导出与启用开关。
 // 语义沿用旧版：project 类型按各工具的 project_relative_skills_dir 组织（含 -disabled 目录）；

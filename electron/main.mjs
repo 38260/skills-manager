@@ -4,7 +4,6 @@ import { app, BrowserWindow, dialog, shell, ipcMain } from "electron";
 import { spawn } from "node:child_process";
 import http from "node:http";
 import path from "node:path";
-import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");

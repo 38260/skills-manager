@@ -102,7 +102,10 @@ test("preset lifecycle: create, rename, duplicate guard, order, delete", async t
   assert.equal(after.body.data.some(item => item.id === presetId), false);
 });
 
-test("preset apply deploys enabled tools and switch clears stale targets", async t => {
+// 自 v1.16 起没有「应用 Preset」命令：部署由工作区按技能即时同步完成，
+// 旧测试调用的 apply_preset_to_default / get_active_preset 已不存在。
+// 这里改按现行语义验证同一件事：同步到工具会产生部署记录，撤销后不残留目标。
+test("技能同步到工具产生部署记录，撤销后清空目标，Preset 开关独立落库", async t => {
   const { invoke } = await startServer(t);
 
   const preset = await invoke("create_preset", { name: "部署场景" });
@@ -114,24 +117,27 @@ test("preset apply deploys enabled tools and switch clears stale targets", async
   const order = await invoke("get_preset_skill_order", { presetId });
   assert.deepEqual(order.body.data, ["skill-1"]);
 
-  const applied = await invoke("apply_preset_to_default", { id: presetId });
-  assert.equal(applied.body.ok, true, `apply 失败：${applied.body.message}`);
-  const active = await invoke("get_active_preset", {});
-  assert.equal(active.body.data?.id, presetId);
+  const synced = await invoke("sync_skill_to_tool", { skillId: "skill-1", tool: "codex" });
+  assert.equal(synced.body.ok, true, `同步失败：${synced.body.message}`);
 
   const deployedTarget = path.join("home", ".codex", "skills").replace(/\//g, path.sep);
   // 部署目标位于 home 下的工具目录；通过技能读回验证 target 记录。
   const skills = await invoke("get_managed_skills", {});
   const target = skills.body.data[0].targets.find(item => item.tool === "codex");
-  assert.ok(target, "应用 Preset 后应产生 codex 部署记录");
+  assert.ok(target, "同步到工具后应产生 codex 部署记录");
   assert.ok(path.normalize(target.target_path).includes(path.normalize(deployedTarget)));
 
-  // 切换到不含技能的默认 Preset：旧部署应被撤销。
-  const defaultPreset = (await invoke("get_presets", {})).body.data.find(item => item.id !== presetId);
-  const switched = await invoke("apply_preset_to_default", { id: defaultPreset.id });
-  assert.equal(switched.body.ok, true, `切换失败：${switched.body.message}`);
+  // Preset 内的工具开关按 Preset 独立保存（非活动 Preset 只落库，不触发部署）。
+  const toggled = await invoke("set_skill_tool_toggle", { presetId, skillId: "skill-1", tool: "codex", enabled: false });
+  assert.equal(toggled.body.ok, true, `开关写入失败：${toggled.body.message}`);
+  const toggles = await invoke("get_skill_tool_toggles", { presetId, skillId: "skill-1" });
+  assert.equal(toggles.body.data.find(item => item.tool === "codex")?.enabled, false, "Preset 内的工具开关应落库");
+
+  // 撤销同步后部署目标应被清空，不留陈旧副本。
+  const unsynced = await invoke("unsync_skill_from_tool", { skillId: "skill-1", tool: "codex" });
+  assert.equal(unsynced.body.ok, true, `撤销失败：${unsynced.body.message}`);
   const skillsAfter = await invoke("get_managed_skills", {});
-  assert.equal(skillsAfter.body.data[0].targets.length, 0, "旧 Preset 的部署目标应被撤销");
+  assert.equal(skillsAfter.body.data[0].targets.length, 0, "撤销同步后不应残留部署目标");
 
   // 非法路径参数返回结构化错误。
   const badOrder = await invoke("reorder_preset_skills", { presetId, skillIds: ["not-a-member"] });

@@ -7,6 +7,10 @@ on:
     branches: [main]
     paths:
       - 'src/**'
+      - 'backend/**'
+      - 'electron/**'
+      - 'tests/**'
+      - 'scripts/**'
       - 'index.html'
       - 'package.json'
       - 'package-lock.json'
@@ -19,6 +23,10 @@ on:
   pull_request:
     paths:
       - 'src/**'
+      - 'backend/**'
+      - 'electron/**'
+      - 'tests/**'
+      - 'scripts/**'
       - 'index.html'
       - 'package.json'
       - 'package-lock.json'
@@ -57,3 +65,32 @@ jobs:
       # references, so a bare `tsc --noEmit` checks no source file.
       - name: Build
         run: npm run build
+
+  # 后端（backend/）与 UI（tests/）检查此前完全不在 CI 里：本地 82 个后端用例、19 个 UI
+  # 用例只有在手动跑的时候才生效，未定义变量一类的错误也就只能靠用户碰上。
+  # 目标平台与产品一致（单用户 Windows 桌面），不做跨平台矩阵。
+  backend-tests:
+    runs-on: windows-latest
+    name: Backend and UI tests
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backend tests
+        run: npm run test:backend
+
+      - name: UI tests
+        run: npm run test:ui
+
+      - name: Electron bridge tests
+        run: npm run test:electron

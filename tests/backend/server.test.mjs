@@ -186,8 +186,11 @@ test("设置读写、活动预设持久，服务重启后从既有存储恢复",
   } });
   const size = await first.invoke("get_settings", { key: "text_size" });
   assert.equal(size.body.data, "large");
-  const active = await first.invoke("get_active_preset");
-  assert.equal(active.body.data?.id, presetId);
+  // 活动 Preset 只存在库里，没有对外的读取命令：直接从同一目录的存储层确认，
+  // 不再依赖已删除的 get_active_preset。
+  const probe = new Store({ directory, home: directory });
+  assert.equal(probe.activeScenarioId(), presetId, "活动预设应写入 active_scenario");
+  probe.close();
   const presets = await first.invoke("get_presets");
   assert.ok(presets.body.data.some(preset => preset.id === presetId));
 
@@ -197,8 +200,9 @@ test("设置读写、活动预设持久，服务重启后从既有存储恢复",
   assert.equal(reopenedSize.body.data, "large");
   const reopenedSkills = await second.invoke("get_managed_skills");
   assert.equal(reopenedSkills.body.data.length, 1);
-  const reopenedActive = await second.invoke("get_active_preset");
-  assert.equal(reopenedActive.body.data?.id, presetId);
+  const reopened = new Store({ directory, home: directory });
+  assert.equal(reopened.activeScenarioId(), presetId, "重启后活动预设应从既有存储恢复");
+  reopened.close();
 });
 
 test("已构建前端通过服务直接访问（SPA 回退与未知接口）", async t => {
