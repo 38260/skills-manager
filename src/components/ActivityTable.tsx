@@ -17,6 +17,8 @@ interface Props {
   items: ActivityEvent[];
   selectedId: string | null;
   onSelect: (record: ActivityEvent) => void;
+  /** 技能名是独立入口：命中技能库时直接打开技能详情，不再只是选中行。 */
+  onOpenSkill?: (managedSkillId: string) => void;
   loading?: boolean;
   error?: string;
   emptyText?: string;
@@ -27,7 +29,7 @@ interface Props {
  * 调用记录列表（表格形态）：与参考图一致的五列对齐 + 选中行浅绿底与左侧绿线，
  * 选中项由右侧详情面板呈现，不再就地展开。
  */
-export function ActivityTable({ items, selectedId, onSelect, loading, error, emptyText, onRetry }: Props) {
+export function ActivityTable({ items, selectedId, onSelect, onOpenSkill, loading, error, emptyText, onRetry }: Props) {
   const { t, i18n } = useTranslation();
 
   if (loading) {
@@ -72,16 +74,23 @@ export function ActivityTable({ items, selectedId, onSelect, loading, error, emp
       {items.map(record => {
         const isSelected = record.id === selectedId;
         const stamp = time(record.timestamp);
+        const skillId = record.managedSkillId ?? record.usageSkillId ?? null;
         return (
-          <button
+          <div
             key={record.id}
-            type="button"
+            role="button"
+            tabIndex={0}
             onClick={() => onSelect(record)}
+            onKeyDown={event => {
+              // 技能名按钮自己处理键盘事件，避免同时选中行。
+              if (event.target !== event.currentTarget) return;
+              if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onSelect(record); }
+            }}
             aria-pressed={isSelected}
             aria-label={t("activity.eventDetails", { skill: record.skillName })}
             className={cn(
               GRID,
-              "w-full min-w-0 items-center border-b border-border-subtle border-l-[3px] px-3 py-2.5 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent",
+              "w-full min-w-0 cursor-pointer items-center border-b border-border-subtle border-l-[3px] px-3 py-2.5 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent",
               isSelected ? "border-l-accent bg-accent-bg" : "border-l-transparent hover:bg-surface-hover"
             )}
           >
@@ -91,7 +100,18 @@ export function ActivityTable({ items, selectedId, onSelect, loading, error, emp
                 {record.skillName.charAt(0)}
               </span>
               <span className="min-w-0">
-                <span className="block truncate text-[13px] font-medium leading-5 text-primary" title={record.skillName}>{record.skillName}</span>
+                {skillId && onOpenSkill ? (
+                  <button
+                    type="button"
+                    onClick={event => { event.stopPropagation(); onOpenSkill(skillId); }}
+                    className="block max-w-full truncate rounded text-left text-[13px] font-medium leading-5 text-primary underline-offset-2 outline-none hover:text-accent-dark hover:underline focus-visible:text-accent-dark focus-visible:underline focus-visible:ring-2 focus-visible:ring-accent dark:hover:text-accent-light dark:focus-visible:text-accent-light"
+                    title={record.skillName}
+                  >
+                    {record.skillName}
+                  </button>
+                ) : (
+                  <span className="block truncate text-[13px] font-medium leading-5 text-primary" title={record.skillName}>{record.skillName}</span>
+                )}
                 <span className="block truncate text-[11.5px] leading-4 text-tertiary" title={record.project || undefined}>{record.project || t("activity.noProject")}</span>
               </span>
             </span>
@@ -126,7 +146,7 @@ export function ActivityTable({ items, selectedId, onSelect, loading, error, emp
             <span className="hidden whitespace-nowrap text-right text-[11.5px] tabular-nums leading-4 text-tertiary xl:block">
               {stamp.day}{stamp.clock && ` ${stamp.clock}`}
             </span>
-          </button>
+          </div>
         );
       })}
     </div>

@@ -19,7 +19,7 @@ test("Qoder 关联 slash 选择和工具结果，重复事件不增次，累计�
   [...rows, ...rows].forEach((r, i) => parseQoder({ sessionId: "s", cwd: "/demo", timestamp: 1000, line: i + 1, ...r }, ctx));
   ctx.finish();
   assert.equal(events.size, 3);
-  assert.deepEqual([...events.values()].map(e => [e.trigger, e.status]), [["manual", "returned"], ["automatic", "failed"], ["unknown", "pending"]]);
+  assert.deepEqual([...events.values()].map(e => [e.trigger, e.status]), [["manual", "returned"], ["automatic", "failed"], ["automatic", "pending"]]);
   parseQoder({ type: "user", line: 50, message: { content: "<command-name>/help</command-name>" } }, ctx);ctx.finish();
   assert.equal(events.size, 3);
 });

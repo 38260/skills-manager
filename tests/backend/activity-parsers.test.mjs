@@ -26,8 +26,8 @@ test("Codex 区分手动与自动选择；确认读取后才计数，不计打�
   ];
   const events = parse(parseCodex, "codex", rows);
   assert.equal(events.length, 3);
-  // “继续”没有提供本次调用的触发证据，不继承上一轮的自动选择指令。
-  assert.deepEqual(events.map(e => [e.kind, e.trigger, e.status]), [["document", "manual", "returned"], ["invocation", "automatic", "failed"], ["request", "unknown", "pending"]]);
+  // “继续”没有点名技能，后续未完成的文档读取仍由 Agent 自行选择。
+  assert.deepEqual(events.map(e => [e.kind, e.trigger, e.status]), [["document", "manual", "returned"], ["invocation", "automatic", "failed"], ["request", "automatic", "pending"]]);
   assert.equal(parse(parseCodex, "codex", [...rows, ...rows]).length, 3);
   assert.deepEqual(documentPaths("exec_command", { cmd: 'echo "cat /skills/ui/SKILL.md"' }), []);
   assert.deepEqual(documentPaths("exec_command", { cmd: 'if false; then cat /skills/ui/SKILL.md; fi' }), []);
@@ -45,7 +45,7 @@ test("没有用户消息的日志片段仍判为来源未知", () => {
   assert.deepEqual([events[0].kind, events[0].trigger, events[0].status], ["invocation", "unknown", "returned"]);
 });
 
-test("明确的自然语言点名是手动；普通任务、否定、引用与仅提及保持未知", () => {
+test("明确的自然语言点名是手动；有用户任务但未点名的调用归为自动", () => {
   const invoke = (message, skill = "pdf") => parse(parseCodex, "codex", [
     codex({ type: "message", role: "user", id: "u", content: message }),
     codex({ type: "function_call", call_id: "c", name: "Skill", arguments: JSON.stringify({ skill }) }),
@@ -60,10 +60,10 @@ test("明确的自然语言点名是手动；普通任务、否定、引用与�
     "不要使用 pdf 技能", "请不要调用技能 pdf", "Do not use the pdf skill", "use the document",
     "示例：\n```text\n请使用 pdf 技能\n```", "> 请使用 pdf 技能", "这是 pdf-converter 的说明"]) {
     const event = invoke(message);
-    assert.deepEqual([event.trigger, event.evidence], ["unknown", "skill_call"], message);
+    assert.deepEqual([event.trigger, event.evidence], ["automatic", "agent_choice"], message);
   }
   assert.equal(invoke("请使用 pdf-converter 技能", "pdf-converter").trigger, "manual");
-  assert.equal(invoke("请使用 pdf-converter 技能", "pdf").trigger, "unknown", "名称必须完整匹配");
+  assert.equal(invoke("请使用 pdf-converter 技能", "pdf").trigger, "automatic", "点了别的技能，当前技能只能是 Agent 自选");
   assert.equal(invoke("请自动选择合适的技能处理文档").trigger, "automatic");
 });
 

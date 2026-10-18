@@ -62,7 +62,7 @@ test("切换类型/触发方式筛选时统计数字不变，只收窄列表", t
   assert.equal(store.query({ tool: "qoder" }).counts.manual, 0);
 });
 
-test("旧版无依据自动推断回到未知，有明确证据的手动和自动记录保留", t => {
+test("agent_choice 自动记录在重开数据库后保留，手动证据不被覆盖", t => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "activity-trigger-upgrade-"));
   let store = new UsageStore(directory);
   t.after(() => { store.close(); fs.rmSync(directory, { recursive: true, force: true }); });
@@ -78,8 +78,8 @@ test("旧版无依据自动推断回到未知，有明确证据的手动和自�
   store.close(); store = new UsageStore(directory);
   const byId = new Map(store.query().items.map(event => [event.id, event]));
   assert.equal(byId.size, 4, "来源文件缺失也不能删除历史记录");
-  assert.deepEqual([byId.get("legacy-call").trigger, byId.get("legacy-call").evidence], ["unknown", "skill_call"]);
-  assert.deepEqual([byId.get("legacy-read").trigger, byId.get("legacy-read").evidence], ["unknown", "document_read"]);
+  assert.deepEqual([byId.get("legacy-call").trigger, byId.get("legacy-call").evidence], ["automatic", "agent_choice"]);
+  assert.deepEqual([byId.get("legacy-read").trigger, byId.get("legacy-read").evidence], ["automatic", "agent_choice"]);
   assert.equal(byId.get("explicit-auto").trigger, "automatic");
   assert.equal(byId.get("manual").trigger, "manual");
   assert.ok([...byId.values()].every(event => event.status === "returned" && event.timestamp === 1000));

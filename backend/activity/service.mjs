@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { Worker } from "node:worker_threads";
 import { UsageStore, defaultSources } from "./store.mjs";
+import { activityExcerpt } from "./excerpt.mjs";
 
 const canonical = filename => {
   try { filename = fs.realpathSync(filename); } catch { /* 未部署或已卸载路径仍可用于精确匹配。 */ }
@@ -87,6 +88,14 @@ export class ActivityService {
         })) };
       } },
       get_skill_activity_sources: { call: () => ({ sources: this.store.sources(), running: !!this.worker }) },
+      // 详情按需读取原始日志片段：历史库只存来源路径与行号，原文不落库。
+      get_skill_activity_excerpt: { call: async args => {
+        const id = String(args.id ?? "");
+        if (!id || id.length > 256) throw new Error("无效的调用记录");
+        const event = this.store.db.prepare("SELECT tool,sourcePath,sourceLine FROM events WHERE id=?").get(id);
+        if (!event) throw new Error("找不到这条调用记录");
+        return activityExcerpt(event);
+      } },
       // 每个已纳管技能的调用统计：总次数与最后使用时间；仅请求（未确认使用）不计入。
       get_skill_usage: { call: () => {
         // 索引只建一次：旧实现逐行全量重算 canonical，174 条记录就要 750ms。

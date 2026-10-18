@@ -333,6 +333,7 @@ export function SkillActivity() {
           items={result?.items ?? []}
           selectedId={selected?.id ?? null}
           onSelect={selectRecord}
+          onOpenSkill={openSkillDetailById}
           loading={loading && !result}
           error={result ? undefined : error || undefined}
           emptyText={emptyText}

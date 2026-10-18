@@ -1349,6 +1349,18 @@
     "openSkillByNameHint": "No verifiable skill path — matched because the name is unique in the library, so it may not be the same skill.",
     "unlinked": "Not linked to the library. The original activity is retained.",
     "statusNote": "Returned means the tool returned a result, not that the overall task succeeded.",
+    "sourceSnippet": "Log excerpt",
+    "snippetPosition": "Record position: {{position}}",
+    "snippetLoading": "Loading log excerpt…",
+    "snippetTruncated": "Excerpt truncated.",
+    "snippetCompressed": "Compressed log; showing the decoded record.",
+    "snippetDatabase": "SQLite source; showing the matching part record.",
+    "openLog": "Jump to log",
+    "snippetReasons": {
+      "missing": "The source file no longer exists or has moved.",
+      "not_found": "This record was not found in the source file; the log may have been rewritten.",
+      "unreadable": "Unable to read this log excerpt."
+    },
     "kinds": {
       "invocation": "Explicit calls",
       "document": "Confirmed loads",

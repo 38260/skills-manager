@@ -33,8 +33,8 @@ test("DSH 逐帧读取、触发方式、结果关联和截断前缀保留", asyn
   });
   ctx.finish();
   assert.equal(events.size, 3);
-  // “继续”不足以判定触发来源。
-  assert.deepEqual([...events.values()].map(e => [e.trigger, e.status]), [["manual", "returned"], ["automatic", "failed"], ["unknown", "pending"]]);
+  // “继续”之后未点名的调用由 Agent 自行选择。
+  assert.deepEqual([...events.values()].map(e => [e.trigger, e.status]), [["manual", "returned"], ["automatic", "failed"], ["automatic", "pending"]]);
   fs.writeFileSync(filename, Buffer.concat(frames));
   for await (const item of readRecords(filename, { compressed: true })) parseDsh(item.row, ctx);
   assert.equal(events.size, 3);

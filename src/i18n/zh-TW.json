@@ -1264,6 +1264,18 @@
     "openSkillByNameHint": "沒有可驗證的技能路徑，依「技能名在技能庫中唯一」歸屬，可能不是同一個技能。",
     "unlinked": "未關聯技能庫；原始呼叫記錄仍然保留。",
     "statusNote": "「已返回」表示工具已返回結果，不代表整個任務成功。",
+    "sourceSnippet": "日誌片段",
+    "snippetPosition": "記錄位置：{{position}}",
+    "snippetLoading": "正在讀取日誌片段…",
+    "snippetTruncated": "片段過長，已截斷顯示。",
+    "snippetCompressed": "壓縮日誌，顯示解碼後的記錄。",
+    "snippetDatabase": "SQLite 來源，顯示對應的 part 記錄。",
+    "openLog": "跳轉到日誌",
+    "snippetReasons": {
+      "missing": "來源檔案已不存在或已被移動。",
+      "not_found": "在來源檔案中沒有找到這條記錄，日誌可能已被重寫。",
+      "unreadable": "無法讀取這段日誌。"
+    },
     "kinds": {
       "invocation": "明確呼叫",
       "document": "已確認載入",

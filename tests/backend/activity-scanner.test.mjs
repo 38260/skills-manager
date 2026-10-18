@@ -40,7 +40,7 @@ test("判定修复后未变化日志重新解析，旧推断修正而记录数�
   store.close(); store = new UsageStore(usage);
   assert.equal((await scanSources(store)).parsed, 1, "内容未改变的旧版本缓存必须重扫");
   assert.deepEqual(store.query().items.map(event => event.id).sort(), ids);
-  assert.deepEqual(store.query().counts, { invocation: 3, document: 0, request: 0, manual: 1, automatic: 1, unknown: 1 });
+  assert.deepEqual(store.query().counts, { invocation: 3, document: 0, request: 0, manual: 1, automatic: 2, unknown: 0 });
   assert.equal((await scanSources(store)).parsed, 0, "同版本重复扫描保持幂等");
 });
 

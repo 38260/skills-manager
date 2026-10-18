@@ -238,6 +238,7 @@ export function Dashboard() {
                     tabIndex={0}
                     onClick={() => openEntry(entry)}
                     onKeyDown={(event) => {
+                      if (event.target !== event.currentTarget) return;
                       if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openEntry(entry); }
                     }}
                     className="flex cursor-pointer items-center gap-3 px-3.5 py-2.5 transition-colors hover:bg-surface-hover"
@@ -247,7 +248,14 @@ export function Dashboard() {
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                        <span className="max-w-[200px] truncate text-[13px] font-medium text-accent-dark dark:text-accent-light" title={skillName}>{skillName}</span>
+                        <button
+                          type="button"
+                          onClick={(event) => { event.stopPropagation(); openEntry(entry); }}
+                          className="max-w-[200px] truncate rounded text-left text-[13px] font-medium text-accent-dark underline-offset-2 outline-none hover:underline focus-visible:underline focus-visible:ring-2 focus-visible:ring-accent dark:text-accent-light"
+                          title={skillName}
+                        >
+                          {skillName}
+                        </button>
                         {entry.type === "activity" ? (
                           <>
                             <span className="rounded border border-border-subtle bg-surface-hover px-1.5 py-px text-[10px] leading-4 text-tertiary">

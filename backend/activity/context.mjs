@@ -54,10 +54,14 @@ export class ParseContext {
     this.tool = tool; this.filename = filename; this.sink = sink;
     this.sessionId = path.basename(filename); this.project = null;
     this.calls = new Map(); this.selections = new Map(); this.autoChoice = false;
+    // 只要会话里出现过用户消息，后续未被点名的技能调用就视为 Agent 自行选择；
+    // 没有用户消息的日志片段（例如只截到工具调用）才保留「来源未知」。
+    this.userContext = false;
     this.recognized = 0; this.errors = 0;
   }
   user(content, row, selections = []) {
     this.flushRequests();
+    this.userContext = true;
     const raw = contentText(content);
     // 附加技能块是客户端的显式选择；先于自然语言解析，避免同一条消息重复登记。
     selections = [...attachedSkillSelections(raw), ...selections];
@@ -96,9 +100,10 @@ export class ParseContext {
   }
   event({ id, name, skillPath, kind = "invocation", status = "pending", row }) {
     const selection = this.selections.get(nameKey(name));
-    // 有用户消息不等于已确认 Agent 自主选择；缺少明确点名或自动选择指令时保留未知。
-    const trigger = selection ? "manual" : this.autoChoice ? "automatic" : "unknown";
-    const evidence = selection ? "user_selection" : this.autoChoice ? "user_auto_choice"
+    // 触发方式只分三种：用户点名 = 手动；用户给了任务但没点名，由 Agent 自行选用 = 自动；
+    // 完全没有用户消息可依据时才记来源未知。
+    const trigger = selection ? "manual" : this.userContext ? "automatic" : "unknown";
+    const evidence = selection ? "user_selection" : this.userContext ? (this.autoChoice ? "user_auto_choice" : "agent_choice")
       : kind === "invocation" ? "skill_call" : "document_read";
     return {
       id: eventId(this.tool, id || `${this.filename}:${row.line}`, name), tool: this.tool,

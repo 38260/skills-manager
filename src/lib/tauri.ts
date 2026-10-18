@@ -296,9 +296,9 @@ export const getSkillDocument = (skillId: string) =>
 export const getSkillFiles = (skillId: string) =>
   invoke<SkillFiles>("get_skill_files", { skillId });
 
-/** 用系统默认程序打开文件/目录；reveal 为 true 时在文件管理器中定位。 */
-export const openPath = (path: string, reveal = false) =>
-  invoke<{ path: string; reveal: boolean }>("open_path", { path, reveal });
+/** 用系统默认程序打开文件/目录；reveal 为 true 时在文件管理器中定位；line 指定时优先在编辑器中定位到该行。 */
+export const openPath = (path: string, reveal = false, line?: number) =>
+  invoke<{ path: string; reveal: boolean; line: number | null; editor: string | null }>("open_path", { path, reveal, line });
 
 /** 打开技能中心库副本内的文件/目录：relative 相对技能目录，"" 表示技能根目录。 */
 export const openSkillPath = (skillId: string, relative = "", reveal = false) =>

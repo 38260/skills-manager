@@ -43,12 +43,43 @@ export function launchPlan(target, { isDirectory, reveal, platform = process.pla
   return [["xdg-open", [reveal ? path.dirname(target) : target]]];
 }
 
+// 常见编辑器的命令行入口，按优先级尝试；VS Code 系都支持 --goto path:line。
+const EDITOR_CLI = ["code", "cursor", "windsurf", "codium"];
+
+/** 在 PATH 中找可用的编辑器命令行；找不到时返回 null，调用方回退到系统默认程序。 */
+export function findEditor(env = process.env, platform = process.platform) {
+  const names = EDITOR_CLI.map(name => platform === "win32" ? `${name}.cmd` : name);
+  const directories = String(env.PATH ?? env.Path ?? "")
+    .split(path.delimiter)
+    .map(directory => directory.replace(/^"(.*)"$/, "$1"))
+    .filter(Boolean);
+  for (const name of names) {
+    for (const directory of directories) {
+      const candidate = path.join(directory, name);
+      try { if (fs.statSync(candidate).isFile()) return candidate; } catch { /* 继续找下一个 */ }
+    }
+  }
+  return null;
+}
+
+/** 构造“在编辑器中打开指定行”的启动命令；.cmd 包装器需要通过 cmd.exe 执行。 */
+export function editorCommand(editor, target, line, { platform = process.platform, env = process.env } = {}) {
+  if (!Number.isSafeInteger(line) || line < 1) throw new Error("无效的行号");
+  const location = `${target}:${line}`;
+  if (platform === "win32" && /\.(?:cmd|bat)$/i.test(editor)) {
+    // cmd /s /c 会剥掉最外层引号，因此命令行本身要以一对引号包住整个命令。
+    return [env.ComSpec || "cmd.exe", ["/d", "/s", "/c", `""${editor}" --goto "${location}""`]];
+  }
+  return [editor, ["--goto", location]];
+}
+
 // 等待子进程真正建立（spawn）或明确失败（error），避免把"启动失败"当成"已打开"。
-function spawnConfirmed(command, args) {
+// cmd.exe /c 的命令行已经自行加好引号，必须原样传递，否则 Node 会再转义一层引号导致解析失败。
+function spawnConfirmed(command, args, { verbatim = false } = {}) {
   return new Promise((resolve, reject) => {
     let settled = false;
     let child;
-    try { child = spawn(command, args, { detached: true, stdio: "ignore", env: launchEnv() }); }
+    try { child = spawn(command, args, { detached: true, stdio: "ignore", env: launchEnv(), windowsVerbatimArguments: verbatim }); }
     catch (error) { reject(error); return; }
     const timer = setTimeout(() => { if (!settled) { settled = true; resolve(child); } }, 2000);
     child.once("spawn", () => { if (!settled) { settled = true; clearTimeout(timer); resolve(child); } });
@@ -164,8 +195,21 @@ export function shellCommands(store, { packageVersion, exit, restart, extraRoots
         : resolveOpenTarget(args.path);
       if (!fs.existsSync(target)) throw new Error("目标文件不存在或已被移动");
       const reveal = Boolean(args.reveal);
+      const line = Number(args.line);
+      const useLine = !reveal && Number.isSafeInteger(line) && line > 0;
+      if (useLine) {
+        const editor = findEditor();
+        if (editor) {
+          try {
+            const [command, argv] = editorCommand(editor, target, line);
+            const child = await spawnConfirmed(command, argv, { verbatim: /cmd\.exe$/i.test(command) });
+            child.unref();
+            return { path: target, reveal, line, editor };
+          } catch { /* 编辑器启动失败时回退到系统默认程序。 */ }
+        }
+      }
       await launch(target, reveal);
-      return { path: target, reveal };
+      return { path: target, reveal, line: useLine ? line : null, editor: null };
     } },
   };
 }

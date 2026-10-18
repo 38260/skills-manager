@@ -43,10 +43,7 @@ export class UsageStore {
       CREATE TABLE IF NOT EXISTS scanned_files (tool TEXT,path TEXT,fingerprint TEXT,errors INTEGER NOT NULL DEFAULT 0,
         parser_version INTEGER NOT NULL DEFAULT 0,
         PRIMARY KEY(tool,path));`);
-    // 旧版 agent_choice 只依据“存在用户消息”推断，证据不足；不删记录，重扫时可补回明确证据。
-    this.db.prepare(`UPDATE events SET trigger='unknown',
-      evidence=CASE WHEN kind='invocation' THEN 'skill_call' ELSE 'document_read' END
-      WHERE trigger='automatic' AND evidence='agent_choice'`).run();
+    // agent_choice 表示会话有用户消息但未点名该技能，属于 Agent 自选，保留 automatic。
     this.insert = this.db.prepare(`INSERT INTO events(${columns.join(",")}) VALUES(${columns.map(() => "?").join(",")})
       ON CONFLICT(id) DO UPDATE SET
         status=CASE WHEN excluded.status IN ('returned','failed') OR events.status IN ('pending','unknown') THEN excluded.status ELSE events.status END,

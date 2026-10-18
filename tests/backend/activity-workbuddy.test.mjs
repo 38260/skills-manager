@@ -20,7 +20,7 @@ test("WorkBuddy 只统计顶层调用，关联重复文件与结果，触发方�
     rows.forEach((r, i) => parseWorkbuddy({ sessionId: "s", timestamp: 1000, line: i + 1, ...r }, ctx)); ctx.finish();
   }
   assert.equal(events.size, 3);
-  assert.deepEqual([...events.values()].map(e => [e.trigger, e.status]), [["manual", "returned"], ["automatic", "failed"], ["unknown", "pending"]]);
+  assert.deepEqual([...events.values()].map(e => [e.trigger, e.status]), [["manual", "returned"], ["automatic", "failed"], ["automatic", "pending"]]);
   assert.ok(!JSON.stringify([...events.values()]).includes("private"));
 });
 
@@ -104,14 +104,14 @@ test("WorkBuddy 仅提及或否定使用不产生调用和请求", () => {
   assert.equal(events.length, 0);
 });
 
-test("WorkBuddy 普通任务隐式触发保留来源未知", () => {
+test("WorkBuddy 普通任务未点名技能时归为 Agent 自选", () => {
   const events = parse([
     { type: "message", role: "user", content: reminder("", "给五岁小孩解释一下什么是量子纠缠，三句话以内。") },
     { type: "function_call", callId: "c1", name: "Skill", arguments: '{"skill":"eli5"}' },
     { type: "function_call_result", callId: "c1", status: "completed" },
   ]);
   assert.equal(events.length, 1);
-  assert.deepEqual([events[0].skillName, events[0].trigger], ["eli5", "unknown"]);
+  assert.deepEqual([events[0].skillName, events[0].trigger, events[0].evidence], ["eli5", "automatic", "agent_choice"]);
 });
 
 test("WorkBuddy 从带引号的 SKILL.md 路径推导技能名", () => {

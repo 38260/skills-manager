@@ -1,9 +1,9 @@
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FileSearch, FolderSearch, FileText, FolderOpen } from "lucide-react";
+import { ExternalLink, FileSearch, FolderSearch, FileText, FolderOpen, RefreshCw } from "lucide-react";
 import { cn } from "../utils";
 import { openPath } from "../lib/tauri";
-import { toolIconKeys, toolNames, type ActivityEvent } from "../lib/activity";
+import { getActivityExcerpt, toolIconKeys, toolNames, type ActivityEvent, type ActivityExcerpt } from "../lib/activity";
 import { TRIGGER_TONE } from "../lib/activityTone";
 import { AgentIcon } from "./AgentIcon";
 
@@ -22,10 +22,35 @@ interface Props {
 export function ActivityDetailPanel({ record, compact = false, onOpenSkill, className }: Props) {
   const { t, i18n } = useTranslation();
   const [openError, setOpenError] = useState("");
+  // 状态带上记录 id，切换记录时直接由渲染判定为加载中，避免在 effect 里同步清空状态。
+  const [excerptState, setExcerptState] = useState<{ id: string; data?: ActivityExcerpt; error?: string } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    getActivityExcerpt(record.id).then(data => {
+      if (active) setExcerptState({ id: record.id, data });
+    }).catch(cause => {
+      if (active) setExcerptState({ id: record.id, error: String(cause instanceof Error ? cause.message : cause) });
+    });
+    return () => { active = false; };
+  }, [record.id]);
+
+  const fresh = excerptState?.id === record.id ? excerptState : null;
+  const excerpt = fresh?.data ?? null;
+  const excerptError = fresh?.error ?? "";
+  const excerptLoading = !fresh;
 
   async function revealFile(path: string) {
     setOpenError("");
     try { await openPath(path, true); }
+    catch (cause) { setOpenError(String(cause instanceof Error ? cause.message : cause)); }
+  }
+
+  // 普通日志跳到精确行；ZCode 的位置是 SQLite 的 part id，定位到数据库文件。
+  async function openLog() {
+    setOpenError("");
+    const line = /^\d+$/.test(record.sourceLine) ? Number(record.sourceLine) : null;
+    try { await openPath(record.sourcePath, line === null, line ?? undefined); }
     catch (cause) { setOpenError(String(cause instanceof Error ? cause.message : cause)); }
   }
 
@@ -79,6 +104,59 @@ export function ActivityDetailPanel({ record, compact = false, onOpenSkill, clas
         <p className="mt-1.5 border-l-2 border-accent bg-accent-bg px-2.5 py-1.5 text-[12px] leading-5 text-secondary">
           {t(`activity.evidenceCodes.${record.evidence}`, { defaultValue: record.evidence })}
         </p>
+      </section>
+
+      {/* 原始日志片段：按需读取来源文件，历史库只保存路径与位置 */}
+      <section className="mt-4 border-t border-border-subtle pt-3">
+        <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1.5">
+          <div className="min-w-0">
+            <h4 className="text-[12px] font-semibold text-secondary">{t("activity.sourceSnippet")}</h4>
+            <p className="mt-0.5 break-all text-[11px] text-tertiary">{t("activity.snippetPosition", { position: record.sourceLine || "—" })}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void openLog()}
+            className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border-subtle bg-surface px-2 py-0.5 text-[11.5px] text-secondary outline-none hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />{t("activity.openLog")}
+          </button>
+        </div>
+
+        {excerptLoading && (
+          <p role="status" className="mt-2 flex items-center gap-1.5 text-[12px] text-tertiary">
+            <RefreshCw className="h-3 w-3 animate-spin" />{t("activity.snippetLoading")}
+          </p>
+        )}
+        {!excerptLoading && excerptError && (
+          <p role="alert" className="mt-2 border-l-2 border-danger bg-danger-bg px-2 py-1 text-[12px] text-danger">{excerptError}</p>
+        )}
+        {!excerptLoading && !excerptError && excerpt && !excerpt.available && (
+          <div className="mt-2 rounded-lg border border-dashed border-border-subtle px-2.5 py-2 text-[12px] text-tertiary">
+            <p>{t(`activity.snippetReasons.${excerpt.reason}`, { defaultValue: t("activity.snippetReasons.unreadable") })}</p>
+            {excerpt.detail && <p className="mt-1 break-all text-[11px] text-muted">{excerpt.detail}</p>}
+          </div>
+        )}
+        {!excerptLoading && !excerptError && excerpt?.available && (
+          <>
+            <div role="region" aria-label={t("activity.sourceSnippet")} className="mt-1.5 overflow-hidden rounded-lg border border-border-subtle bg-background">
+              {excerpt.lineKind === "part" ? (
+                <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all px-2.5 py-2 font-mono text-[11px] leading-[18px] text-secondary">{excerpt.lines[0]?.text ?? ""}</pre>
+              ) : (
+                <div className="max-h-56 overflow-auto py-1 font-mono text-[11px] leading-[18px]">
+                  {excerpt.lines.map((line, index) => (
+                    <div key={`${line.label}:${index}`} className={cn("flex min-w-max gap-2 px-2 py-0.5", line.label === excerpt.focus && "bg-accent-bg")}>
+                      <span className={cn("w-9 shrink-0 select-none text-right tabular-nums", line.label === excerpt.focus ? "font-medium text-accent-dark dark:text-accent-light" : "text-muted")}>{line.label}</span>
+                      <span className="whitespace-pre text-secondary">{line.text}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {excerpt.kind === "zstd" && <p className="mt-1 text-[11px] text-tertiary">{t("activity.snippetCompressed")}</p>}
+            {excerpt.kind === "zcode" && <p className="mt-1 text-[11px] text-tertiary">{t("activity.snippetDatabase")}</p>}
+            {excerpt.truncated && <p className="mt-1 text-[11px] text-tertiary">{t("activity.snippetTruncated")}</p>}
+          </>
+        )}
       </section>
 
       {/* 记录信息 */}

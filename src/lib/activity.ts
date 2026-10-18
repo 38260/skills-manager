@@ -31,7 +31,21 @@ export interface ActivitySource {
   tool: ActivityTool; path: string; enabled: boolean; state: string; lastScan: number | null;
   files: number; processed: number; errors: number; detail: string | null;
 }
+export interface ActivityExcerpt {
+  available: boolean;
+  reason?: "missing" | "not_found" | "unreadable";
+  detail?: string;
+  kind: "jsonl" | "zstd" | "zcode";
+  lineKind: "line" | "part";
+  sourcePath: string;
+  sourceLine: string;
+  /** 高亮行：普通日志是行号，ZCode 是 part:<id>。 */
+  focus: string;
+  lines: { label: string; text: string }[];
+  truncated: boolean;
+}
 export const getActivity = (query: ActivityQuery) => invoke<ActivityResult>("get_skill_activity", { ...query });
+export const getActivityExcerpt = (id: string) => invoke<ActivityExcerpt>("get_skill_activity_excerpt", { id });
 export const getActivitySources = () => invoke<{ sources: ActivitySource[]; running: boolean }>("get_skill_activity_sources");
 export const scanActivity = () => invoke<{ running: boolean }>("scan_skill_activity");
 export const cancelActivityScan = () => invoke<{ running: boolean }>("cancel_skill_activity_scan");

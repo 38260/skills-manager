@@ -6,7 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { launchEnv, launchPlan, pathWithinRoots } from "../../backend/shell.mjs";
+import { editorCommand, findEditor, launchEnv, launchPlan, pathWithinRoots } from "../../backend/shell.mjs";
 
 const serverModule = fileURLToPath(new URL("../../backend/server.mjs", import.meta.url));
 
@@ -124,6 +124,28 @@ test("打开外部程序时清理 Electron 注入的环境变量", () => {
   const source = { ELECTRON_RUN_AS_NODE: "1" };
   launchEnv(source);
   assert.equal(source.ELECTRON_RUN_AS_NODE, "1");
+});
+
+test("日志跳转优先使用可用编辑器，并生成按行定位命令", t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "skills-manager-editor-"));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const codeDir = path.join(root, "vscode"), cursorDir = path.join(root, "cursor");
+  fs.mkdirSync(codeDir); fs.mkdirSync(cursorDir);
+  fs.writeFileSync(path.join(cursorDir, "cursor.cmd"), "@echo off\n");
+  assert.equal(findEditor({ PATH: cursorDir }, "win32"), path.join(cursorDir, "cursor.cmd"));
+  // 编辑器优先级高于 PATH 顺序：装了 code 就先用 code。
+  fs.writeFileSync(path.join(codeDir, "code.cmd"), "@echo off\n");
+  assert.equal(findEditor({ PATH: [cursorDir, codeDir].join(path.delimiter) }, "win32"), path.join(codeDir, "code.cmd"));
+  assert.equal(findEditor({ PATH: path.join(root, "missing") }, "win32"), null);
+  assert.equal(findEditor({ PATH: cursorDir }, "linux"), null);
+
+  const win = editorCommand("C:\\IDE\\Microsoft VS Code\\bin\\code.cmd", "C:\\logs\\session.jsonl", 12,
+    { platform: "win32", env: { ComSpec: "C:\\Windows\\System32\\cmd.exe" } });
+  assert.deepEqual(win, ["C:\\Windows\\System32\\cmd.exe", ["/d", "/s", "/c",
+    '""C:\\IDE\\Microsoft VS Code\\bin\\code.cmd" --goto "C:\\logs\\session.jsonl:12""']]);
+  const posix = editorCommand("/usr/bin/code", "/logs/session.jsonl", 3, { platform: "linux" });
+  assert.deepEqual(posix, ["/usr/bin/code", ["--goto", "/logs/session.jsonl:3"]]);
+  assert.throws(() => editorCommand("code", "/logs/a.jsonl", 0), /行号/);
 });
 
 test("打开方式按平台与目标类型选择，且失败可回退", () => {
