@@ -4,60 +4,69 @@
 
 @layer base {
   /* Light theme (default)
-     层次重建（2026-10-12）：原配色下卡片与页面「分不开」，整屏偏灰。无头实测（output/ui-contrast）：
-       卡片 #FFF vs 页面 #FAFAFA 亮度差仅 0.044；卡片边框 #E4E4E7 对页面 1.22:1；卡片阴影 4% 透明 ≈ 不可见。
-       另外卡片次级文字 #8B8B94 只有 3.38:1（低于 WCAG AA 4.5）。
-     改法：页面底压深一档 + 边框提到可辨（≈1.3:1）+ 次级文字提亮到过 AA，全部只动 token，一处生效全局。 */
+     第一轮（2026-10-12 上午）为了让卡片与页面「分得开」，把页面底压到 #F1F1F4、边框提到 1.3:1。
+     但那招是拿「整屏变灰」换层次：真实数据下实测（output/ui-contrast/shot-real.mjs）
+       中性灰像素占比 93.9%（饱和度 <6%）、平均饱和度 0.023，画面里最大的两块颜色是
+       #F8F8F8(44%) 与 #F0F0F0(31%) —— 几乎是一张灰度图，于是用户第二次反馈「颜色发灰」。
+     这一轮换思路：**页面底回到接近白（带冷调），层次交给边框 + 阴影承担**，同时
+       · 所有中性色带一点冷蓝色相（避免"死灰"，同一灰阶下更像有意为之）
+       · 次级文字整体压深一档（原来 12px 的 #70707A 在近白底上发飘）
+       · 选中态改用品牌绿浅底，让界面上有真实的颜色落点
+     改完仍以 WCAG 为准：正文 ≥4.5、大字号 ≥3（见 output/ui-contrast/probe.mjs 采样）。 */
   :root {
     --app-scale: 1;
-    --color-bg: #F1F1F4;
-    --color-bg-secondary: #F7F7F9;
+    --color-bg: #F6F8FC;
+    --color-bg-secondary: #FAFBFE;
     --color-surface: #FFFFFF;
-    --color-surface-hover: #EAEAEE;
-    --color-surface-active: #E0E0E5;
-    --color-border: #C7C7CE;
-    --color-border-subtle: #D5D5DB;
-    --color-border-faint: #E7E7EB;
-    --shadow-card: 0 1px 2px rgba(24, 24, 27, 0.05), 0 2px 6px rgba(24, 24, 27, 0.04);
-    --shadow-card-hover: 0 4px 14px rgba(24, 24, 27, 0.09);
-    --color-text-primary: #18181B;
-    --color-text-secondary: #27272A;
-    --color-text-tertiary: #52525B;
-    --color-text-muted: #65656E;
-    --color-text-faint: #70707A;
+    --color-surface-hover: #EDF1F9;
+    --color-surface-active: #E1E8F4;
+    --color-border: #C1CBE0;
+    --color-border-subtle: #D2DAEA;
+    --color-border-faint: #E5E9F4;
+    --shadow-card: 0 1px 2px rgba(23, 33, 66, 0.07), 0 3px 10px rgba(23, 33, 66, 0.07);
+    --shadow-card-hover: 0 6px 20px rgba(23, 33, 66, 0.14);
+    /* 文字阶梯在「近白底」上重新排布：原来最轻的两档（#65656E / #70707A）压在近白底上发飘，
+       全屏看就是一大片浅灰字 —— 这也是「界面发灰」的主要来源。整体压深一档、保留 5 级层次。 */
+    --color-text-primary: #151A27;
+    --color-text-secondary: #2A3346;
+    --color-text-tertiary: #3D4A63;
+    --color-text-muted: #4E5A75;
+    --color-text-faint: #5E6A85;
     --color-accent: #059669;
     --color-accent-light: #10B981;
     --color-accent-dark: #047857;
-    --color-accent-bg: rgba(5,150,105,0.08);
-    --color-accent-border: rgba(5,150,105,0.25);
+    --color-accent-bg: rgba(5,150,105,0.09);
+    --color-accent-border: rgba(5,150,105,0.28);
     --color-danger: #DC2626;
     --color-danger-bg: rgba(220,38,38,0.08);
   }
 
-  /* Dark theme */
+  /* Dark theme
+     同一轮顺带修层次：原配色卡片 #131317 与页面 #0C0C0F 亮度差只有 0.003（卡片几乎看不见），
+     边框 #1C1C22 对页面约 1.2:1。这里把卡片抬离页面、边框提到可辨，并同样带一点冷色调。 */
   .dark {
-    --color-bg: #0C0C0F;
-    --color-bg-secondary: #0F0F13;
-    --color-surface: #131317;
-    --color-surface-hover: #17171E;
-    --color-surface-active: #1E1E28;
-    --color-border: #222229;
-    --color-border-subtle: #1C1C22;
-    --color-border-faint: #18181E;
-    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-card-hover: 0 4px 14px rgba(0, 0, 0, 0.45);
-    --color-text-primary: #F4F4F5;
-    --color-text-secondary: #D4D4D8;
-    --color-text-tertiary: #A1A1AA;
-    --color-text-muted: #8E8E96;
-    --color-text-faint: #71717A;
+    --color-bg: #0B0D12;
+    --color-bg-secondary: #0F121A;
+    --color-surface: #171A23;
+    --color-surface-hover: #1E2330;
+    --color-surface-active: #272E3D;
+    --color-border: #2A3141;
+    --color-border-subtle: #212836;
+    --color-border-faint: #1A202B;
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-card-hover: 0 6px 18px rgba(0, 0, 0, 0.5);
+    --color-text-primary: #F3F5F9;
+    --color-text-secondary: #D6DBE6;
+    --color-text-tertiary: #A6AFC0;
+    --color-text-muted: #929BAC;
+    --color-text-faint: #7C8598;
     --color-accent: #10B981;
     --color-accent-light: #34D399;
     --color-accent-dark: #059669;
-    --color-accent-bg: rgba(16,185,129,0.08);
-    --color-accent-border: rgba(16,185,129,0.25);
+    --color-accent-bg: rgba(16,185,129,0.1);
+    --color-accent-border: rgba(16,185,129,0.28);
     --color-danger: #EF4444;
-    --color-danger-bg: rgba(239,68,68,0.08);
+    --color-danger-bg: rgba(239,68,68,0.1);
   }
 
   /* System preference fallback (when no .dark class and user chose "system") */
@@ -238,8 +247,10 @@
     @apply whitespace-nowrap rounded-md px-3 py-2 text-[13px] font-medium text-muted transition-colors outline-none hover:text-tertiary;
   }
 
+  /* 选中态用品牌绿浅底：原来用中性灰（bg-surface-active）时，界面上除了几个小圆点几乎没有真实颜色，
+     整屏读起来就是一张灰度图。筛选/多选这类「当前生效」的状态正好是放品牌色的位置。 */
   .app-segmented-button-active {
-    @apply bg-surface-active text-secondary;
+    @apply bg-accent-bg font-medium text-accent-dark;
   }
 
   .app-button-primary {
