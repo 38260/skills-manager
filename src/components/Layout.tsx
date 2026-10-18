@@ -55,9 +55,10 @@ export function Layout() {
       <Sidebar />
       <div className="relative flex min-w-[600px] flex-1 flex-col overflow-hidden">
         <div id="page-scroll-container" className="flex-1 overflow-y-auto px-5 pb-5 pt-[calc(28px+20px)] scrollbar-hide">
-          {/* 技能库以表格化的列表/卡片为主，宽屏下放宽上限，避免右侧留下大片空白；
+          {/* 技能库与调用记录以表格化的列表为主，宽屏下放宽上限，避免右侧留下大片空白、
+              也才放得下调用记录的分列（记录类型 / 触发方式 / 时间单行）；
               其余页面（仪表盘、设置等）保持 1200px，避免正文行过长影响阅读。 */}
-          <div className={`mx-auto flex min-h-full flex-col gap-4 ${location.pathname === "/my-skills" ? "max-w-[1760px]" : "max-w-[1200px]"}`}>
+          <div className={`mx-auto flex min-h-full flex-col gap-4 ${location.pathname === "/my-skills" ? "max-w-[1760px]" : location.pathname === "/skill-activity" ? "max-w-[1560px]" : "max-w-[1200px]"}`}>
             {appError ? (
               <StatusBanner
                 compact
