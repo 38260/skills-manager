@@ -63,3 +63,14 @@ output/activity-layout/shots
 
 # 第六轮 UI 细节验收的截图（含真实技能名与本机路径，不入库）
 output/ui-polish/shots
+
+# 隔离验收截图含当前 Windows 临时目录名称，仅作为本机交付证据保存。
+output/optimization/evidence
+
+# Electron 便携版与本地打包检查的产物：单目录 275～538MB，只在本机留档。
+/release/
+/release-check/
+/acceptance-release/
+
+# PPT 技能演示素材（88MB 视频/图片），仅本机留档。
+output/ppt-skill/
