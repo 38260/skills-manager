@@ -12,8 +12,36 @@ export function time(value) {
   const result = typeof value === "number" ? value : typeof value === "string" ? Date.parse(value) : NaN;
   return Number.isSafeInteger(result) && result >= 0 ? result : null;
 }
-export const skillFromPath = filename => filename.replace(/\\/g, "/").split("/").at(-2);
+// 技能芯片里的路径是 JSON 转义后的（反斜杠成对出现），按连续分隔符切分，
+// 避免 C:\\Users\\... 被拆出空目录、把整条路径当成技能名。
+export const skillFromPath = filename => filename.split(/[\\/]+/).filter(Boolean).at(-2);
 const nameKey = name => String(name).normalize("NFC").toLowerCase();
+
+function attachedSkillSelections(content) {
+  const selections = [];
+  for (const block of content.matchAll(/<manually_attached_skills>([\s\S]*?)<\/manually_attached_skills>/gi)) {
+    let name = null;
+    for (const line of block[1].split(/\r?\n/)) {
+      const named = /^\s*name:\s*(.+?)\s*$/i.exec(line);
+      if (named) { name = named[1]; continue; }
+      const located = /^\s*path:\s*(.+?)\s*$/i.exec(line);
+      if (located && name) { selections.push({ name, path: located[1] }); name = null; }
+    }
+  }
+  return selections;
+}
+
+function explicitSelection(text) {
+  const dollar = /^\s*\$([\w.:-]+)(?=\s|$)/u.exec(text);
+  if (dollar) return { name: dollar[1] };
+  const command = /^\s*\/skill\s+([\w.:-]+)(?=\s|$)/u.exec(text);
+  if (command) return { name: command[1] };
+  // WorkBuddy 的技能芯片写成带引号的 SKILL.md 路径，技能名要从父目录推导。
+  const attached = /@skill:(?:"([^"]+)"|'([^']+)'|([\w.:-]+))/u.exec(text);
+  if (!attached) return null;
+  const path = attached[1] || attached[2];
+  return path ? { name: skillFromPath(path) || path, path } : { name: attached[3] };
+}
 
 export class ParseContext {
   constructor(tool, filename, sink) {
@@ -24,17 +52,18 @@ export class ParseContext {
   }
   user(content, row, selections = []) {
     this.flushRequests();
+    const raw = contentText(content);
+    // 附加技能块是客户端的显式选择；先于自然语言解析，避免同一条消息重复登记。
+    selections = [...attachedSkillSelections(raw), ...selections];
     // 示例代码与引用不作为当前指令；不保存原始消息。
-    const text = userInstructionText(contentText(content)).replace(/```[\s\S]*?(?:```|$)|~~~[\s\S]*?(?:~~~|$)/g, "")
+    const text = userInstructionText(raw).replace(/```[\s\S]*?(?:```|$)|~~~[\s\S]*?(?:~~~|$)/g, "")
       .replace(/^\s*>.*$/gm, "");
     // 只接受明确的「用户点名」写法：
     //   Codex / DSH 的 `$技能名`（必须出现在消息开头，避免和 shell 变量混淆）
     //   通用的 `/skill 技能名`
-    //   WorkBuddy / WorkBuddy AI 的 `@skill:技能名`（本机实测最常用，出现在消息任意位置）
-    const explicit = /^\s*\$([\w.:-]+)(?=\s|$)/u.exec(text)
-      ?? /^\s*\/skill\s+([\w.:-]+)(?=\s|$)/u.exec(text)
-      ?? /@skill:([\w.:-]+)/u.exec(text);
-    if (explicit) selections = [...selections, { name: explicit[1] }];
+    //   WorkBuddy / WorkBuddy AI 的 `@skill:技能名` 或 `@skill:"...\SKILL.md"`
+    const explicit = explicitSelection(text);
+    if (explicit) selections = [...selections, explicit];
     // 自然语言只接受正向使用指令和明确的技能名，普通提及、否定与提问不作点名证据。
     for (const pattern of [
       /(?:^|\n)\s*(?:(?:请(?:你|帮我)?|麻烦(?:你)?|帮我)\s*)?(?:使用|调用|启用|用)\s*(?:技能\s*[:：]?\s*[`"'“‘]?([\w.:-]+)|[`"'“‘]?([\w.:-]+)[`"'”’]?\s*(?:技能|skill\b))/gi,
