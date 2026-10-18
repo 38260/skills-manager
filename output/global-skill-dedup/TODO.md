@@ -19,7 +19,7 @@
 - [x] 3. `design-taste-frontend`：将 `.agents/skills/design-taste-frontend` 改为 Junction。
 - [x] 4. `web-design-guidelines`：将 `.agents/skills/web-design-guidelines` 改为 Junction。
 - [x] 5. `ai-rereseach`：将 WorkBuddy 中的副本改为 Junction。
-- [ ] 6. 整体验证入口、备份、中央库、绑定、同名变体和原有工作区内容；重新扫描重复副本。
+- [x] 6. 整体验证入口、备份、中央库、绑定、同名变体和原有工作区内容；重新扫描重复副本。
 - [ ] 7. 用户在新开的 Codex 对话及 WorkBuddy 中验收技能识别。
 
 ## 验证与证据
@@ -58,3 +58,38 @@ node --disable-warning=ExperimentalWarning output/global-skill-dedup/verify.mjs 
 - 步骤 3：`design-taste-frontend` 原目录完整备份，新入口及技能说明读取通过；内容和原文件标识核对通过。
 - 步骤 4：`web-design-guidelines` 原目录完整备份，新入口指向中央库，技能说明读取及原文件标识核对通过。
 - 步骤 5：WorkBuddy 的 `ai-rereseach` 原目录完整备份于 D 盘，原入口改为中央库 Junction；9 个技能文件及原文件标识核对通过。
+
+## 整体测试
+
+| 验证项 | 结果 |
+| --- | --- |
+| 默认全局目录、中央库及 Codex 插件缓存复扫 | 56 个候选根目录中 14 个存在，220 个技能入口、108 个实际目录，读取错误 0；相同内容的独立副本由 5 组降至 0 组 |
+| 五项调整及备份 | 全部通过；780 个技能文件逐一比对，备份保留原 `SKILL.md` 文件标识 |
+| 中央库 | 五个目标技能的内容与操作前相同，运行依赖和缓存未改动 |
+| 既有部署绑定与工具设置 | 53 条绑定及工具设置逐字段相同；53 条绑定入口均可读取并正确解析至各自中央库 |
+| 同名不同内容的技能 | `find-skills`、`skill-creator`、`pdf` 的 6 个变体内容保持不变 |
+| 用户原有工作区 | 10 个已修改文件的 SHA-256 未变，15 个原有未跟踪文件仍存在 |
+| 验证脚本与 Git | Node 语法检查及本任务 `git diff --check` 通过；真实快照与复扫摘要均已确认被 Git 忽略 |
+
+首次整体检查发现 SQLite 返回的行对象无原型，与 JSON 快照的普通对象存在类型差异。已在验证脚本中将行转为普通记录，保留全部字段的严格比较，重新验证通过；数据库未写入。
+
+本次未修改应用源码，因此未运行应用全仓库测试。未自动重启 Codex / WorkBuddy，也未触发技能执行；应用界面与实际调用由用户验收。五份原目录备份仍保留，不计入有效安装目录的复扫范围，也尚未释放其磁盘占用。
+
+## Git 留痕
+
+Git 记录本任务脚本与逐步操作结果；全局目录调整本身由备份和本机快照保证可恢复。
+
+| Commit | 内容 |
+| --- | --- |
+| `cd84444` | 去重计划与基线验证脚本 |
+| `7dce559` | dashi-ppt 冗余入口整理记录 |
+| `d643aca` | archify 目录联接整理记录 |
+| `d93c919` | design-taste-frontend 目录联接整理记录 |
+| `d14d277` | web-design-guidelines 目录联接整理记录 |
+| `4cbc864` | WorkBuddy ai-rereseach 目录联接整理记录 |
+
+## 用户验收
+
+1. 在 Codex 新开对话查看技能列表，确认 `dashi-ppt` 只显示一次，且其余三个 `.agents` 技能仍能识别。
+2. 在 WorkBuddy 刷新技能列表或新开对话，确认 `ai-rereseach` 仍可识别。
+3. 确认使用正常后，再决定是否清理上述五份备份；本任务不自动清理。

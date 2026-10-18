@@ -38,8 +38,9 @@ function databaseState() {
   const db = new DatabaseSync(`${home}/.skills-manager/skills-manager.db`, { readOnly: true });
   try {
     return {
-      targets: db.prepare("SELECT * FROM skill_targets ORDER BY id").all(),
-      settings: db.prepare("SELECT key,value FROM settings WHERE key IN ('sync_mode','custom_tool_paths','custom_tools','disabled_tools','hidden_tools') ORDER BY key").all(),
+      // SQLite 行对象无原型；转成普通记录，以便与 JSON 基线逐字段严格比较。
+      targets: db.prepare("SELECT * FROM skill_targets ORDER BY id").all().map(row => ({ ...row })),
+      settings: db.prepare("SELECT key,value FROM settings WHERE key IN ('sync_mode','custom_tool_paths','custom_tools','disabled_tools','hidden_tools') ORDER BY key").all().map(row => ({ ...row })),
     };
   } finally { db.close(); }
 }
@@ -83,12 +84,13 @@ if (command === "capture") {
     before(item);
   }
   const dirtyFiles = git(["diff", "--name-only", "-z"]).split("\0").filter(Boolean).map(filename => ({ filename, sha256: hash(fs.readFileSync(path.join(repository, filename))) }));
-  const baseline = { plan, database: databaseState(), protected: protectedPaths.map(filename => ({ filename, content: manifest(filename) })), dirtyFiles, originalUntracked: git(["ls-files", "--others", "--exclude-standard", "-z"]).split("\0").filter(Boolean) };
+  const baseline = { plan, database: databaseState(), protected: protectedPaths.map(filename => ({ filename, content: manifest(filename) })), dirtyFiles, originalUntracked: git(["ls-files", "--others", "--exclude-standard", "-z"]).split("\0").filter(filename => filename && !filename.startsWith("output/global-skill-dedup/")) };
   fs.mkdirSync(data, { recursive: true });
   fs.writeFileSync(baselineFile, JSON.stringify(baseline, null, 2) + "\n", { flag: "wx" });
   console.log(JSON.stringify({ status: "captured", skills: plan.map(item => ({ name: item.name, files: item.content.length })), userDirtyFiles: dirtyFiles.length, bindings: baseline.database.targets.length }));
 } else {
   const baseline = JSON.parse(fs.readFileSync(baselineFile, "utf8"));
+  baseline.originalUntracked = baseline.originalUntracked.filter(filename => !filename.startsWith("output/global-skill-dedup/"));
   if (command === "before" || command === "after") {
     const item = baseline.plan.find(item => item.name === name);
     assert.ok(item, "未知技能，拒绝操作");
