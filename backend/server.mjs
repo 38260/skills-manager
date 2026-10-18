@@ -44,6 +44,12 @@ try {
   process.exit(1);
 }
 
+// 启动后自动检查更新的「新鲜期」：10 分钟内查过的技能不再重复查（手动检查走 force，不受影响）。
+const AUTO_UPDATE_CHECK_FRESH_MS = 10 * 60 * 1000;
+// 上次检查失败的技能退避一小时：坏掉的远程每次都要重试一遍 clone（实测单次 11–30 秒且注定失败），
+// 状态与错误原因仍留在技能行里给界面展示，用户随时可以手动「检查全部更新」立刻重试。
+const AUTO_UPDATE_CHECK_ERROR_BACKOFF_MS = 60 * 60 * 1000;
+
 // ── 事件通知：SSE 客户端登记 + 防抖广播 ──
 const clients = new Set();function broadcast(event, payload) {
   for (const response of clients) response.write(`event: ${event}\ndata: ${JSON.stringify(payload ?? null)}\n\n`);
@@ -129,9 +135,18 @@ const commands = {
 
   // ── 技能更新与维护 ──
   check_skill_update: { call: args => library.check(args.skillId) },
-  check_all_skill_updates: { call: async () => {
+  check_all_skill_updates: { call: async args => {
+    // 非强制（前端启动后自动跑的那轮）跳过最近查过的技能：逐个检查里最贵的是 clone 远程，
+    // 每次启动把已经查过的技能重查一遍既慢又不带来新信息。
+    // 手动「检查全部更新」传 force=true，语义与原来一致（全部重查）。
+    const force = args?.force === true;
     const failed = [];
     for (const skill of store.skills()) {
+      if (!force && skill.last_checked_at) {
+        const age = Date.now() - skill.last_checked_at;
+        const window = skill.last_check_error ? AUTO_UPDATE_CHECK_ERROR_BACKOFF_MS : AUTO_UPDATE_CHECK_FRESH_MS;
+        if (age < window) continue;
+      }
       try { await library.check(skill.id); }
       catch (error) { failed.push(`${skill.id}: ${error.message}`); }
     }
