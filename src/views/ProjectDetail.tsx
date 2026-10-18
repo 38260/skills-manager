@@ -43,6 +43,7 @@ import * as api from "../lib/tauri";
 import type { ProjectSkill, ManagedSkill, ProjectAgentTarget } from "../lib/tauri";
 import { getErrorMessage } from "../lib/error";
 import { AddSkillsSheet } from "../components/AddSkillsSheet";
+import { WorkspaceDeploymentResults } from "../components/WorkspaceDeploymentResults";
 const projectLastUsedAgentsKey = (projectId: string) =>
   `project_last_used_export_agents:${projectId}`;
 
@@ -128,7 +129,8 @@ export function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { projects, presets, managedSkills, refreshManagedSkills, refreshPresets, refreshProjects } = useApp();
+  const { tools, projects, presets, managedSkills, refreshManagedSkills, refreshPresets, refreshProjects } = useApp();
+  const [deploymentResults, setDeploymentResults] = useState<api.WorkspaceImportResult[]>([]);
   const [skills, setSkills] = useState<ProjectSkill[]>([]);
   const [projectAgentTargets, setProjectAgentTargets] = useState<ProjectAgentTarget[]>([]);
   const [loading, setLoading] = useState(true);
@@ -204,6 +206,7 @@ export function ProjectDetail() {
     setDetailSkill(null);
     setDocContent(null);
     setCenterDocContent(null);
+    setDeploymentResults([]);
   }, [id]);
 
   useEffect(() => {
@@ -542,16 +545,18 @@ export function ProjectDetail() {
   // the way 1.34.0 answers a write that would destroy something.
   const pushSkillToCenterAndAlign = async (
     skill: ProjectSkillGroup
-  ): Promise<{ alignFailed: number; conflicting: number }> => {
-    if (!id) return { alignFailed: 0, conflicting: 0 };
+  ): Promise<{ alignFailed: number; conflicting: number; deploymentFailed: number }> => {
+    if (!id) return { alignFailed: 0, conflicting: 0, deploymentFailed: 0 };
 
     const unproven = skill.variants.filter((v) => v.sync_status !== "in_sync");
     if (unproven.length > 1) {
-      return { alignFailed: 0, conflicting: unproven.length };
+      return { alignFailed: 0, conflicting: unproven.length, deploymentFailed: 0 };
     }
 
     const winner = unproven[0] ?? skill.primaryVariant;
-    await api.updateProjectSkillToCenter(id, winner.relative_path, winner.agent);
+    const result = await api.updateProjectSkillToCenter(id, winner.relative_path, winner.agent);
+    const deploymentFailed = result.deployments?.filter(item => item.status === "failed").length ?? 0;
+    if (result.deployments?.length) setDeploymentResults(previous => [...previous.filter(item => item.id !== result.id), result]);
 
     // Every remaining variant is in_sync, so pulling the freshly written center
     // over it discards nothing — and it keeps a multi-agent group from flipping
@@ -567,14 +572,15 @@ export function ProjectDetail() {
         alignFailed += 1;
       }
     }
-    return { alignFailed, conflicting: 0 };
+    return { alignFailed, conflicting: 0, deploymentFailed };
   };
 
   const handleUpdateCenter = async (skill: ProjectSkillGroup) => {
     if (!id) return;
     setUpdatingCenterSkill(getSkillKey(skill));
+    setDeploymentResults([]);
     try {
-      const { alignFailed, conflicting } = await pushSkillToCenterAndAlign(skill);
+      const { alignFailed, conflicting, deploymentFailed } = await pushSkillToCenterAndAlign(skill);
       if (conflicting > 0) {
         toast.warning(
           t("project.updateCenterConflict", { name: skill.name, count: conflicting })
@@ -583,6 +589,8 @@ export function ProjectDetail() {
         toast.warning(
           t("project.updateCenterAlignFailed", { name: skill.name, count: alignFailed })
         );
+      } else if (deploymentFailed > 0) {
+        toast.warning(t("optimization.deploymentFailures", { count: deploymentFailed }));
       } else {
         toast.success(t("project.updateCenterSuccess", { name: skill.name }));
       }
@@ -758,6 +766,7 @@ export function ProjectDetail() {
   const handleBatchUpdateCenter = async () => {
     if (!id) return;
     setBatchUpdatingCenter(true);
+    setDeploymentResults([]);
     try {
       let updated = 0;
       let failed = 0;
@@ -769,7 +778,7 @@ export function ProjectDetail() {
           skill.status === "diverged";
         if (!canUpdateCenter) continue;
         try {
-          const { alignFailed, conflicting: conflictingForSkill } =
+          const { alignFailed, conflicting: conflictingForSkill, deploymentFailed } =
             await pushSkillToCenterAndAlign(skill);
           // Refused outright: neither written nor failed, so it is counted on
           // its own rather than folded into either total.
@@ -780,7 +789,7 @@ export function ProjectDetail() {
           // The push landed but some sibling failed to realign → the group is
           // not fully in sync, so count it as failed rather than reporting a
           // clean success.
-          if (alignFailed > 0) failed++;
+          if (alignFailed > 0 || deploymentFailed > 0) failed++;
           else updated++;
         } catch {
           failed++;
@@ -1013,6 +1022,12 @@ export function ProjectDetail() {
             </div>
           </div>
         </div>
+
+        {deploymentResults.map(result => <WorkspaceDeploymentResults
+          key={`${result.id}:${result.updated_at}`} result={result} tools={tools}
+          onChanged={async () => { await Promise.all([refreshManagedSkills(), loadSkills()]); }}
+          onClose={() => setDeploymentResults(previous => previous.filter(item => item.id !== result.id))}
+        />)}
 
         {allTags.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5">

@@ -374,7 +374,7 @@ export class Library {
     return this.store.skill(id);
   }
   // 用指定目录内容整体替换中心技能（工作区／项目导入到中心共用）：保留 ID、分类、Preset 与部署关系，
-  // 失败回滚为原内容，并强制刷新 copy 模式的部署副本。
+  // 中央库写入失败回滚；部署逐项同步，保留其他 Agent 的本地编辑。
   async replaceWithDirectory(id,sourceDir) {
     if(this.snapshots?.restoring.has(id)||this.updates.has(id)) throw new Error("该技能正在更新或恢复，请等待完成");
     const operation=this.performReplacement(id,sourceDir).finally(()=>this.updates.delete(id));this.updates.set(id,operation);return operation;
@@ -393,9 +393,9 @@ export class Library {
       this.persistReplacement(id,()=>this.store.run("UPDATE skills SET description=?,content_hash=?,updated_at=? WHERE id=?",info.description,hashDirectory(skill.central_path),Date.now(),id));
     } catch(error){fs.rmSync(skill.central_path,{recursive:true,force:true});fs.renameSync(previous,skill.central_path);throw error;}
     fs.rmSync(previous,{recursive:true,force:true});
-    for(const target of skill.targets.filter(target=>target.mode==="copy")) await this.deploy(id,target.tool,{force:true});
-    this.store.saveMetadata(id);this.changed();
-    return this.store.skill(id);
+    const deployments=await this.syncUpdatedTargets(id,skill.targets,{force:false});
+    this.changed();
+    return {...this.store.skill(id),deployments};
   }
 
   async syncUpdatedTargets(id,targets,{force=true}={}) {
@@ -424,7 +424,11 @@ export class Library {
     if(fs.existsSync(target)&&!old&&!force) {
       if(canonical(target)!==canonical(skill.central_path)) throw new Error("目标目录已有未纳管内容，请先导入或认领");
     }
-    if(fs.existsSync(target)&&old&&old.mode==="copy"&&!force&&hashDirectory(target)!==old.source_hash) throw new Error("目标副本包含本地修改，请先同步到技能库");
+    if(fs.existsSync(target)&&old&&old.mode==="copy"&&!force) {
+      const currentHash=hashDirectory(target);
+      // 推送来源可能就是这个部署副本；与新中央库一致的内容可以安全同步。
+      if(currentHash!==old.source_hash&&currentHash!==hashDirectory(skill.central_path)) throw new Error("目标副本包含本地修改，已保留原内容，请先同步到技能库");
+    }
     const mode=this.store.getSetting("sync_mode")||"symlink";
     fs.mkdirSync(path.dirname(target),{recursive:true});
     const staged=path.join(path.dirname(target),".deploy-"+crypto.randomUUID()),previous=staged+"-previous";

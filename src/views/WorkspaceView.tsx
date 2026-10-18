@@ -33,6 +33,7 @@ import type { ManagedSkill, ProjectSkill } from "../lib/tauri";
 import { getErrorMessage } from "../lib/error";
 import { getTagActiveColor, getTagColor, pruneStaleTagFilters, UNTAGGED_FILTER } from "../lib/skillTags";
 import { AddSkillsSheet } from "../components/AddSkillsSheet";
+import { WorkspaceDeploymentResults } from "../components/WorkspaceDeploymentResults";
 import { useMultiSelect } from "../hooks/useMultiSelect";
 import { MultiSelectToolbar } from "../components/MultiSelectToolbar";
 import type { WorkspaceConfig } from "./workspaceConfigs";
@@ -337,6 +338,7 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
   /** 当前 localSkills 属于哪个 Agent：换 Agent 时视为首次加载（出骨架），同 Agent 刷新保留内容。 */
   const [localSkillsAgentKey, setLocalSkillsAgentKey] = useState<string | null>(null);
   const [localActionKey, setLocalActionKey] = useState<string | null>(null);
+  const [deploymentResult, setDeploymentResult] = useState<api.WorkspaceImportResult | null>(null);
   const [localDetailSkill, setLocalDetailSkill] = useState<ProjectSkill | null>(null);
   const [localDocContent, setLocalDocContent] = useState<string | null>(null);
   const [localCenterDocContent, setLocalCenterDocContent] = useState<string | null>(null);
@@ -496,6 +498,7 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
     setPullConfirmSkill(null);
     setDeleteLocalConfirmSkill(null);
     setTagFilters(new Set());
+    setDeploymentResult(null);
   }, [currentTool?.key]);
 
   const agentSkills = useMemo(
@@ -698,8 +701,11 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
       const key = `upload:${skill.relative_path}`;
       setLocalActionKey(key);
       try {
-        await api.importGlobalLocalSkillToCenter(currentTool.key, skill.relative_path);
-        toast.success(t("globalWorkspace.localSkills.uploadedToast", { name: skill.name, agent: currentTool.display_name }));
+        const result = await api.importGlobalLocalSkillToCenter(currentTool.key, skill.relative_path);
+        setDeploymentResult(result.deployments?.length ? result : null);
+        const failed = result.deployments?.filter(item => item.status === "failed").length ?? 0;
+        if (failed) toast.warning(t("optimization.deploymentFailures", { count: failed }));
+        else toast.success(t("globalWorkspace.localSkills.uploadedToast", { name: skill.name, agent: currentTool.display_name }));
         await Promise.all([loadLocalSkills(), refreshManagedSkills()]);
       } catch (error: unknown) {
         toast.error(getErrorMessage(error, t("common.error")));
@@ -1070,6 +1076,12 @@ export function WorkspaceView({ config }: { config: WorkspaceConfig }) {
             </button>
           </div>
         </div>
+
+        {deploymentResult && <WorkspaceDeploymentResults
+          key={`${deploymentResult.id}:${deploymentResult.updated_at}`} result={deploymentResult} tools={tools}
+          onChanged={async () => { await Promise.all([refreshManagedSkills(), loadLocalSkills()]); }}
+          onClose={() => setDeploymentResult(null)}
+        />}
 
         {allLocalTags.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5">

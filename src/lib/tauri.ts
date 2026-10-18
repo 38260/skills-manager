@@ -446,6 +446,7 @@ export const detachLocalSkillSource = (skillId: string) =>
   invoke<ManagedSkill>("detach_local_skill_source", { skillId });
 
 export interface DeploymentResult { tool: string; status: "success" | "failed"; message: string; }
+export interface WorkspaceImportResult extends ManagedSkill { deployments?: DeploymentResult[]; }
 export const retrySkillDeployments = (skillId: string, tools: string[]) =>
   invoke<DeploymentResult[]>("retry_skill_deployments", { skillId, tools });
 
@@ -881,13 +882,13 @@ export const getProjectSkillDocument = (projectId: string, skillRelativePath: st
   invoke<ProjectSkillDocument>("get_project_skill_document", { projectId, skillRelativePath, agent });
 
 export const importProjectSkillToCenter = (projectId: string, skillRelativePath: string, agent: string) =>
-  invoke<void>("import_project_skill_to_center", { projectId, skillRelativePath, agent });
+  invoke<WorkspaceImportResult>("import_project_skill_to_center", { projectId, skillRelativePath, agent });
 
 export const exportSkillToProject = (skillId: string, projectId: string, agents?: string[]) =>
   invoke<void>("export_skill_to_project", { skillId, projectId, agents: agents ?? null });
 
 export const updateProjectSkillToCenter = (projectId: string, skillRelativePath: string, agent: string) =>
-  invoke<void>("update_project_skill_to_center", { projectId, skillRelativePath, agent });
+  invoke<WorkspaceImportResult>("update_project_skill_to_center", { projectId, skillRelativePath, agent });
 
 export const updateProjectSkillFromCenter = (projectId: string, skillRelativePath: string, agent: string) =>
   invoke<void>("update_project_skill_from_center", { projectId, skillRelativePath, agent });
@@ -913,7 +914,7 @@ export const getGlobalLocalSkillDocument = (agent: string, skillRelativePath: st
   invoke<ProjectSkillDocument>("get_global_local_skill_document", { agent, skillRelativePath });
 
 export const importGlobalLocalSkillToCenter = (agent: string, skillRelativePath: string) =>
-  invoke<void>("import_global_local_skill_to_center", { agent, skillRelativePath });
+  invoke<WorkspaceImportResult>("import_global_local_skill_to_center", { agent, skillRelativePath });
 
 export const updateGlobalLocalSkillFromCenter = (agent: string, skillRelativePath: string) =>
   invoke<void>("update_global_local_skill_from_center", { agent, skillRelativePath });
