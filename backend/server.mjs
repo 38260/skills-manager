@@ -18,6 +18,7 @@ import { backupCommands } from "./backup.mjs";
 import { shellCommands, attachDiagnostics } from "./shell.mjs";
 import { redact } from "./files.mjs";
 import { skillOperationCommands } from "./skill-operations.mjs";
+import { skillTranslationCommands } from "./skill-translations.mjs";
 
 function parseArgs(argv) {
   const args = {};
@@ -278,6 +279,7 @@ const activity = new ActivityService({
 });
 Object.assign(commands, activity.commands);
 Object.assign(commands, skillOperationCommands(library));
+Object.assign(commands, skillTranslationCommands(library));
 
 // ── 桌面外壳与诊断：日志落盘、panic 记录、退出与重启 ──
 // 重启必须等 restart_app 的响应真正写完再退出：同步退出会让请求以 ECONNRESET 收尾，
