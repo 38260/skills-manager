@@ -20,6 +20,26 @@ test("没有或未闭合的前置元数据保留正文与代码缩进", () => {
   }
 });
 
+test("目录标题剥掉行内 Markdown 标记，与正文渲染出的标题一致", () => {
+  const content = [
+    "# Example",
+    "## 1. Response — kill *latency*",
+    "## 2. 使用 `code` 与 [链接](https://example.com)",
+    "## 3. **加粗** 与 ~~删除~~ 与 <br>",
+    "## 4. 转义 \\* 号",
+  ].join("\n");
+  assert.deepEqual(extractHeadings(content, { skipFirst: true }).map(h => h.text), [
+    "1. Response — kill latency",
+    "2. 使用 code 与 链接",
+    "3. 加粗 与 删除 与",
+    "4. 转义 * 号",
+  ]);
+  // 带强调的首个 h1 也要能被识别为"与技能名重复"而跳过
+  assert.deepEqual(extractHeadings("# **UI Design**\n## 方法", { skipFirst: true, repeatedTitle: "ui-design" }), [
+    { text: "方法", level: 2, line: 1 },
+  ]);
+});
+
 test("只隐藏与技能名称重复的首个 h1，正文标题和目录行号完整保留", () => {
   assert.deepEqual(extractHeadings("# UI Design\n## 场景", { skipFirst: true, repeatedTitle: "ui-design" }), [{ text: "场景", level: 2, line: 1 }]);
   assert.deepEqual(extractHeadings("# 适用场景\n## 方法", { skipFirst: true, repeatedTitle: "ui-design" }), [{ text: "适用场景", level: 1, line: 0 }, { text: "方法", level: 2, line: 1 }]);

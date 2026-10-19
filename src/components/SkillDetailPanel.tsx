@@ -466,7 +466,11 @@ function SkillDetailPanelContent({
   ].filter((item) => Boolean(item.value));
 
   // 目录：跳过与技能名重复的首个标题（页头已展示）。
-  const readingContent = documentLanguage === "zh-CN" ? translationState.translation?.content : activeDoc?.content;
+  // 必须与正文取内容的口径完全一致：选了中文版但还没译文时（中文原文技能、或英文技能缺译本），
+  // 正文回落展示原文，目录也要跟着从原文提取，否则目录会整块消失。
+  const readingContent = documentLanguage === "zh-CN" && translationState.translation?.content
+    ? translationState.translation.content
+    : activeDoc?.content;
   const headings = useMemo(
     () => (readingContent ? extractHeadings(readingContent, { skipFirst: true, repeatedTitle: skill.name }) : []),
     [readingContent, skill.name]

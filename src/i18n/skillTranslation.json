@@ -2,7 +2,7 @@
   "zh": {
     "language": "文档语言",
     "chinese": "中文版",
-    "original": "英文原文",
+    "original": "English",
     "add": "添加中文版",
     "edit": "更新中文版",
     "missing": "暂无中文版，当前显示原文。",
@@ -26,7 +26,7 @@
   "zh-TW": {
     "language": "文件語言",
     "chinese": "中文版",
-    "original": "英文原文",
+    "original": "English",
     "add": "新增中文版",
     "edit": "更新中文版",
     "missing": "暫無中文版，目前顯示原文。",
@@ -50,7 +50,7 @@
   "en": {
     "language": "Document language",
     "chinese": "Chinese",
-    "original": "English original",
+    "original": "English",
     "add": "Add Chinese version",
     "edit": "Update Chinese version",
     "missing": "No Chinese version yet. Showing the original.",

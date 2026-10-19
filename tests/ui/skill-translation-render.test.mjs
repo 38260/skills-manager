@@ -45,7 +45,8 @@ test("双语文档默认有中文选中文、无中文选原文；内容、标�
     const english = render({ language: "original" });
     assert.match(english, /English content/);
     assert.ok(!english.includes("中文正文"));
-    assert.match(controls({ language: "original" }), /aria-pressed="true"[^>]*>英文原文<\/button>/);
+    // 「英文原文」按钮文案已改为 English（三语统一）。
+    assert.match(controls({ language: "original" }), /aria-pressed="true"[^>]*>English<\/button>/);
 
     // 没有中文版：正文直接展示原文，不再出现整行「暂无中文版」提示；
     // 缺译用页签行「中文版」上的角标表达，且「中文版」保持可选中（默认就是它）。

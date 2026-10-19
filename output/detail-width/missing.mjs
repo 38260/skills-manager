@@ -108,7 +108,7 @@ try {
   expect("打开缺译本技能 en-missing-alpha", opened === true, opened);
   await sleep(1500);
 
-  const state = await evaluate(`(() => {
+  const STATE = `(() => {
     const shell = document.querySelector('.skill-detail-shell');
     if (!shell) return { missing: true };
     const main = shell.querySelector('.skill-detail-main');
@@ -116,6 +116,10 @@ try {
     const ctrl = row?.querySelector('[role="group"]')?.parentElement;
     const group = ctrl?.querySelector('[role="group"]');
     const zhBtn = group ? [...group.querySelectorAll('button')].find(b => b.textContent.includes('中文版')) : null;
+    const tocNav = shell.querySelector('aside nav[aria-label]');
+    const tocItems = tocNav ? [...tocNav.querySelectorAll('button')].map(b => b.textContent.trim()).filter(Boolean) : [];
+    const bodyHeadings = main ? [...main.querySelectorAll('h1,h2,h3')].map(h => h.textContent.trim()).filter(Boolean) : [];
+    const tocMissing = tocItems.filter(item => !bodyHeadings.some(h => h === item || h.includes(item) || item.includes(h)));
     const badges = zhBtn ? [...zhBtn.querySelectorAll('span')].filter(s => /缺少中文版/.test(s.textContent) || s.getAttribute('aria-hidden') === 'true') : [];
     return {
       zhPressed: zhBtn?.getAttribute('aria-pressed') ?? null,
@@ -129,16 +133,45 @@ try {
       editButtons: ctrl ? [...ctrl.querySelectorAll('button')].map(b => ({ text: b.textContent.trim(), disabled: b.disabled })) : [],
       // 正文顶部第一块是内容还是提示行
       firstBlockIsContent: !!main?.querySelector('article'),
+      // 缺译本时目录必须与正文同源（都回落为原文），不能整块消失
+      tocCount: tocItems.length,
+      tocSample: tocItems.slice(0, 4),
+      tocMissing: tocMissing.slice(0, 3),
+      bodyHeadingSample: bodyHeadings.slice(0, 4),
+      tocInBody: tocItems.length > 0 && tocMissing.length === 0,
     };
-  })()`);
+  })()`;
+  const state = await evaluate(STATE);
   record("缺译本状态", state);
   expect("缺译本时默认选中「中文版」", state?.zhPressed === "true", state?.zhPressed);
   expect("「中文版」按钮可点（不再 disabled）", state?.zhDisabled === false, state?.zhDisabled);
   expect("正文不再出现「暂无中文版」整行提示", state?.noticeInBody === false, state?.noticeInBody);
   expect("缺译本时正文直接展示原文", state?.bodyHasOriginal === true, state?.bodyHasOriginal);
+  // 这是本轮回归的核心：默认选中「中文版」但译文为空时，目录必须跟正文一起回落为原文，不能消失
+  expect("缺译本时目录非空且与正文标题一致",
+    state?.tocCount > 0 && state?.tocInBody === true,
+    { tocCount: state?.tocCount, tocSample: state?.tocSample, tocMissing: state?.tocMissing, bodyHeadingSample: state?.bodyHeadingSample });
   expect("「中文版」上有缺译角标", state?.badgeVisible === true, state?.srText);
   expect("编辑入口仍可用（文案为添加中文版）", Array.isArray(state?.editButtons) && state.editButtons.some(b => b.text.includes("添加中文版") && b.disabled === false), state?.editButtons);
   await shoot("01_missing_badge");
+
+  // 切到 English：目录同样跟随正文（原文），不能消失
+  const switched = await evaluate(`(async () => {
+    const row = document.querySelector('.skill-detail-shell nav[aria-label]')?.parentElement;
+    const ctrl = row?.querySelector('[role="group"]')?.parentElement;
+    const btn = ctrl ? [...ctrl.querySelectorAll('button')].find(b => b.textContent.trim().startsWith('English')) : null;
+    if (!btn) return false;
+    btn.click();
+    await new Promise(r => setTimeout(r, 900));
+    return true;
+  })()`, true);
+  expect("切到 English", switched === true, switched);
+  await sleep(900);
+  const enState = await evaluate(STATE);
+  record("English 状态", { tocCount: enState?.tocCount, tocSample: enState?.tocSample, tocMissing: enState?.tocMissing, bodyHeadingSample: enState?.bodyHeadingSample });
+  expect("切到 English：目录非空且与正文标题一致", enState?.tocCount > 0 && enState?.tocInBody === true,
+    { tocCount: enState?.tocCount, tocSample: enState?.tocSample, tocMissing: enState?.tocMissing });
+  await shoot("02_missing_english");
 
   // 点编辑入口应能打开编辑器
   const editor = await evaluate(`(async () => {

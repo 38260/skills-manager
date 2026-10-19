@@ -1,4 +1,4 @@
-import { stripMarkdownFrontmatter, headingMatchesTitle } from "./skillMarkdownText.ts";
+import { stripMarkdownFrontmatter, stripInlineMarkdown, headingMatchesTitle } from "./skillMarkdownText.ts";
 
 export interface MarkdownHeading { text: string; level: 1 | 2 | 3; line: number }
 
@@ -19,11 +19,13 @@ export function extractHeadings(content: string, { skipFirst = false, repeatedTi
     if (marker) { fence = marker[1]; return; }
     const match = /^ {0,3}(#{1,3})\s+(.+?)(?:\s+#+)?\s*$/.exec(line);
     if (!match) return;
+    // 目录展示的是渲染后的标题文本：先剥掉行内 Markdown 标记，再判断是否与技能名重复。
+    const text = stripInlineMarkdown(match[2]);
     if (match[1].length === 1 && !seenH1) {
       seenH1 = true;
-      if (skipFirst && (!repeatedTitle || headingMatchesTitle(match[2], repeatedTitle))) return;
+      if (skipFirst && (!repeatedTitle || headingMatchesTitle(text, repeatedTitle))) return;
     }
-    headings.push({ text: match[2], level: match[1].length as 1 | 2 | 3, line: index });
+    headings.push({ text, level: match[1].length as 1 | 2 | 3, line: index });
   });
   return headings;
 }
