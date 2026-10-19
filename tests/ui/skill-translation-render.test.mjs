@@ -11,10 +11,10 @@ import { I18nextProvider } from "react-i18next";
 
 test("双语文档默认有中文选中文、无中文选原文；内容、标题锚点与错误提示一致", async () => {
   const modulePath = path.join(process.cwd(), "tests/ui", `translation-render-${process.pid}.mjs`);
-  const result = await build({ stdin: { contents: 'export { SkillTranslationReader } from "./src/components/SkillTranslationReader.tsx"; export { resolveDocumentLanguage } from "./src/lib/skillTranslation.ts";', resolveDir: process.cwd() }, bundle: true, platform: "node", format: "esm", jsx: "automatic", packages: "external", write: false });
+  const result = await build({ stdin: { contents: 'export { SkillTranslationReader, SkillTranslationControls } from "./src/components/SkillTranslationReader.tsx"; export { resolveDocumentLanguage } from "./src/lib/skillTranslation.ts";', resolveDir: process.cwd() }, bundle: true, platform: "node", format: "esm", jsx: "automatic", packages: "external", write: false });
   fs.writeFileSync(modulePath, result.outputFiles[0].text, { flag: "wx" });
   try {
-    const { SkillTranslationReader, resolveDocumentLanguage } = await import(pathToFileURL(modulePath).href);
+    const { SkillTranslationReader, SkillTranslationControls, resolveDocumentLanguage } = await import(pathToFileURL(modulePath).href);
     const translations = JSON.parse(fs.readFileSync("src/i18n/skillTranslation.json", "utf8"));
     const i18n = createInstance();
     await i18n.init({ lng: "zh", resources: { zh: { translation: { skillTranslation: translations.zh } }, en: { translation: { skillTranslation: translations.en } } } });
@@ -24,30 +24,51 @@ test("双语文档默认有中文选中文、无中文选原文；内容、标�
     assert.equal(resolveDocumentLanguage(null, null), "original");
     assert.equal(resolveDocumentLanguage("zh-CN", null), "original");
     assert.equal(resolveDocumentLanguage(null, { ...translation, content: null }), "original");
-    const props = { skillId: "sample", original: "## English heading\nEnglish content", translation, language: "zh-CN", loading: false, error: "", headingIdPrefix: "sample", repeatedTitle: "sample", onLanguageChange() {}, onReload() {}, onSaved() {} };
+    const state = { translation, loading: false, error: "", reload() {}, accept() {} };
+    const props = { skillId: "sample", original: "## English heading\nEnglish content", ...state, language: "zh-CN", draftOpen: false, onDraftClose() {}, headingIdPrefix: "sample", repeatedTitle: "sample", onLanguageChange() {}, onSaved() {} };
     const render = overrides => renderToStaticMarkup(createElement(I18nextProvider, { i18n }, createElement(SkillTranslationReader, { ...props, ...overrides })));
+    // 语言切换入口已移到页签行（控件组件），正文区只留内容本身。
+    const controls = overrides => renderToStaticMarkup(createElement(I18nextProvider, { i18n }, createElement(SkillTranslationControls, { skillId: "sample", state: { ...state, ...overrides.state }, language: overrides.language ?? "zh-CN", onLanguageChange() {} })));
+
     const chinese = render({});
-    assert.match(chinese, /aria-pressed="true"[^>]*>中文版<\/button>/);
     assert.match(chinese, /id="sample-heading-0"[^>]*>中文目录<\/h2>/);
     assert.match(chinese, /中文正文/);
     assert.ok(!chinese.includes("English content"));
     assert.match(chinese, /const original = true;/);
+    // 正文区不再渲染语言切换按钮与编辑器入口。
+    assert.ok(!chinese.includes("aria-pressed"), "正文不应再出现语言切换");
+    assert.ok(!chinese.includes("更新中文版") && !chinese.includes("添加中文版"), "正文不应再出现编辑入口");
+
+    const controlsZh = controls({});
+    assert.match(controlsZh, /aria-pressed="true"[^>]*>中文版<\/button>/);
+    assert.match(controlsZh, /更新中文版/);
+
     const english = render({ language: "original" });
-    assert.match(english, /aria-pressed="true"[^>]*>英文原文<\/button>/);
     assert.match(english, /English content/);
     assert.ok(!english.includes("中文正文"));
+    assert.match(controls({ language: "original" }), /aria-pressed="true"[^>]*>英文原文<\/button>/);
+
     const absent = render({ language: "original", translation: null });
-    assert.match(absent, /disabled=""[^>]*>中文版<\/button>/);
     assert.match(absent, /暂无中文版，当前显示原文/);
-    assert.match(absent, /添加中文版/);
     assert.match(absent, /English content/);
+    const absentControls = controls({ language: "original", state: { translation: null } });
+    assert.match(absentControls, /disabled=""[^>]*>中文版<\/button>/);
+    assert.match(absentControls, /添加中文版/);
+
     const failed = render({ language: "original", translation: null, error: "读取被拒绝" });
     assert.match(failed, /role="alert"[^>]*>读取被拒绝/);
-    assert.match(failed, /重新读取中文版/);
     assert.match(failed, /English content/);
-    assert.ok(!failed.includes("暂无中文版，当前显示原文。<"));
+    assert.match(controls({ state: { error: "读取被拒绝" } }), /重新读取中文版/);
     assert.match(render({ translation: { ...translation, stale: true } }), /英文原文已更新/);
     assert.ok(!render({ language: "original", translation: { ...translation, stale: true } }).includes("当前中文版需要重新核对"));
+
+    // 编辑器：draftOpen 时才渲染；关闭时立即不渲染。
+    const editing = render({ draftOpen: true });
+    assert.match(editing, /<textarea/);
+    assert.match(editing, /保存中文版/);
+    const closed = render({ draftOpen: false });
+    assert.ok(!closed.includes("<textarea"));
+
     await i18n.changeLanguage("en");
     assert.match(render({}), /Showing the Chinese translation/);
     assert.deepEqual(Object.keys(translations.zh).sort(), Object.keys(translations.en).sort());

@@ -21,7 +21,7 @@ import {
 } from "../lib/tauri";
 import { SkillSourceDiffViewer } from "./SkillSourceDiffViewer";
 import { SkillMarkdown } from "./SkillMarkdown";
-import { SkillTranslationReader } from "./SkillTranslationReader";
+import { SkillTranslationControls, SkillTranslationReader, TRANSLATION_EDITOR_EVENT, type SkillTranslationState } from "./SkillTranslationReader";
 import { useSkillTranslation } from "../hooks/useSkillTranslation";
 import { resolveDocumentLanguage, type DocumentLanguage } from "../lib/skillTranslation";
 import { extractHeadings } from "../lib/markdownOutline";
@@ -200,6 +200,8 @@ function SkillDetailPanelContent({
   const translationState = useSkillTranslation(skill.id, localDocVersion);
   const [languageChoice, setLanguageChoice] = useState<DocumentLanguage | null>(null);
   const documentLanguage = resolveDocumentLanguage(languageChoice, translationState.translation);
+  // 编辑器开合放在面板这层：按钮在页签行，编辑器仍渲染正文顶部。
+  const [translationDraftOpen, setTranslationDraftOpen] = useState(false);
   const sourceDocVersion = [
     skill.id,
     skill.source_type,
@@ -212,6 +214,27 @@ function SkillDetailPanelContent({
   ].join(":");
   /** 来源版本 + 重试次数：失败信息只属于那一次尝试，重跑之后旧失败自动失效。 */
   const sourceAttemptKey = `${sourceDocVersion}#${sourceReloadToken}`;
+
+  /** 切换正文语言：正文回到顶部，当前小节高亮清空（两种语言的标题行号不同）。 */
+  function chooseDocumentLanguage(language: DocumentLanguage) {
+    if (language === documentLanguage) return;
+    // 切换语言保持当前阅读位置：不回到顶部，也不清空当前小节高亮——
+    // 两种语言是同一份文档的不同译本，标题结构一致，滚动位置本来就有意义。
+    setLanguageChoice(language);
+  }
+
+  // 页签行的「编辑 / 添加中文版」按钮只发事件：编辑器在正文顶部，滚动到那里才看得到内容。
+  useEffect(() => {
+    const onOpen = (event: Event) => {
+      const detail = (event as CustomEvent<{ skillId?: string }>).detail;
+      if (detail?.skillId !== skill.id) return;
+      setContentTab("doc");
+      setTranslationDraftOpen(true);
+      mainScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    };
+    document.addEventListener(TRANSLATION_EDITOR_EVENT, onOpen);
+    return () => document.removeEventListener(TRANSLATION_EDITOR_EVENT, onOpen);
+  }, [skill.id]);
 
   useEffect(() => {
     const shell = shellRef.current;
@@ -799,8 +822,9 @@ function SkillDetailPanelContent({
               </button>}
             </div>
           </div>
-          {/* 页签层级：文档 / 来源与差异 / 调用记录 */}
-          <nav className={cn("flex items-center gap-3.5 border-b border-border-subtle transition-all duration-200", scrolled ? "mt-1" : "mt-2.5")} aria-label={t("mySkills.detail.doc")}>
+          {/* 页签层级：文档 / 来源与差异 / 调用记录；行尾右侧是文档语言切换与编辑入口 */}
+          <div className={cn("flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 border-b border-border-subtle transition-all duration-200", scrolled ? "mt-1" : "mt-2.5")}>
+          <nav className="flex min-w-0 flex-wrap items-center gap-3.5" aria-label={t("mySkills.detail.doc")}>
             {([
               ["doc", t("mySkills.detail.tabDoc")],
               ...(supportsSourceDiff ? [["sourceDiff", t("mySkills.detail.tabSourceDiff")] as [ContentTab, string]] : []),
@@ -811,6 +835,8 @@ function SkillDetailPanelContent({
                 type="button"
                 onClick={() => {
                   setContentTab(tab as ContentTab);
+                  // 切走文档页签时收起编辑器，回来重新点按钮即可。
+                  if (tab !== "doc") setTranslationDraftOpen(false);
                   if (tab === "sourceDiff") {
                     setSourceFocus("diff");
                     setSourceRefreshing(true);
@@ -833,6 +859,16 @@ function SkillDetailPanelContent({
               </button>
             ))}
           </nav>
+          {activeDoc && (
+            <SkillTranslationControls
+              skillId={skill.id}
+              state={translationState as SkillTranslationState}
+              language={documentLanguage}
+              disabled={contentTab !== "doc"}
+              onLanguageChange={chooseDocumentLanguage}
+            />
+          )}
+          </div>
         </header>
 
         <div className="flex min-h-0 flex-1">
@@ -918,8 +954,11 @@ function SkillDetailPanelContent({
                 language={documentLanguage}
                 loading={translationState.loading}
                 error={translationState.error}
-                onLanguageChange={language => { setLanguageChoice(language); setActiveHeading(null); mainScrollRef.current?.scrollTo({ top: 0 }); }}
-                onReload={translationState.reload}
+                draftOpen={translationDraftOpen}
+                onDraftClose={() => setTranslationDraftOpen(false)}
+                onLanguageChange={chooseDocumentLanguage}
+                reload={translationState.reload}
+                accept={translationState.accept}
                 onSaved={translationState.accept}
                 headingIdPrefix={tocPrefix}
                 repeatedTitle={skill.name}

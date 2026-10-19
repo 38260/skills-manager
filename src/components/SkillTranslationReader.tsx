@@ -6,29 +6,91 @@ import { SkillMarkdown } from "./SkillMarkdown";
 import { saveSkillTranslation, type DocumentLanguage, type SkillTranslation } from "../lib/skillTranslation";
 import { getErrorMessage } from "../lib/error";
 
-interface Props {
-  skillId: string;
-  original: string;
+export interface SkillTranslationState {
   translation: SkillTranslation | null;
-  language: DocumentLanguage;
   loading: boolean;
   error: string;
+  reload: () => void;
+  accept: (translation: SkillTranslation) => void;
+}
+
+const CONTROL = "inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-[12.5px] outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-40";
+
+/** 页签行的「编辑 / 添加中文版」按钮通过这个事件通知详情面板打开编辑器。 */
+export const TRANSLATION_EDITOR_EVENT = "skills-manager:open-translation-editor";
+
+/**
+ * 文档语言切换 + 编辑入口。原先和正文一起放在文档顶部，现在挂到页签行最右侧，
+ * 与「文档 / 来源与差异 / 调用记录」同一行，正文区只留内容本身。
+ */
+export function SkillTranslationControls({ skillId, state, language, disabled, onLanguageChange }: {
+  skillId: string;
+  state: SkillTranslationState;
+  language: DocumentLanguage;
+  /** 非文档页签时禁用编辑入口，避免在来源/记录页误开编辑器。 */
+  disabled?: boolean;
+  onLanguageChange: (language: DocumentLanguage) => void;
+}) {
+  const { t } = useTranslation();
+  const { translation, loading, error } = state;
+  return (
+    <div className="flex shrink-0 items-center gap-1">
+      <div role="group" aria-label={t("skillTranslation.language")} className="inline-flex rounded-lg bg-surface-hover p-0.5">
+        {(["zh-CN", "original"] as const).map(value => <button
+          key={value} type="button" aria-pressed={language === value}
+          disabled={value === "zh-CN" && !translation?.content}
+          title={value === "zh-CN" && !translation?.content ? t("skillTranslation.missing") : undefined}
+          onClick={() => onLanguageChange(value)}
+          className={cn(
+            "inline-flex items-center rounded-md px-2.5 py-1 text-[12.5px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-40",
+            language === value ? "bg-surface font-medium text-accent shadow-sm" : "text-tertiary hover:text-secondary"
+          )}
+        >{t(value === "zh-CN" ? "skillTranslation.chinese" : "skillTranslation.original")}</button>)}
+      </div>
+      <button type="button" onClick={state.reload} disabled={loading || disabled} className={cn(CONTROL, "px-2 py-1 text-muted hover:bg-surface-hover")} title={t("skillTranslation.retry")} aria-label={t("skillTranslation.retry")}>
+        <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+      </button>
+      {/* 编辑入口只负责开合：编辑器仍渲染在正文顶部，按钮留在页签行。 */}
+      <button
+        type="button"
+        disabled={loading || disabled || !translation || !!error}
+        onClick={() => document.dispatchEvent(new CustomEvent(TRANSLATION_EDITOR_EVENT, { detail: { skillId } }))}
+        className={cn(CONTROL, "border border-border-subtle py-1 text-secondary hover:bg-surface-hover")}
+      ><Pencil className="h-3.5 w-3.5" />{t(translation?.content ? "skillTranslation.edit" : "skillTranslation.add")}</button>
+    </div>
+  );
+}
+
+interface Props extends SkillTranslationState {
+  skillId: string;
+  original: string;
+  language: DocumentLanguage;
+  /** 编辑器开合由页签行的按钮控制；这里只负责渲染。 */
+  draftOpen: boolean;
+  onDraftClose: () => void;
   headingIdPrefix: string;
   repeatedTitle: string;
   onLanguageChange: (language: DocumentLanguage) => void;
-  onReload: () => void;
   onSaved: (translation: SkillTranslation) => void;
 }
 
-export function SkillTranslationReader({ skillId, original, translation, language, loading, error, headingIdPrefix, repeatedTitle, onLanguageChange, onReload, onSaved }: Props) {
+export function SkillTranslationReader({ skillId, original, translation, loading, error, language, draftOpen, onDraftClose, headingIdPrefix, repeatedTitle, onLanguageChange, onSaved }: Props) {
   const { t } = useTranslation();
   const editorId = useId();
-  const [draft, setDraft] = useState<{ content: string; sourceHash: string; revision: string | null } | null>(null);
+  const [draftContent, setDraftContent] = useState<{ content: string; sourceHash: string; revision: string | null } | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [saved, setSaved] = useState(false);
   const content = language === "zh-CN" && translation?.content ? translation.content : original;
   const button = "inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-[12.5px] outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-40";
+
+  // 打开编辑器时以当前译文为草稿；原文版本与修订号一起冻结，保存时由后端校验。
+  // 用渲染期按需初始化（不在 effect 里 setState），关闭编辑器时草稿随之丢掉，下次打开重新取。
+  if (draftOpen && !draftContent && translation) {
+    setDraftContent({ content: translation.content ?? "", sourceHash: translation.source_hash, revision: translation.revision });
+  }
+  // 渲染期切换：关闭时立即不渲染编辑器，但保留失败输入一段时间以便提示仍在（重新打开会重新取）。
+  const draft = draftOpen ? draftContent : null;
 
   async function save(event: FormEvent) {
     event.preventDefault();
@@ -38,33 +100,13 @@ export function SkillTranslationReader({ skillId, original, translation, languag
       const next = await saveSkillTranslation(skillId, draft.content, draft.sourceHash, draft.revision);
       onSaved(next);
       onLanguageChange("zh-CN");
-      setDraft(null); setSaved(true);
+      setDraftContent(null); setSaved(true); onDraftClose();
     } catch (cause) { setSaveError(getErrorMessage(cause, t("skillTranslation.saveFailed"))); }
     finally { setSaving(false); }
   }
 
   return <div className="mx-auto w-full max-w-[860px]">
     <div className="mb-5 space-y-2">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div role="group" aria-label={t("skillTranslation.language")} className="inline-flex rounded-lg bg-surface-hover p-1">
-          {(["zh-CN", "original"] as const).map(value => <button
-            key={value} type="button" aria-pressed={language === value}
-            disabled={value === "zh-CN" && !translation?.content}
-            title={value === "zh-CN" && !translation?.content ? t("skillTranslation.missing") : undefined}
-            onClick={() => onLanguageChange(value)}
-            className={cn(button, language === value ? "bg-surface font-medium text-accent shadow-sm" : "text-tertiary hover:text-secondary")}
-          >{t(value === "zh-CN" ? "skillTranslation.chinese" : "skillTranslation.original")}</button>)}
-        </div>
-        <div className="flex items-center gap-1">
-          <button type="button" onClick={onReload} disabled={loading || saving} className={cn(button, "text-muted hover:bg-surface-hover")} title={t("skillTranslation.retry")} aria-label={t("skillTranslation.retry")}>
-            <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
-          </button>
-          {!draft && <button type="button" disabled={loading || !translation || !!error} className={cn(button, "text-secondary hover:bg-surface-hover")}
-            onClick={() => { if (translation) { setDraft({ content: translation.content ?? "", sourceHash: translation.source_hash, revision: translation.revision }); setSaveError(""); setSaved(false); } }}>
-            <Pencil className="h-3.5 w-3.5" />{t(translation?.content ? "skillTranslation.edit" : "skillTranslation.add")}
-          </button>}
-        </div>
-      </div>
       <p className="text-[12px] text-muted" aria-live="polite">
         {loading ? t("skillTranslation.loading") : error ? t("skillTranslation.loadFailed") : !translation?.content ? t("skillTranslation.missing") : t(language === "zh-CN" ? "skillTranslation.readingChinese" : "skillTranslation.readingOriginal")}
       </p>
@@ -76,12 +118,12 @@ export function SkillTranslationReader({ skillId, original, translation, languag
       <label htmlFor={editorId} className="block text-[13px] font-medium text-primary">{t("skillTranslation.editorLabel")}</label>
       <p id={`${editorId}-hint`} className="text-[12.5px] leading-5 text-tertiary">{t("skillTranslation.editorHint")}</p>
       <textarea id={editorId} aria-describedby={`${editorId}-hint`} value={draft.content} disabled={saving} rows={14}
-        onChange={event => setDraft({ ...draft, content: event.target.value })} placeholder={t("skillTranslation.placeholder")}
+        onChange={event => setDraftContent({ ...draft, content: event.target.value })} placeholder={t("skillTranslation.placeholder")}
         className="w-full resize-y rounded-md border border-border-subtle bg-background px-3 py-2 font-mono text-[13px] leading-6 text-primary outline-none focus:border-accent focus:ring-1 focus:ring-accent disabled:opacity-60" />
       {saveError && <div role="alert" className="text-[12.5px] text-danger"><p>{saveError}</p><p className="mt-1">{t("skillTranslation.sourceChanged")}</p></div>}
       <div className="flex flex-wrap items-center gap-2">
         <button type="submit" disabled={saving || !draft.content.trim()} className={cn(button, "bg-accent text-white hover:opacity-90")}>{t(saving ? "skillTranslation.saving" : "skillTranslation.save")}</button>
-        <button type="button" disabled={saving} onClick={() => { setDraft(null); setSaveError(""); }} className={cn(button, "border border-border-subtle text-secondary hover:bg-surface-hover")}>{t("skillTranslation.cancel")}</button>
+        <button type="button" disabled={saving} onClick={() => { setDraftContent(null); setSaveError(""); onDraftClose(); }} className={cn(button, "border border-border-subtle text-secondary hover:bg-surface-hover")}>{t("skillTranslation.cancel")}</button>
       </div>
     </form>}
     <SkillMarkdown content={content} headingIdPrefix={headingIdPrefix} hideFirstHeading repeatedTitle={repeatedTitle} variant="detail" />

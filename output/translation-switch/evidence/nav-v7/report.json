@@ -1,0 +1,458 @@
+{
+  "tag": "nav-v7",
+  "runId": "run-nav-v7-1792401127423",
+  "failures": [],
+  "results": [
+    {
+      "name": "浅色主题生效",
+      "value": "ok"
+    },
+    {
+      "name": "打开 en-done 详情",
+      "value": true
+    },
+    {
+      "name": "页签行布局",
+      "value": {
+        "ctrl": {
+          "x": 1209,
+          "y": 154,
+          "w": 277,
+          "h": 31,
+          "right": 1486,
+          "bottom": 185
+        },
+        "nav": {
+          "x": 269,
+          "y": 154,
+          "w": 242,
+          "h": 31,
+          "right": 511,
+          "bottom": 185
+        },
+        "tabs": [
+          {
+            "text": "文档",
+            "x": 269,
+            "y": 154,
+            "w": 50,
+            "h": 32,
+            "right": 319,
+            "bottom": 186
+          },
+          {
+            "text": "来源与差异",
+            "x": 333,
+            "y": 154,
+            "w": 89,
+            "h": 32,
+            "right": 421,
+            "bottom": 186
+          },
+          {
+            "text": "调用记录",
+            "x": 435,
+            "y": 154,
+            "w": 76,
+            "h": 32,
+            "right": 511,
+            "bottom": 186
+          }
+        ],
+        "buttons": [
+          {
+            "text": "中文版",
+            "pressed": "true",
+            "disabled": false,
+            "x": 1211,
+            "y": 156,
+            "w": 57,
+            "h": 27,
+            "right": 1268,
+            "bottom": 183
+          },
+          {
+            "text": "英文原文",
+            "pressed": "false",
+            "disabled": false,
+            "x": 1268,
+            "y": 156,
+            "w": 70,
+            "h": 27,
+            "right": 1338,
+            "bottom": 183
+          },
+          {
+            "text": "",
+            "pressed": null,
+            "disabled": false,
+            "x": 1344,
+            "y": 159,
+            "w": 30,
+            "h": 22,
+            "right": 1374,
+            "bottom": 181
+          },
+          {
+            "text": "更新中文版",
+            "pressed": null,
+            "disabled": false,
+            "x": 1378,
+            "y": 155,
+            "w": 108,
+            "h": 29,
+            "right": 1486,
+            "bottom": 184
+          }
+        ],
+        "sameRow": true,
+        "ctrlRightOfTabs": true,
+        "navRight": 511,
+        "ctrlRight": 1486
+      }
+    },
+    {
+      "name": "详情面板可定位（shell / nav / 控件齐全）",
+      "value": {
+        "ctrl": {
+          "x": 1209,
+          "y": 154,
+          "w": 277,
+          "h": 31,
+          "right": 1486,
+          "bottom": 185
+        },
+        "nav": {
+          "x": 269,
+          "y": 154,
+          "w": 242,
+          "h": 31,
+          "right": 511,
+          "bottom": 185
+        },
+        "tabs": [
+          {
+            "text": "文档",
+            "x": 269,
+            "y": 154,
+            "w": 50,
+            "h": 32,
+            "right": 319,
+            "bottom": 186
+          },
+          {
+            "text": "来源与差异",
+            "x": 333,
+            "y": 154,
+            "w": 89,
+            "h": 32,
+            "right": 421,
+            "bottom": 186
+          },
+          {
+            "text": "调用记录",
+            "x": 435,
+            "y": 154,
+            "w": 76,
+            "h": 32,
+            "right": 511,
+            "bottom": 186
+          }
+        ],
+        "buttons": [
+          {
+            "text": "中文版",
+            "pressed": "true",
+            "disabled": false,
+            "x": 1211,
+            "y": 156,
+            "w": 57,
+            "h": 27,
+            "right": 1268,
+            "bottom": 183
+          },
+          {
+            "text": "英文原文",
+            "pressed": "false",
+            "disabled": false,
+            "x": 1268,
+            "y": 156,
+            "w": 70,
+            "h": 27,
+            "right": 1338,
+            "bottom": 183
+          },
+          {
+            "text": "",
+            "pressed": null,
+            "disabled": false,
+            "x": 1344,
+            "y": 159,
+            "w": 30,
+            "h": 22,
+            "right": 1374,
+            "bottom": 181
+          },
+          {
+            "text": "更新中文版",
+            "pressed": null,
+            "disabled": false,
+            "x": 1378,
+            "y": 155,
+            "w": 108,
+            "h": 29,
+            "right": 1486,
+            "bottom": 184
+          }
+        ],
+        "sameRow": true,
+        "ctrlRightOfTabs": true,
+        "navRight": 511,
+        "ctrlRight": 1486
+      }
+    },
+    {
+      "name": "页签行（nav）与控件（ctrl）在同一行",
+      "value": {
+        "nav": {
+          "x": 269,
+          "y": 154,
+          "w": 242,
+          "h": 31,
+          "right": 511,
+          "bottom": 185
+        },
+        "ctrl": {
+          "x": 1209,
+          "y": 154,
+          "w": 277,
+          "h": 31,
+          "right": 1486,
+          "bottom": 185
+        }
+      }
+    },
+    {
+      "name": "控件在页签右侧、贴靠行尾",
+      "value": {
+        "ctrl": {
+          "x": 1209,
+          "y": 154,
+          "w": 277,
+          "h": 31,
+          "right": 1486,
+          "bottom": 185
+        },
+        "nav": {
+          "x": 269,
+          "y": 154,
+          "w": 242,
+          "h": 31,
+          "right": 511,
+          "bottom": 185
+        }
+      }
+    },
+    {
+      "name": "行内含「中文版 / 英文原文」",
+      "value": [
+        "中文版",
+        "英文原文",
+        "",
+        "更新中文版"
+      ]
+    },
+    {
+      "name": "行内含「更新中文版」编辑入口",
+      "value": [
+        "中文版",
+        "英文原文",
+        "",
+        "更新中文版"
+      ]
+    },
+    {
+      "name": "正文区",
+      "value": {
+        "pressed": 0,
+        "editButton": 0,
+        "firstChild": "mx-auto w-full max-w-[860px]"
+      }
+    },
+    {
+      "name": "正文区没有语言切换按钮",
+      "value": 0
+    },
+    {
+      "name": "正文区没有编辑/添加中文版按钮",
+      "value": 0
+    },
+    {
+      "name": "切换语言",
+      "value": {
+        "before": 900,
+        "afterEnglish": 900,
+        "afterChinese": 900,
+        "englishText": true,
+        "chineseText": true,
+        "headingBefore": "何时使用",
+        "headingAfter": "何时使用",
+        "englishPressed": "false",
+        "zhPressed": "true"
+      }
+    },
+    {
+      "name": "切到英文原文时正文真的换了",
+      "value": true
+    },
+    {
+      "name": "切回中文版时正文真的换了",
+      "value": true
+    },
+    {
+      "name": "切到英文原文不改变滚动位置",
+      "value": {
+        "before": 900,
+        "after": 900
+      }
+    },
+    {
+      "name": "切回中文版不改变滚动位置",
+      "value": {
+        "before": 900,
+        "after": 900
+      }
+    },
+    {
+      "name": "滚动位置确实不在顶部（断言有效）",
+      "value": 900
+    },
+    {
+      "name": "切换后按钮选中态正确",
+      "value": {
+        "en": "false",
+        "zh": "true"
+      }
+    },
+    {
+      "name": "编辑器",
+      "value": {
+        "open": true,
+        "value": "# en-done\n\n## 何时使用\n\n",
+        "scrollTop": 0
+      }
+    },
+    {
+      "name": "行尾按钮能打开编辑器",
+      "value": {
+        "open": true,
+        "value": "# en-done\n\n## 何时使用\n\n",
+        "scrollTop": 0
+      }
+    },
+    {
+      "name": "编辑器内容取当前译文",
+      "value": "# en-done\n\n## 何时使用\n\n"
+    },
+    {
+      "name": "取消后编辑器关闭",
+      "value": "ok"
+    },
+    {
+      "name": "调用记录页签时的控件",
+      "value": [
+        {
+          "text": "中文版",
+          "disabled": false
+        },
+        {
+          "text": "英文原文",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "disabled": true
+        },
+        {
+          "text": "更新中文版",
+          "disabled": true
+        }
+      ]
+    },
+    {
+      "name": "非文档页签时编辑入口与重读按钮禁用",
+      "value": [
+        {
+          "text": "中文版",
+          "disabled": false
+        },
+        {
+          "text": "英文原文",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "disabled": true
+        },
+        {
+          "text": "更新中文版",
+          "disabled": true
+        }
+      ]
+    },
+    {
+      "name": "深色主题生效",
+      "value": "ok"
+    },
+    {
+      "name": "深色下重新打开 en-done 详情",
+      "value": true
+    },
+    {
+      "name": "深色正文配色",
+      "value": {
+        "applied": {
+          "selector": "skill-detail-shell absolute inset-0 z-10",
+          "bg": "rgb(23, 26, 35)"
+        },
+        "text": "rgb(243, 245, 249)",
+        "bgLuminance": 26,
+        "textLuminance": 245
+      }
+    },
+    {
+      "name": "深色下正文背景是深色、文字是浅色",
+      "value": {
+        "applied": {
+          "selector": "skill-detail-shell absolute inset-0 z-10",
+          "bg": "rgb(23, 26, 35)"
+        },
+        "text": "rgb(243, 245, 249)",
+        "bgLuminance": 26,
+        "textLuminance": 245
+      }
+    },
+    {
+      "name": "900 窄窗口",
+      "value": {
+        "visible": true,
+        "right": 868,
+        "innerWidth": 900,
+        "navBottom": 243,
+        "ctrlBottom": 243,
+        "scrollWidth": 900
+      }
+    },
+    {
+      "name": "窄屏控件仍可见且不溢出",
+      "value": {
+        "visible": true,
+        "right": 868,
+        "innerWidth": 900,
+        "navBottom": 243,
+        "ctrlBottom": 243,
+        "scrollWidth": 900
+      }
+    }
+  ]
+}
