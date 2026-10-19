@@ -1,0 +1,60 @@
+{
+  "automated": {
+    "backend": {
+      "passed": 137,
+      "failed": 0
+    },
+    "ui": {
+      "passed": 44,
+      "failed": 0
+    },
+    "electron": {
+      "passed": 1,
+      "failed": 0
+    },
+    "lint": "passed",
+    "build": "passed"
+  },
+  "browser": {
+    "passed": 17,
+    "checks": [
+      "有译文时默认中文，目录也为中文",
+      "中文目录点击能滚动定位正文",
+      "切换英文同时更新正文与目录并回到顶部",
+      "英文目录点击能滚动定位正文",
+      "键盘可切回中文，代码块保持原样",
+      "主内容页签往返保留语言",
+      "关闭后重新打开默认中文",
+      "窄屏抽屉目录跟随语言，Esc 只关闭抽屉",
+      "无中文版默认已有原文，中文入口不可选",
+      "保存失败保留完整输入",
+      "粘贴译文真实保存成功，立即更新中文正文与目录",
+      "整页刷新后译文仍存在且默认中文",
+      "译文读取失败保留原文与目录，重试恢复中文",
+      "过期提示明确且保留旧译文",
+      "真实并发冲突保留草稿及另一窗口已保存译文",
+      "来源与差异往返不影响译文阅读",
+      "浏览器无未捕获运行异常"
+    ],
+    "errors": []
+  },
+  "originals": [
+    {
+      "name": "bilingual-demo",
+      "unchanged": true
+    },
+    {
+      "name": "english-only",
+      "unchanged": true
+    }
+  ],
+  "workspace": {
+    "preExistingFiles": 210,
+    "unexpectedChanges": []
+  },
+  "unperformed": [
+    "Windows EXE packaging",
+    "Real user skill translation",
+    "Real Agent client acceptance"
+  ]
+}
