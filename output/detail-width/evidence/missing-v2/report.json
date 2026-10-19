@@ -1,0 +1,97 @@
+{
+  "tag": "missing-v2",
+  "failures": [],
+  "results": [
+    {
+      "name": "打开缺译本技能 en-missing-alpha",
+      "value": true
+    },
+    {
+      "name": "缺译本状态",
+      "value": {
+        "zhPressed": "true",
+        "zhDisabled": false,
+        "zhText": "中文版!缺少中文版",
+        "badgeCount": 3,
+        "badgeVisible": true,
+        "srText": "!缺少中文版|!|缺少中文版",
+        "noticeInBody": false,
+        "bodyHasOriginal": true,
+        "editButtons": [
+          {
+            "text": "中文版!缺少中文版",
+            "disabled": false
+          },
+          {
+            "text": "英文原文",
+            "disabled": false
+          },
+          {
+            "text": "",
+            "disabled": false
+          },
+          {
+            "text": "添加中文版",
+            "disabled": false
+          }
+        ],
+        "firstBlockIsContent": true
+      }
+    },
+    {
+      "name": "缺译本时默认选中「中文版」",
+      "value": "true"
+    },
+    {
+      "name": "「中文版」按钮可点（不再 disabled）",
+      "value": false
+    },
+    {
+      "name": "正文不再出现「暂无中文版」整行提示",
+      "value": false
+    },
+    {
+      "name": "缺译本时正文直接展示原文",
+      "value": true
+    },
+    {
+      "name": "「中文版」上有缺译角标",
+      "value": "!缺少中文版|!|缺少中文版"
+    },
+    {
+      "name": "编辑入口仍可用（文案为添加中文版）",
+      "value": [
+        {
+          "text": "中文版!缺少中文版",
+          "disabled": false
+        },
+        {
+          "text": "英文原文",
+          "disabled": false
+        },
+        {
+          "text": "",
+          "disabled": false
+        },
+        {
+          "text": "添加中文版",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "name": "编辑器",
+      "value": {
+        "open": true,
+        "empty": true
+      }
+    },
+    {
+      "name": "缺译本时点编辑入口能打开空编辑器",
+      "value": {
+        "open": true,
+        "empty": true
+      }
+    }
+  ]
+}

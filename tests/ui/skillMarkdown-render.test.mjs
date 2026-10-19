@@ -32,7 +32,10 @@ test("实际 Markdown 组件保留正文，详情代码提供语言／行号／�
     assert.match(bodyTitle, />适用场景<\/h1>/, "不删除与技能名不同的正文标题");
     const normal = render({ content });
     assert.ok(!normal.includes("skill-detail-code"));
-    assert.ok(normal.includes("max-w-[860px]"));
+    assert.ok(normal.includes("max-w-[860px]"), "非详情场景保留窄栏阅读宽度");
     assert.match(normal, />UI Design<\/h1>/);
+    // 详情页正文跟着主区自适应，不再自带宽度上限（否则宽屏两侧会空出大块留白）。
+    assert.ok(!detail.includes("max-w-[860px]"), "详情正文不应再限制 860px");
+    assert.ok(detail.includes("skill-detail-markdown"));
   } finally { fs.unlinkSync(modulePath); }
 });

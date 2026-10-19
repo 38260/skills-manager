@@ -199,7 +199,7 @@ function SkillDetailPanelContent({
   const localDocVersion = `${skill.id}:${skill.updated_at}`;
   const translationState = useSkillTranslation(skill.id, localDocVersion);
   const [languageChoice, setLanguageChoice] = useState<DocumentLanguage | null>(null);
-  const documentLanguage = resolveDocumentLanguage(languageChoice, translationState.translation);
+  const documentLanguage = resolveDocumentLanguage(languageChoice);
   // 编辑器开合放在面板这层：按钮在页签行，编辑器仍渲染正文顶部。
   const [translationDraftOpen, setTranslationDraftOpen] = useState(false);
   const sourceDocVersion = [

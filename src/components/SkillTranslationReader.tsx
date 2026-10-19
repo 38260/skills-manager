@@ -22,6 +22,9 @@ export const TRANSLATION_EDITOR_EVENT = "skills-manager:open-translation-editor"
 /**
  * 文档语言切换 + 编辑入口。原先和正文一起放在文档顶部，现在挂到页签行最右侧，
  * 与「文档 / 来源与差异 / 调用记录」同一行，正文区只留内容本身。
+ *
+ * 没有中文版时仍然默认选中「中文版」——正文本来就只有一份原文，直接展示它；
+ * 「还没有译本」这件事用小角标 + 编辑按钮文案表达，不占一整行提示。
  */
 export function SkillTranslationControls({ skillId, state, language, disabled, onLanguageChange }: {
   skillId: string;
@@ -33,19 +36,31 @@ export function SkillTranslationControls({ skillId, state, language, disabled, o
 }) {
   const { t } = useTranslation();
   const { translation, loading, error } = state;
+  const missing = !loading && !error && !translation?.content;
   return (
     <div className="flex shrink-0 items-center gap-1">
       <div role="group" aria-label={t("skillTranslation.language")} className="inline-flex rounded-lg bg-surface-hover p-0.5">
         {(["zh-CN", "original"] as const).map(value => <button
           key={value} type="button" aria-pressed={language === value}
-          disabled={value === "zh-CN" && !translation?.content}
-          title={value === "zh-CN" && !translation?.content ? t("skillTranslation.missing") : undefined}
+          title={value === "zh-CN" && missing ? t("skillTranslation.missing") : undefined}
+          aria-describedby={value === "zh-CN" && missing ? `${skillId}-translation-missing` : undefined}
           onClick={() => onLanguageChange(value)}
           className={cn(
-            "inline-flex items-center rounded-md px-2.5 py-1 text-[12.5px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-40",
+            "relative inline-flex items-center rounded-md px-2.5 py-1 text-[12.5px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-40",
             language === value ? "bg-surface font-medium text-accent shadow-sm" : "text-tertiary hover:text-secondary"
           )}
-        >{t(value === "zh-CN" ? "skillTranslation.chinese" : "skillTranslation.original")}</button>)}
+        >{t(value === "zh-CN" ? "skillTranslation.chinese" : "skillTranslation.original")}
+          {/* 缺译角标：不撑宽按钮太多，靠 title / sr-only 给出完整说明 */}
+          {value === "zh-CN" && missing && (
+            <span
+              id={`${skillId}-translation-missing`}
+              className="ml-1 inline-flex h-[15px] min-w-[15px] items-center justify-center rounded-full bg-amber-100 px-1 text-[10px] font-semibold leading-none text-amber-700 ring-1 ring-inset ring-amber-500/30 dark:bg-amber-500/15 dark:text-amber-300 dark:ring-amber-400/30"
+            >
+              <span aria-hidden="true">!</span>
+              <span className="sr-only">{t("skillTranslation.missingShort")}</span>
+            </span>
+          )}
+        </button>)}
       </div>
       <button type="button" onClick={state.reload} disabled={loading || disabled} className={cn(CONTROL, "px-2 py-1 text-muted hover:bg-surface-hover")} title={t("skillTranslation.retry")} aria-label={t("skillTranslation.retry")}>
         <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
@@ -53,10 +68,14 @@ export function SkillTranslationControls({ skillId, state, language, disabled, o
       {/* 编辑入口只负责开合：编辑器仍渲染在正文顶部，按钮留在页签行。 */}
       <button
         type="button"
-        disabled={loading || disabled || !translation || !!error}
+        disabled={loading || disabled || !!error || (missing && !translation)}
         onClick={() => document.dispatchEvent(new CustomEvent(TRANSLATION_EDITOR_EVENT, { detail: { skillId } }))}
         className={cn(CONTROL, "border border-border-subtle py-1 text-secondary hover:bg-surface-hover")}
-      ><Pencil className="h-3.5 w-3.5" />{t(translation?.content ? "skillTranslation.edit" : "skillTranslation.add")}</button>
+        title={missing ? t("skillTranslation.add") : undefined}
+      ><Pencil className="h-3.5 w-3.5" />
+        {/* 缺译时只留图标 + 角标，避免按钮过长把页签行挤满；有译本时显示完整文案 */}
+        {missing ? <span className="sr-only">{t("skillTranslation.add")}</span> : t("skillTranslation.edit")}
+      </button>
     </div>
   );
 }
@@ -105,15 +124,23 @@ export function SkillTranslationReader({ skillId, original, translation, loading
     finally { setSaving(false); }
   }
 
-  return <div className="mx-auto w-full max-w-[860px]">
-    <div className="mb-5 space-y-2">
-      <p className="text-[12px] text-muted" aria-live="polite">
-        {loading ? t("skillTranslation.loading") : error ? t("skillTranslation.loadFailed") : !translation?.content ? t("skillTranslation.missing") : t(language === "zh-CN" ? "skillTranslation.readingChinese" : "skillTranslation.readingOriginal")}
-      </p>
+  // 只有真的有译文内容时才算「在看中文」；缺译本时虽然按钮选中中文版，正文其实是原文。
+  const showingTranslation = language === "zh-CN" && !!translation?.content;
+  const statusText = loading
+    ? t("skillTranslation.loading")
+    : error
+      ? t("skillTranslation.loadFailed")
+      : translation?.content
+        ? t(showingTranslation ? "skillTranslation.readingChinese" : "skillTranslation.readingOriginal")
+        : null;
+
+  return <div className="w-full">
+    {(statusText || error || (language === "zh-CN" && translation?.stale) || saved) && <div className="mb-5 space-y-2">
+      {statusText && <p className="text-[12px] text-muted" aria-live="polite">{statusText}</p>}
       {error && <p role="alert" className="break-words text-[12.5px] text-danger">{error}</p>}
       {language === "zh-CN" && translation?.stale && <p role="status" className="rounded-md border border-border-subtle bg-surface-hover px-3 py-2 text-[12.5px] text-secondary">{t("skillTranslation.stale")}</p>}
       {saved && <p role="status" className="text-[12px] text-accent">{t("skillTranslation.saved")}</p>}
-    </div>
+    </div>}
     {draft && <form onSubmit={save} className="mb-6 space-y-3 rounded-lg border border-border-subtle bg-surface p-4">
       <label htmlFor={editorId} className="block text-[13px] font-medium text-primary">{t("skillTranslation.editorLabel")}</label>
       <p id={`${editorId}-hint`} className="text-[12.5px] leading-5 text-tertiary">{t("skillTranslation.editorHint")}</p>

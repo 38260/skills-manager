@@ -50,7 +50,9 @@ export function SkillMarkdown({ content, className, headingIdPrefix, hideFirstHe
   };
 
   return (
-    <article className={cn("mx-auto w-full max-w-[860px] text-[14px] leading-[25px] text-secondary", variant === "detail" && "skill-detail-markdown", className)}>
+    // 详情页正文跟着主区自适应（原先 860px 上限在宽屏下两侧各空出 70–90px）；
+    // 其他场景保持原来的窄栏阅读宽度，避免影响项目详情/工作区排版。
+    <article className={cn("mx-auto w-full text-[14px] leading-[25px] text-secondary", variant === "detail" ? "skill-detail-markdown" : "max-w-[860px]", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{

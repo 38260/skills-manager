@@ -1,0 +1,283 @@
+{
+  "tag": "after3",
+  "failures": [],
+  "results": [
+    {
+      "name": "打开真实技能 apple-design",
+      "value": true
+    },
+    {
+      "name": "1600 宽布局",
+      "value": {
+        "main": {
+          "x": 221,
+          "w": 1021,
+          "right": 1242,
+          "y": 188
+        },
+        "article": {
+          "x": 269,
+          "w": 941,
+          "right": 1210,
+          "y": 250
+        },
+        "leftGap": 48,
+        "rightGap": 32,
+        "ctrl": {
+          "x": 1273,
+          "w": 277,
+          "right": 1550,
+          "y": 156
+        },
+        "tabs": [
+          {
+            "text": "文档",
+            "right": 319
+          },
+          {
+            "text": "来源与差异",
+            "right": 421
+          },
+          {
+            "text": "调用记录",
+            "right": 511
+          }
+        ],
+        "tabToCtrlGap": 762,
+        "buttons": [
+          {
+            "text": "中文版",
+            "pressed": "true"
+          },
+          {
+            "text": "英文原文",
+            "pressed": "false"
+          },
+          {
+            "text": "",
+            "pressed": null
+          },
+          {
+            "text": "更新中文版",
+            "pressed": null
+          }
+        ],
+        "innerWidth": 1582,
+        "noticeRow": false
+      }
+    },
+    {
+      "name": "详情面板可定位",
+      "value": {
+        "main": {
+          "x": 221,
+          "w": 1021,
+          "right": 1242,
+          "y": 188
+        },
+        "article": {
+          "x": 269,
+          "w": 941,
+          "right": 1210,
+          "y": 250
+        },
+        "leftGap": 48,
+        "rightGap": 32,
+        "ctrl": {
+          "x": 1273,
+          "w": 277,
+          "right": 1550,
+          "y": 156
+        },
+        "tabs": [
+          {
+            "text": "文档",
+            "right": 319
+          },
+          {
+            "text": "来源与差异",
+            "right": 421
+          },
+          {
+            "text": "调用记录",
+            "right": 511
+          }
+        ],
+        "tabToCtrlGap": 762,
+        "buttons": [
+          {
+            "text": "中文版",
+            "pressed": "true"
+          },
+          {
+            "text": "英文原文",
+            "pressed": "false"
+          },
+          {
+            "text": "",
+            "pressed": null
+          },
+          {
+            "text": "更新中文版",
+            "pressed": null
+          }
+        ],
+        "innerWidth": 1582,
+        "noticeRow": false
+      }
+    },
+    {
+      "name": "正文左留白收敛到主区内边距",
+      "value": {
+        "leftGap": 48
+      }
+    },
+    {
+      "name": "正文右留白收敛到主区内边距",
+      "value": {
+        "rightGap": 32
+      }
+    },
+    {
+      "name": "正文实际宽度随主区变化（不再固定 860）",
+      "value": {
+        "main": 1021,
+        "article": 941
+      }
+    },
+    {
+      "name": "右侧只显示「中文版」与「英文原文」",
+      "value": [
+        {
+          "text": "中文版",
+          "pressed": "true"
+        },
+        {
+          "text": "英文原文",
+          "pressed": "false"
+        },
+        {
+          "text": "",
+          "pressed": null
+        },
+        {
+          "text": "更新中文版",
+          "pressed": null
+        }
+      ]
+    },
+    {
+      "name": "有译本时中文版默认选中",
+      "value": [
+        {
+          "text": "中文版",
+          "pressed": "true"
+        },
+        {
+          "text": "英文原文",
+          "pressed": "false"
+        },
+        {
+          "text": "",
+          "pressed": null
+        },
+        {
+          "text": "更新中文版",
+          "pressed": null
+        }
+      ]
+    },
+    {
+      "name": "1280 宽布局",
+      "value": {
+        "main": {
+          "x": 221,
+          "w": 719,
+          "right": 940,
+          "y": 188
+        },
+        "article": {
+          "x": 269,
+          "w": 639,
+          "right": 908,
+          "y": 250
+        },
+        "leftGap": 48,
+        "rightGap": 32,
+        "ctrl": {
+          "x": 971,
+          "w": 277,
+          "right": 1248,
+          "y": 156
+        },
+        "tabs": [
+          {
+            "text": "文档",
+            "right": 319
+          },
+          {
+            "text": "来源与差异",
+            "right": 421
+          },
+          {
+            "text": "调用记录",
+            "right": 511
+          }
+        ],
+        "tabToCtrlGap": 460,
+        "buttons": [
+          {
+            "text": "中文版",
+            "pressed": "true"
+          },
+          {
+            "text": "英文原文",
+            "pressed": "false"
+          },
+          {
+            "text": "",
+            "pressed": null
+          },
+          {
+            "text": "更新中文版",
+            "pressed": null
+          }
+        ],
+        "innerWidth": 1280,
+        "noticeRow": false
+      }
+    },
+    {
+      "name": "1280 下正文贴合主区",
+      "value": {
+        "leftGap": 48,
+        "rightGap": 32
+      }
+    },
+    {
+      "name": "1280 下无横向溢出",
+      "value": {
+        "noOverflow": true,
+        "innerWidth": 1280
+      }
+    },
+    {
+      "name": "深色下重新打开详情",
+      "value": true
+    },
+    {
+      "name": "深色背景",
+      "value": {
+        "bg": "rgb(23, 26, 35)",
+        "luminance": 26
+      }
+    },
+    {
+      "name": "深色下详情面板为深色背景",
+      "value": {
+        "bg": "rgb(23, 26, 35)",
+        "luminance": 26
+      }
+    }
+  ]
+}
