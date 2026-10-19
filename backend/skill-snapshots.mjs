@@ -4,7 +4,7 @@ import crypto from "node:crypto";
 import { inside, hashDirectory, readJson, writeJson, redact } from "./files.mjs";
 
 const ignored = new Set([".git", ".skills-manager", "node_modules", "__pycache__", ".DS_Store", "Thumbs.db"]);
-const columns = ["id", "name", "description", "source_type", "source_ref", "source_ref_resolved", "source_subpath", "source_branch", "source_revision", "remote_revision", "central_path", "content_hash", "enabled", "created_at", "updated_at", "status", "update_status", "last_checked_at", "last_check_error", "alias", "custom_description", "author_override"];
+const columns = ["id", "name", "description", "source_type", "source_ref", "source_ref_resolved", "source_subpath", "source_branch", "source_revision", "remote_revision", "central_path", "content_hash", "enabled", "created_at", "updated_at", "status", "update_status", "last_checked_at", "last_check_error", "alias", "custom_description", "author_override", "icon"];
 const validId = value => typeof value === "string" && /^[a-zA-Z0-9_-]{1,100}$/.test(value);
 const digest = value => crypto.createHash("sha256").update(value).digest("hex");
 

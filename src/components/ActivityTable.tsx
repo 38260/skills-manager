@@ -9,7 +9,9 @@ import { AgentIcon } from "./AgentIcon";
 // Agent 让位）；≥1536px 再加回 Agent。表头与数据行共用同一模板，保证逐列对齐（与技能库列表同一约定）。
 // 断点定在 1280 而非 1024：1024–1280 这一段外层已经并排（详情栏占 380px），
 // 列表只剩五六百像素，再摊开列会被挤扁 —— 这一档保持两列更可读。
-const GRID = "grid grid-cols-[minmax(0,1fr)_72px] gap-3 xl:grid-cols-[minmax(0,1fr)_100px_76px_76px_96px] 2xl:grid-cols-[minmax(0,1fr)_84px_100px_76px_76px_96px]";
+// ≥1800px 单独一档：外层再宽时多出来的空间全部灌进技能列会让它占到一半（实测 1920 下 543/1062），
+// 名字只有几十像素却留出大片空白。这一档把余量分给 Agent/结果/时间，技能列回落到四成左右。
+const GRID = "grid grid-cols-[minmax(0,1fr)_72px] gap-3 xl:grid-cols-[minmax(0,1fr)_100px_76px_76px_96px] 2xl:grid-cols-[minmax(0,1fr)_104px_100px_76px_76px_96px] min-[1800px]:grid-cols-[minmax(0,1fr)_124px_116px_88px_84px_120px]";
 
 // 徽章底色见 lib/activityTone.ts（记录类型 / 触发方式 / 结果三类各自的色系）。
 
@@ -61,8 +63,8 @@ export function ActivityTable({ items, selectedId, onSelect, onOpenSkill, loadin
 
   return (
     <div className="min-w-0">
-      {/* 表头 */}
-      <div className={cn(GRID, "border-b border-border-subtle border-l-[3px] border-l-transparent px-3 py-2 text-[11.5px] font-medium text-tertiary")} role="presentation">
+      {/* 表头在列表自身滚动时吸顶，长列表也能对上列 */}
+      <div className={cn(GRID, "sticky top-0 z-[1] border-b border-border-subtle border-l-[3px] border-l-transparent bg-surface px-3 py-2 text-[11.5px] font-medium text-tertiary")} role="presentation">
         <span className="truncate">{t("activity.skill")} / {t("activity.project")}</span>
         <span className="hidden truncate 2xl:block">{t("activity.agent")}</span>
         <span className="hidden truncate xl:block">{t("activity.kind")}</span>
@@ -90,7 +92,7 @@ export function ActivityTable({ items, selectedId, onSelect, onOpenSkill, loadin
             aria-label={t("activity.eventDetails", { skill: record.skillName })}
             className={cn(
               GRID,
-              "w-full min-w-0 cursor-pointer items-center border-b border-border-subtle border-l-[3px] px-3 py-2.5 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent",
+              "w-full min-w-0 cursor-pointer items-center border-b border-border-subtle border-l-[3px] px-3 py-2 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent",
               isSelected ? "border-l-accent bg-accent-bg" : "border-l-transparent hover:bg-surface-hover"
             )}
           >

@@ -7,12 +7,18 @@ import type { ManagedSkill } from "./tauri";
  * 与本机该技能的 description 前 100 字逐字比对。
  *
  * 为什么不按名字直接关联：skills.sh 上「同名」根本不算证据 —— 实测
- * `pdf` / `skill-creator` / `find-skills` / `aihot` / `figma` 都存在**同名但不同物**的仓库
+ * `pdf` / `skill-creator` / `find-skills` / `figma` 都存在**同名但不同物**的仓库
  * （例如 `pdf` 与 `anthropics/skills` 的 pdf 描述完全不同）。指到一个错的仓库比留空更糟，
  * 所以推不出来就留空。
  *
  * 核对脚本与完整结论：`output/skill-source/verify-repos.mjs`
  * （2026-10-12 核对 53 个本地技能，确证 14 个，其余留空）。
+ * 第二轮：`output/skill-source/search-repos.mjs` + `check-pairs.mjs`（2026-10-18），
+ * 改用「GitHub 全文检索 + 逐字比对」，另确证 12 个。
+ * 注：上一轮把 `aihot` 判成「与 khazix-skills 同名不同物」是误杀 —— 只看 description 前 100 字，
+ * 而本机那份是被分发渠道改写过 description 的 v1.2.1；按整文件比对，80 行里 70 行与上游 v1.2.1
+ * 完全相同，版本号一致、API 端点与 ETag 规则一致，差异全是分发壳字段（display_name / visibility /
+ * description_zh 等），故本轮收录。
  */
 export const SKILL_REPOS: Record<string, string> = {
   "animation-vocabulary": "https://github.com/emilkowalski/skills",
@@ -29,6 +35,21 @@ export const SKILL_REPOS: Record<string, string> = {
   "grill-me": "https://github.com/mattpocock/skills",
   "archify": "https://github.com/tt-a1i/archify",
   "dashi-ppt": "https://github.com/chuspeeism/dashi-ppt-skill",
+  // 2026-10-18 第二轮：output/skill-source/search-repos.mjs 逐字比对 description 后确证。
+  "ai-rereseach": "https://github.com/38260/ai-rereseach",
+  "ai-rereseach-v2": "https://github.com/38260/ai-rereseach",
+  "claude-vision-skill": "https://github.com/asuojun/claude-vision-skill",
+  "codex-with-chatgpt": "https://github.com/XiaoDuoYa/codex-with-chatgpt",
+  "design-taste-frontend": "https://github.com/Leonxlnx/taste-skill",
+  "eli5": "https://github.com/anthropics/claude-plugins-community",
+  "pdf-converter": "https://github.com/tanis90/pdf-converter-mineru",
+  "pebrel-runtime": "https://github.com/Kuddev/pebrel",
+  "web-design-guidelines": "https://github.com/vercel-labs/web-interface-guidelines",
+  // 这三条描述与上游有出入（上游改写过文案／升过版本），但同一技能可确认：
+  // thesis-review 描述逐字一致；aihot 只差上游 v2 换了域名；self-improving-agent 上游重写过首句。
+  "thesis-review": "https://github.com/mochuishle/Thesis-Review-Skill",
+  "aihot": "https://github.com/KKKKhazix/khazix-skills",
+  "self-improving-agent": "https://github.com/pskoett/self-improving-agent",
 };
 
 type SourceLike = Pick<ManagedSkill, "name" | "source_type" | "source_ref" | "source_ref_resolved">;

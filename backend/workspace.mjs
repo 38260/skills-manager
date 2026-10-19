@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { metadata, hashDirectory, files, canonical, inside } from "./files.mjs";
+import { metadata, hashDirectory, files, canonical, inside, readJson, writeJson } from "./files.mjs";
 import { slugify } from "./scan.mjs";
 
 // 全局工作区与项目工作区共用的技能目录读取、中心匹配与同步状态判定。
@@ -19,7 +19,7 @@ function listTopLevelFiles(directory) {
 function latestModifiedMs(directory) {
   let latest = null;
   for (const file of files(directory)) {
-    const modified = fs.statSync(file.full).mtimeMs;
+    const modified = file.mtimeMs ?? fs.statSync(file.full).mtimeMs;
     if (latest === null || modified > latest) latest = modified;
   }
   return latest;
@@ -32,30 +32,83 @@ function latestModifiedMs(directory) {
 // 这里用「文件数 + 总字节 + mtime 的最大值/和」做前置指纹：指纹没变就直接复用上次的哈希
 // （stat 一遍实测约 85ms，是整读的 1/7 左右）。外部改动会刷新 mtime，指纹随之失效。
 // 注意：写入类操作（安装 / 同步 / 备份）不使用这个缓存，仍然现算，保证落盘判定用的是新鲜内容。
-const directoryHashCache = new Map();
-export function cachedDirectoryHash(directory) {
+// 同一次扫描顺带给出最后修改时间，调用方不再为同一目录走第二遍 files()。
+//
+// 缓存同时落盘（{技能库目录}/workspace-directory-state.json）：112MB 的真实副本首次索引后，
+// 重启再打开工作区只需 stat 一遍比对指纹，不再把内容整读一次。指纹含文件数/总字节/mtime，
+// 文件增删改都会失效；最坏情况和进程内缓存一样，只是把"可能沿用的旧结果"延长到跨进程。
+const DIRECTORY_STATE_CACHE_VERSION = 1;
+const DIRECTORY_STATE_CACHE_LIMIT = 2000;
+const directoryStateCache = new Map();
+let directoryStateCacheFile = null;
+let directoryStateCacheLoaded = false;
+let directoryStatePersistTimer = null;
+
+export function configureWorkspaceDirectoryCache(directory) {
+  directoryStateCache.clear();
+  directoryStateCacheLoaded = false;
+  directoryStateCacheFile = directory ? path.join(directory, "workspace-directory-state.json") : null;
+}
+
+function loadDirectoryStateCache() {
+  if (directoryStateCacheLoaded) return;
+  directoryStateCacheLoaded = true;
+  if (!directoryStateCacheFile) return;
+  let data;
+  try { data = readJson(directoryStateCacheFile, null); } catch { return; }
+  if (!data || data.version !== DIRECTORY_STATE_CACHE_VERSION || !data.entries) return;
+  for (const [key, entry] of Object.entries(data.entries)) {
+    if (typeof entry?.fingerprint === "string" && typeof entry?.hash === "string") directoryStateCache.set(key, entry);
+  }
+}
+
+function scheduleDirectoryStatePersist() {
+  if (!directoryStateCacheFile || directoryStatePersistTimer) return;
+  directoryStatePersistTimer = setTimeout(() => {
+    directoryStatePersistTimer = null;
+    while (directoryStateCache.size > DIRECTORY_STATE_CACHE_LIMIT) {
+      directoryStateCache.delete(directoryStateCache.keys().next().value);
+    }
+    try {
+      writeJson(directoryStateCacheFile, {
+        version: DIRECTORY_STATE_CACHE_VERSION,
+        entries: Object.fromEntries(directoryStateCache),
+      });
+    } catch { /* 缓存写失败不影响读取结果 */ }
+  }, 1000);
+}
+
+function cachedDirectoryState(directory) {
+  loadDirectoryStateCache();
   let canonicalPath;
-  try { canonicalPath = canonical(directory); } catch { return hashDirectory(directory); }
+  try { canonicalPath = canonical(directory); } catch { return { hash: hashDirectory(directory), lastModifiedAt: latestModifiedMs(directory) }; }
   let listing;
-  try { listing = files(directory); } catch { return hashDirectory(directory); }
+  try { listing = files(directory); } catch { return { hash: hashDirectory(directory), lastModifiedAt: null }; }
   let bytes = 0, maxMtime = 0, sumMtime = 0;
   for (const file of listing) {
     bytes += file.size;
-    let modified = 0;
-    try { modified = fs.statSync(file.full).mtimeMs; } catch { /* 读不到就按 0 计 */ }
+    const modified = file.mtimeMs ?? 0;
     if (modified > maxMtime) maxMtime = modified;
     sumMtime += modified;
   }
   const fingerprint = `${listing.length}:${bytes}:${Math.round(maxMtime)}:${Math.round(sumMtime)}`;
-  const cached = directoryHashCache.get(canonicalPath);
-  if (cached && cached.fingerprint === fingerprint) return cached.hash;
-  const hash = hashDirectory(directory);
-  directoryHashCache.set(canonicalPath, { fingerprint, hash });
-  return hash;
+  const lastModifiedAt = maxMtime || null;
+  const cached = directoryStateCache.get(canonicalPath);
+  if (cached && cached.fingerprint === fingerprint) return { hash: cached.hash, lastModifiedAt };
+  const hash = hashDirectory(directory, listing);
+  directoryStateCache.set(canonicalPath, { fingerprint, hash });
+  scheduleDirectoryStatePersist();
+  return { hash, lastModifiedAt };
+}
+
+export function cachedDirectoryHash(directory) {
+  return cachedDirectoryState(directory).hash;
 }
 
 // 递归读取一个技能根目录：识别含 SKILL.md 的目录，跳过隐藏目录与嵌入的 bundle skills 子树。
-export function readSkillsRoot(root, { enabled, agent, agent_display_name, agentDisplayName = agent_display_name ?? agent, recursive = true, includeSyncState = true }) {
+// centerPaths 是中央库技能的物理目录集合：命中说明工作区副本就是中心本体（junction/symlink），
+// 内容必然一致，不必整读目录算指纹，交给 withCenterState 按物理路径直判 in_sync。
+export function readSkillsRoot(root, { enabled, agent, agent_display_name, agentDisplayName = agent_display_name ?? agent, recursive = true, includeSyncState = true, centerPaths = null }) {
   const skills = [];
   if (!fs.existsSync(root)) return skills;
   const visited = new Set();
@@ -73,13 +126,15 @@ export function readSkillsRoot(root, { enabled, agent, agent_display_name, agent
       if (isSkillDir(full)) {
         const info = metadata(full);
         const relative = path.relative(root, full).split(path.sep).join("/");
+        const linkedToCenter = includeSyncState && !!centerPaths?.has(canonical(full));
+        const state = includeSyncState && !linkedToCenter ? cachedDirectoryState(full) : null;
         skills.push({
           name: info.name || entry.name, dir_name: entry.name, relative_path: relative,
           description: info.description, author: info.author, author_source: info.author_source,
           path: full, files: listTopLevelFiles(full), enabled, agent, agent_display_name: agentDisplayName,
           tags: [], in_center: false, sync_status: "project_only", center_skill_id: null,
-          content_hash: includeSyncState ? cachedDirectoryHash(full) : null,
-          last_modified_at: includeSyncState ? latestModifiedMs(full) : null,
+          content_hash: state?.hash ?? null,
+          last_modified_at: state?.lastModifiedAt ?? null,
         });
         continue;
       }
@@ -149,13 +204,16 @@ export function classifySyncStatus(info, managed, liveHash) {
   return "diverged";
 }
 
-export function withCenterState(skills, store) {
+export function withCenterState(skills, store, managedSkills = store?.skills() ?? []) {
   // canonical 缓存按「一次读取」为生命周期：路径可能被重链/卸载，跨请求不复用。
   canonicalCache = new Map();
-  const managedSkills = store.skills();
   const tagsMap = new Map(managedSkills.map(skill => [skill.id, skill.tags]));
+  // 工作区副本若就是中心本体（junction/symlink），物理路径一致即内容一致：
+  // 直接判 in_sync，既不读工作区目录，也不读中心目录。这是冷启动最大的一块读盘。
+  const centralByPath = new Map();
+  for (const managed of managedSkills) centralByPath.set(cachedCanonical(managed.central_path), managed);
   // 按物理目录（canonical）缓存实时指纹，并且**先把 readSkillsRoot 已经算好的工作区指纹放进去**：
-  // symlink/junction 部署时工作区副本与中心是同一个物理目录，不做这一步等于把同一个目录整读两次。
+  // 非链接部署下，工作区副本与中心内容相同时也不再整读中心目录。
   const liveHashes = new Map();
   const liveHash = directory => {
     const key = cachedCanonical(directory);
@@ -164,11 +222,12 @@ export function withCenterState(skills, store) {
   };
   for (const info of skills) if (info.content_hash) liveHashes.set(cachedCanonical(info.path), info.content_hash);
   for (const info of skills) {
-    const match = matchCenterSkill(info, managedSkills);
+    const byPath = centralByPath.get(cachedCanonical(info.path)) ?? null;
+    const match = byPath ?? matchCenterSkill(info, managedSkills);
     info.in_center = !!match;
     info.center_skill_id = match?.id ?? null;
     info.tags = match ? tagsMap.get(match.id) ?? [] : [];
-    info.sync_status = classifySyncStatus(info, match, liveHash);
+    info.sync_status = byPath ? "in_sync" : classifySyncStatus(info, match, liveHash);
     delete info.content_hash;
     delete info.last_modified_at;
   }
@@ -211,7 +270,13 @@ export function workspaceCommands(store, library) {
   return {
     get_global_local_skills: { call: args => {
       const tool = findTool(args.agent);
-      return withCenterState(readSkillsRoot(tool.skills_dir, { enabled: true, agent: tool.key, agent_display_name: tool.display_name }), store);
+      const managedSkills = store.skills();
+      const centerPaths = new Set(managedSkills.map(skill => canonical(skill.central_path)));
+      return withCenterState(
+        readSkillsRoot(tool.skills_dir, { enabled: true, agent: tool.key, agent_display_name: tool.display_name, centerPaths }),
+        store,
+        managedSkills
+      );
     } },
     // 总览只需要数量；读取正文只需要身份与路径，均不计算同步指纹。
     get_global_local_skill_count: { call: args => {

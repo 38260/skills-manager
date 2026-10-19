@@ -12,8 +12,29 @@ export interface SkillTranslation {
 
 export type DocumentLanguage = "zh-CN" | "original";
 
+export interface TranslationCoverageSkill {
+  id: string;
+  name: string;
+}
+
+/** 工作台的译本覆盖：分母只含「正文是英文」的技能，中文原文的不需要译本。 */
+export interface TranslationCoverage {
+  total: number;
+  english: number;
+  chinese: number;
+  unknown: number;
+  translated: number;
+  missing: number;
+  stale: number;
+  missing_skills: TranslationCoverageSkill[];
+  stale_skills: TranslationCoverageSkill[];
+}
+
 export const getSkillTranslation = (skillId: string) =>
   invoke<SkillTranslation>("get_skill_translation", { skillId });
+
+export const getTranslationCoverage = () =>
+  invoke<TranslationCoverage>("get_translation_coverage");
 
 export const saveSkillTranslation = (skillId: string, content: string, sourceHash: string, expectedRevision: string | null) =>
   invoke<SkillTranslation>("set_skill_translation", { skillId, content, sourceHash, expectedRevision });

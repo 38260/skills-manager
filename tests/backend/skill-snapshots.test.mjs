@@ -63,7 +63,7 @@ test("恢复等待 Agent 部署时拒绝同技能更新、重导入、重新关�
 test("deleted skill restores its original identity, profile, tags and remaining preset members", async t => {
   const { store, library, snapshots, skill } = await fixture(t);
   store.setTags(skill.id, ["UI"]);
-  store.setProfile(skill.id, { alias: "My skill", customDescription: "Custom note" });
+  store.setProfile(skill.id, { alias: "My skill", customDescription: "Custom note", icon: "rocket" });
   const preset = store.presets()[0];
   store.addSkillToPreset(skill.id, preset.id);
   store.run("INSERT INTO scenario_skill_tools(scenario_id,skill_id,tool,enabled,updated_at) VALUES(?,?,?,?,?)", preset.id, skill.id, "codex", false, Date.now());
@@ -75,6 +75,7 @@ test("deleted skill restores its original identity, profile, tags and remaining 
   const restored = await snapshots.restore(snapshot.snapshot_id);
   assert.equal(restored.skill.id, skill.id);
   assert.equal(restored.skill.display_name, "My skill");
+  assert.equal(restored.skill.icon, "rocket");
   assert.deepEqual(restored.skill.tags, ["UI"]);
   assert.deepEqual(restored.skill.preset_ids, [preset.id]);
   assert.equal(store.get("SELECT enabled FROM scenario_skill_tools WHERE skill_id=?", skill.id).enabled, 0);

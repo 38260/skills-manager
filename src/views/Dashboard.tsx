@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Layers, Plus, Download, AlertTriangle, ArrowRight, ChevronRight } from "lucide-react";
+import { Layers, Plus, Download, AlertTriangle, ArrowRight, ChevronRight, Zap, RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useApp } from "../context/AppContext";
 import { AgentControlSetupCard } from "../components/AgentControlSetupCard";
 import { AgentIcon } from "../components/AgentIcon";
+import { PendingDeployList } from "../components/PendingDeployList";
+import { TranslationCoverageCard } from "../components/TranslationCoverage";
+import { getTranslationCoverage, type TranslationCoverage } from "../lib/skillTranslation";
 import { getActivity, toolNames, type ActivityEvent } from "../lib/activity";
 import { TRIGGER_TONE } from "../lib/activityTone";
 import { cn } from "../utils";
@@ -24,6 +27,9 @@ export function Dashboard() {
   const [activity, setActivity] = useState<ActivityEvent[] | null>(null);
   const [activityError, setActivityError] = useState("");
   const [feedTab, setFeedTab] = useState<"all" | "activity" | "skills">("all");
+  const [coverage, setCoverage] = useState<TranslationCoverage | null>(null);
+  const [coverageLoading, setCoverageLoading] = useState(true);
+  const [coverageError, setCoverageError] = useState("");
 
   const enabledAgents = useMemo(
     () => tools.filter((tool) => tool.installed && tool.enabled),
@@ -35,7 +41,10 @@ export function Dashboard() {
     () => managedSkills.filter((s) => s.targets.length > 0).length,
     [managedSkills]
   );
-  const pendingSkills = Math.max(0, totalSkills - syncedSkills);
+  const pendingSkills = useMemo(
+    () => managedSkills.filter((s) => s.targets.length === 0),
+    [managedSkills]
+  );
   const coveragePercent = totalSkills === 0 ? 0 : Math.round((syncedSkills / totalSkills) * 1000) / 10;
 
   // 各 Agent 的已部署技能数：按"该技能至少有一个部署目标是这个 Agent"计数。
@@ -61,6 +70,22 @@ export function Dashboard() {
     getActivity({ page: 1, pageSize: FEED_LIMIT * 2 })
       .then(result => { if (current) { setActivity(result.items); setActivityError(""); } })
       .catch(error => { if (current) { setActivity(null); setActivityError(String(error instanceof Error ? error.message : error)); } });
+    return () => { current = false; };
+  }, [managedSkills]);
+
+  // 译本覆盖：保存译文会广播技能变更，列表刷新时同步重算，卡片不会停在旧数字。
+  // 刷新期间保留上一次的数字，避免每次技能列表变化都闪一下「统计中」。
+  useEffect(() => {
+    let current = true;
+    getTranslationCoverage()
+      .then(result => {
+        if (!current) return;
+        setCoverage(result); setCoverageError(""); setCoverageLoading(false);
+      })
+      .catch(error => {
+        if (!current) return;
+        setCoverage(null); setCoverageError(String(error instanceof Error ? error.message : error)); setCoverageLoading(false);
+      });
     return () => { current = false; };
   }, [managedSkills]);
 
@@ -124,8 +149,8 @@ export function Dashboard() {
         </div>
       </header>
 
-      {/* 三项统计 */}
-      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+      {/* 四项统计 */}
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
         {/* 技能总量 */}
         <section className="app-panel flex items-start justify-between gap-3 px-4 py-3.5">
           <div className="min-w-0">
@@ -156,7 +181,7 @@ export function Dashboard() {
             </div>
             <span className="shrink-0 text-[12px] tabular-nums text-tertiary">{coveragePercent}%</span>
           </div>
-          <p className="mt-2 text-[12px] text-tertiary">{t("dashboard.pendingDeploy", { count: pendingSkills })}</p>
+          <PendingDeployList skills={pendingSkills} onOpenSkill={openSkillDetailById} />
         </section>
 
         {/* 已启用 Agent */}
@@ -187,6 +212,15 @@ export function Dashboard() {
             )}
           </div>
         </section>
+
+        {/* 中文译本 */}
+        <TranslationCoverageCard
+          coverage={coverage}
+          loading={coverageLoading}
+          error={coverageError}
+          skills={managedSkills}
+          onOpenSkill={openSkillDetailById}
+        />
       </div>
 
       {/* 双栏：左动态，右部署概况与同步提醒 */}
@@ -243,8 +277,16 @@ export function Dashboard() {
                     }}
                     className="flex cursor-pointer items-center gap-3 px-3.5 py-2.5 transition-colors hover:bg-surface-hover"
                   >
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-accent-bg text-[12px] font-semibold uppercase text-accent-dark dark:text-accent-light">
-                      {skillName.charAt(0)}
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "flex h-6 w-6 shrink-0 items-center justify-center rounded border",
+                        entry.type === "activity"
+                          ? "border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300"
+                          : "border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-300"
+                      )}
+                    >
+                      {entry.type === "activity" ? <Zap className="h-3.5 w-3.5" /> : <RefreshCw className="h-3.5 w-3.5" />}
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
@@ -256,6 +298,14 @@ export function Dashboard() {
                         >
                           {skillName}
                         </button>
+                        <span className={cn(
+                          "rounded border px-1.5 py-px text-[10px] font-medium leading-4",
+                          entry.type === "activity"
+                            ? "border-indigo-500/30 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300"
+                            : "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300"
+                        )}>
+                          {entry.type === "activity" ? t("dashboard.feedKindInvocation") : t("dashboard.feedKindUpdate")}
+                        </span>
                         {entry.type === "activity" ? (
                           <>
                             <span className="rounded border border-border-subtle bg-surface-hover px-1.5 py-px text-[10px] leading-4 text-tertiary">

@@ -60,7 +60,7 @@ test("skill files list returns the project structure with directories and sizes"
   assert.ok(listed.entries.find(entry=>entry.relative==="references/guide.md").size>0);
 });
 
-test("自定义别名、说明与作者覆盖优先展示，清空后回退技能文件",async t=>{
+test("自定义别名、说明、作者覆盖与 logo 优先展示，清空后回退技能文件",async t=>{
   const {source,store,library}=fixture(t),skill=await library.installLocal(source);
   const saved=store.setProfile(skill.id,{alias:"示例别名",customDescription:"自定义说明",authorOverride:"张同学"});
   assert.equal(saved.alias,"示例别名");
@@ -70,16 +70,26 @@ test("自定义别名、说明与作者覆盖优先展示，清空后回退技�
   assert.equal(saved.display_author_source,"custom");
   // 技能文件里的作者仍然可读，覆盖只影响展示。
   assert.equal(saved.author,"Alice");
+  // logo 是纯展示字段：指定后写库，清空即回到未指定（由界面按标签自动匹配）。
+  assert.equal(saved.icon,null);
+  const withIcon=store.setProfile(skill.id,{alias:"示例别名",customDescription:"自定义说明",authorOverride:"张同学",icon:"palette"});
+  assert.equal(withIcon.icon,"palette");
+  assert.equal(store.skill(skill.id).icon,"palette");
   // 清空后回退到技能文件里的值。
-  const cleared=store.setProfile(skill.id,{alias:"",customDescription:"",authorOverride:""});
+  const cleared=store.setProfile(skill.id,{alias:"",customDescription:"",authorOverride:"",icon:""});
   assert.equal(cleared.alias,null);
   assert.equal(cleared.display_name,"example");
   assert.equal(cleared.display_author,"Alice");
   assert.equal(cleared.display_author_source,"metadata.author");
+  assert.equal(cleared.icon,null);
   // 自定义信息写入 sidecar 元数据，重建索引时可恢复。
   const sidecar=JSON.parse(fs.readFileSync(path.join(store.skillsDirectory,".skills-manager","skills",`${skill.id}.json`),"utf8"));
   assert.equal(sidecar.alias,null);
   assert.equal(sidecar.custom_description,null);
+  assert.equal(sidecar.icon,null);
+  store.setProfile(skill.id,{alias:"示例别名",icon:"book-open"});
+  const kept=JSON.parse(fs.readFileSync(path.join(store.skillsDirectory,".skills-manager","skills",`${skill.id}.json`),"utf8"));
+  assert.equal(kept.icon,"book-open");
 });
 
 // 安装是「记录 + 目录 + 清单 + 元数据」的整体：任一步失败都必须整体撤销，

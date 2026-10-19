@@ -170,7 +170,6 @@ export function SkillRecovery({ refresh }: { refresh: () => Promise<void> }) {
         {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </button>
       {open && <div id="skill-recovery-list" aria-busy={loading} className="border-t border-border-subtle px-3 py-3">
-        <p className="mb-3 text-[12px] text-muted">{t("mySkills.recovery.hint", { defaultValue: "更新和删除前自动保存技能快照，可恢复单个技能。恢复会保留当前版本，并保护 Agent 副本里的本地改动。" })}</p>
         {error && <div role="alert" className="mb-3 flex items-center gap-2 text-[12px] text-red-500">
           <span className="flex-1">{error}</span>
           <button type="button" onClick={() => void load()} className="rounded px-2 py-1 text-secondary outline-none hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-accent">{t("common.retry")}</button>

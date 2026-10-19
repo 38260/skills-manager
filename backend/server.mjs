@@ -11,7 +11,7 @@ import { Library, registerCancel, releaseCancel, requestCancel } from "./library
 import { presetCommands } from "./presets.mjs";
 import { toolCommands } from "./tools-settings.mjs";
 import { scanCommands } from "./scan.mjs";
-import { workspaceCommands } from "./workspace.mjs";
+import { configureWorkspaceDirectoryCache, workspaceCommands } from "./workspace.mjs";
 import { projectCommands } from "./projects.mjs";
 import { repoSettingsCommands } from "./repo-settings.mjs";
 import { backupCommands } from "./backup.mjs";
@@ -62,6 +62,8 @@ function notifyChange() {
 }
 
 const library = new Library(store, notifyChange);
+// 工作区目录指纹缓存跟随技能库数据目录落盘，重启后不必重新整读大技能。
+configureWorkspaceDirectoryCache(store.directory);
 
 // git 的进度行形如 "Receiving objects:  45% (1234/2740), 1.2 MiB | 500 KiB/s"。
 // 只取第一个百分比，非进度行（如 remote: Enumerating objects）返回 null，前端据此保留上一次百分比。
@@ -90,7 +92,7 @@ const commands = {
   get_all_tags: { call: () => store.all("SELECT DISTINCT tag FROM skill_tags ORDER BY tag").map(row => row.tag) },
   get_skill_categories: { call: () => store.categories() },
   set_skill_profile: { call: args => store.setProfile(String(args.skillId ?? ""), {
-    alias: args.alias, customDescription: args.customDescription, authorOverride: args.authorOverride,
+    alias: args.alias, customDescription: args.customDescription, authorOverride: args.authorOverride, icon: args.icon,
   }), mutating: true },
   create_skill_category: { call: args => store.createCategory(args.name), mutating: true },
   set_skill_tags: { call: args => store.setTags(args.skillId, Array.isArray(args.tags) ? args.tags : []), mutating: true },

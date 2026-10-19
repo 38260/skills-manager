@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   ChevronDown, Github, HardDrive, Globe, ArrowLeft,
-  ListTree, Boxes, Link2, Info, PanelRightOpen, RefreshCw, History, Layers, FileDiff,
+  ListTree, Boxes, Link2, Info, PanelRightOpen, RefreshCw, History, FileDiff,
   FolderTree, FolderOpen, Pencil,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -27,6 +27,7 @@ import { resolveDocumentLanguage, type DocumentLanguage } from "../lib/skillTran
 import { extractHeadings } from "../lib/markdownOutline";
 import { getErrorMessage } from "../lib/error";
 import { skillRepoUrl, repoLabel } from "../lib/skillRepo";
+import { skillIconOption } from "../lib/presetIcons";
 import { AgentIcon } from "./AgentIcon";
 import { ToggleSwitch } from "./ToggleSwitch";
 import { SkillProjectsSection } from "./SkillProjectsSection";
@@ -147,6 +148,7 @@ function SkillDetailPanelContent({
   busyAction,
   onEditProfile,
 }: ContentProps) {
+  const LogoIcon = skillIconOption(skill).icon;
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -734,7 +736,7 @@ function SkillDetailPanelContent({
           </button>
           <div className={cn("skill-detail-heading-row flex min-w-0 items-start justify-between gap-6 transition-all duration-200", scrolled ? "mt-1" : "mt-2.5")}>
             <div className="flex min-w-0 flex-1 items-start gap-3.5">
-              {!scrolled && <Layers className="mt-0.5 h-8 w-8 shrink-0 text-accent" strokeWidth={1.7} aria-hidden="true" />}
+              {!scrolled && <LogoIcon className="mt-0.5 h-8 w-8 shrink-0 text-accent" strokeWidth={1.7} aria-hidden="true" />}
               <div className="min-w-0">
               <div className="flex min-w-0 flex-wrap items-center gap-2.5">
                 <h2

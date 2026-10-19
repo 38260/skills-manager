@@ -60,7 +60,12 @@ export function files(directory, prefix = "") {
     if (ignored.has(item.name) || item.name.endsWith(".pyc") || item.isSymbolicLink()) continue;
     const relative = prefix ? `${prefix}/${item.name}` : item.name;
     if (item.isDirectory()) result.push(...files(path.join(directory, item.name), relative));
-    else if (item.isFile()) result.push({ relative, full: path.join(directory, item.name), size: fs.statSync(path.join(directory, item.name)).size });
+    else if (item.isFile()) {
+      const full = path.join(directory, item.name);
+      const stat = fs.statSync(full);
+      // mtime 随 size 一起带出：调用方要算"最后修改/指纹"时不必再 stat 一遍。
+      result.push({ relative, full, size: stat.size, mtimeMs: stat.mtimeMs });
+    }
   }
   return result.sort((a, b) => Buffer.compare(Buffer.from(a.relative), Buffer.from(b.relative)));
 }
@@ -83,9 +88,9 @@ export function tree(directory, prefix = "") {
   return result.sort((a, b) => Buffer.compare(Buffer.from(a.relative), Buffer.from(b.relative)));
 }
 
-export function hashDirectory(directory) {
+export function hashDirectory(directory, listing = files(directory)) {
   const hash = crypto.createHash("sha256");
-  for (const file of files(directory)) {
+  for (const file of listing) {
     if (path.basename(file.relative) === ".gitignore") continue;
     hash.update(file.relative); hash.update(fs.readFileSync(file.full));
     if (process.platform !== "win32") {

@@ -9,13 +9,13 @@ const skill = {
 };
 
 test("library and command search find both original and customized information", () => {
-  assert.deepEqual(matchSkillSearch(skill, " 海报助手 "), { field: "alias", value: "海报助手" });
-  assert.deepEqual(matchSkillSearch(skill, "IMAGE-TOOL"), { field: "name", value: "image-tool" });
-  assert.deepEqual(matchSkillSearch(skill, "宣传"), { field: "customDescription", value: "制作宣传海报" });
-  assert.deepEqual(matchSkillSearch(skill, "raster"), { field: "description", value: "Original raster image workflow" });
-  assert.deepEqual(matchSkillSearch(skill, "tool-custom"), { field: "directory", value: "image-tool-custom" });
+  assert.deepEqual(matchSkillSearch(skill, " 海报助手 "), { field: "alias", value: "海报助手", index: 0 });
+  assert.deepEqual(matchSkillSearch(skill, "IMAGE-TOOL"), { field: "name", value: "image-tool", index: 0 });
+  assert.deepEqual(matchSkillSearch(skill, "宣传"), { field: "customDescription", value: "制作宣传海报", index: 2 });
+  assert.deepEqual(matchSkillSearch(skill, "raster"), { field: "description", value: "Original raster image workflow", index: 9 });
+  assert.deepEqual(matchSkillSearch(skill, "tool-custom"), { field: "directory", value: "image-tool-custom", index: 6 });
   assert.equal(matchSkillSearch(skill, "not present"), null);
-  assert.deepEqual(matchSkillSearch(skill, "   "), { field: null, value: "" });
+  assert.deepEqual(matchSkillSearch(skill, "   "), { field: null, value: "", index: -1 });
 });
 
 test("duplicate skills use the same distinguishing directory labels in both views", () => {

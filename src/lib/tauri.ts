@@ -25,10 +25,12 @@ export interface ManagedSkill {
   description: string | null;
   author?: string | null;
   author_source?: string | null;
-  /** 用户自定义展示信息：别名、自定义说明、作者覆盖；不改动技能文件本身。 */
+  /** 用户自定义展示信息：别名、自定义说明、作者覆盖、logo；不改动技能文件本身。 */
   alias?: string | null;
   custom_description?: string | null;
   author_override?: string | null;
+  /** 选定的 logo；留空表示按标签与说明自动匹配。 */
+  icon?: string | null;
   /** 生效后的展示值：自定义优先，其次技能文件里的元数据。 */
   display_name?: string;
   display_description?: string | null;
@@ -273,7 +275,7 @@ export const getSkillsForPreset = (presetId: string) =>
   });
 
 /** 保存技能的自定义展示信息；传空字符串表示清除该项，回退到技能文件里的值。 */
-export const setSkillProfile = (skillId: string, profile: { alias?: string; customDescription?: string; authorOverride?: string }) =>
+export const setSkillProfile = (skillId: string, profile: { alias?: string; customDescription?: string; authorOverride?: string; icon?: string }) =>
   invoke<ManagedSkill>("set_skill_profile", { skillId, ...profile });
 
 export interface SkillFileEntry {

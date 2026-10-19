@@ -152,6 +152,23 @@ try {
     const first = panel.querySelector('[role="button"]')?.textContent.replace(/\\s+/g,' ').trim().slice(0, 60);
     return { tabs, rows, first, viewAll: panel.textContent.includes('查看全部') };
   })()`));
+  // 「全部」里调用与更新必须一眼可分：徽标文案 + 图标 + 颜色三项都不同。
+  record("动态类型区分", await evaluate(`(() => {
+    const panel = [...document.querySelectorAll('section')].find(s => s.textContent.includes('近期动态'));
+    const rows = [...panel.querySelectorAll('[role="button"]')].map(row => {
+      const iconBox = row.querySelector(':scope > span[aria-hidden="true"]');
+      const svg = iconBox?.querySelector('svg');
+      const badge = [...row.querySelectorAll('span')].find(el => ['调用','更新'].includes(el.textContent.trim()));
+      return {
+        kind: badge?.textContent.trim() ?? null,
+        icon: svg ? (svg.classList.contains('lucide-zap') ? 'zap' : svg.classList.contains('lucide-refresh-cw') ? 'refresh-cw' : 'other') : null,
+        color: iconBox ? getComputedStyle(iconBox).color : null,
+        text: row.textContent.replace(/\\s+/g,' ').trim().slice(0, 34),
+      };
+    });
+    return { rows: rows.length, kinds: [...new Set(rows.map(r => r.kind))], icons: [...new Set(rows.map(r => r.icon))],
+      colors: [...new Set(rows.map(r => r.color))], samples: rows.slice(0, 4) };
+  })()`));
   record("引导条", await evaluate(`(() => {
     const bar = [...document.querySelectorAll('div')].find(el => el.className.includes('border-l-accent') && el.textContent.includes('让你的 Agent 管理 Skills'));
     return bar ? { present: true, actions: [...bar.querySelectorAll('button')].map(b => b.textContent.trim() || b.title) } : { present: false };

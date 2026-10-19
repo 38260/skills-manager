@@ -13,10 +13,9 @@ import { useDialogFocus } from "../hooks/useDialogFocus";
 
 const field = "min-w-0 rounded-lg border border-border-subtle bg-surface px-3 py-2 text-[13px] text-primary outline-none focus:border-accent focus:ring-1 focus:ring-accent";
 const button = "inline-flex items-center justify-center gap-2 rounded-lg border border-border-subtle px-3 py-2 text-[13px] text-secondary outline-none hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-40";
-// 每页条数：列表是表格形态，一条一行。50 行会把页面撑到三千多像素、详情被甩到最底下；
-// 20 行又太短，扫两页才够看一轮来源。30 行配合单行时间（行高约 56px）约 1700px，
-// 详情栏已吸顶，滚动时始终同屏。
-const pageSize = 30;
+// 每页条数：列表是表格形态，一条一行。原来 30 行配合吸顶详情看着够长，
+// 但双栏改成各自滚动后，20 行就能把可视区填满并留出滚动余量，翻页也更轻。
+const pageSize = 20;
 // 扫描进度通知的刷新节流：后端约 250ms 推一次，节流到这里不会漏掉最终结果（另有 5s 兜底定时）。
 const ACTIVITY_REFRESH_THROTTLE_MS = 1200;
 const initialFilters = { tool: "", kind: "", trigger: "", status: "", skillName: "", project: "", from: "", to: "" };
@@ -82,6 +81,9 @@ export function SkillActivity() {
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState<api.ActivityEvent | null>(null);
   const detailRef = useRef<HTMLElement | null>(null);
+  // 文本筛选的防抖句柄：输入停下来 320ms 才真正查询，回车则立即查。
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
   const refresh = () => setRevision(value => value + 1);
 
   // 窄窗口（<1024px）详情在列表下方，选中后把它带进视野。用 "nearest" 只滚最小距离：
@@ -156,22 +158,40 @@ export function SkillActivity() {
     };
   }
 
-  function apply(event: FormEvent) {
-    event.preventDefault();
-    const start = filters.from ? new Date(`${filters.from}T00:00:00`).getTime() : undefined;
-    const end = filters.to ? new Date(`${filters.to}T00:00:00`) : null;
+  /** 立即按给定条件查询（回到第 1 页）。日期区间非法时只提示、不发请求。 */
+  function commit(next: Filters) {
+    const start = next.from ? new Date(`${next.from}T00:00:00`).getTime() : undefined;
+    const end = next.to ? new Date(`${next.to}T00:00:00`) : null;
     if (end) end.setDate(end.getDate() + 1);
     if (start !== undefined && end !== null && start >= end.getTime()) { setError(t("activity.invalidDates")); return; }
+    setError("");
     setLoading(true);
-    setQuery(buildQuery(filters));
+    setQuery(buildQuery(next));
   }
-  const change = (key: keyof Filters, value: string) => setFilters(current => ({ ...current, [key]: value }));
+
+  // 输入即筛选：文本类条件走 320ms 防抖，下拉与日期立即生效；回车跳过防抖直接查。
+  function schedule(next: Filters) {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => { debounceRef.current = null; commit(next); }, 320);
+  }
+  function change(key: keyof Filters, value: string, immediate = false) {
+    const next = { ...filters, [key]: value };
+    setFilters(next);
+    if (immediate) {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+      commit(next);
+    } else {
+      schedule(next);
+    }
+  }
   // 记录类型页签与统计条联动：点页签即按该类型筛（连同已填的其余条件）。
   const pickKind = (kind: string) => {
     const next = { ...filters, kind };
     setFilters(next);
-    setLoading(true);
-    setQuery(buildQuery(next));
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = null;
+    commit(next);
   };
   const pages = result ? Math.max(1, Math.ceil(result.total / result.pageSize)) : 1;
   const problems = sources.filter(source => source.enabled && ["partial", "missing", "denied", "error"].includes(source.state));
@@ -194,12 +214,14 @@ export function SkillActivity() {
   ]), [allCount, result, t]);
   const emptyText = t(problems.length ? "activity.checkSources" : "activity.empty");
 
-  return <div className="app-page max-w-none">
+  // 并排布局下整页不滚：页面吃满可视高度，左列表与右详情各自成为滚动容器。
+  // 这一档把页内间距与卡片内边距压紧，省下的高度全部给下面两块面板（原来 1080p 下只有约 450px）。
+  return <div className="app-page max-w-none lg:min-h-0 lg:flex-1 lg:gap-3 lg:pb-2">
     {/* 页头：标题与扫描操作 */}
-    <header className="app-page-header flex flex-wrap items-start justify-between gap-3">
+    <header className="app-page-header flex flex-wrap items-start justify-between gap-3 lg:pb-2">
       <div>
         <h1 className="app-page-title flex items-center gap-2"><History className="h-4 w-4 text-accent" />{t("activity.title")}</h1>
-        <p className="app-page-subtitle">{t("activity.subtitle")}</p>
+        <p className="app-page-subtitle mt-1 leading-4">{t("activity.subtitle")}</p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" onClick={() => setSourcesOpen(true)} aria-haspopup="dialog" aria-expanded={sourcesOpen} className={cn(button, "bg-surface")}>
@@ -217,43 +239,53 @@ export function SkillActivity() {
 
     {error && <div role="alert" className="flex items-center justify-between gap-3 border-l-2 border-danger bg-danger-bg px-3 py-2 text-[13px] text-danger"><span>{error}</span><button className={button} onClick={refresh}>{t("activity.retry")}</button></div>}
 
-    {/* 统计：四项紧凑横向排列，紧邻口径说明 */}
-    <section aria-label={t("activity.summary")}>
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border-subtle bg-border-subtle sm:grid-cols-4">
-        {stats.map(stat => <div key={stat.key} className="bg-surface px-4 py-3">
-          <div className="text-[12px] text-tertiary">{stat.label}</div>
-          <div className="mt-0.5 text-[22px] font-semibold tabular-nums leading-7 text-primary">{stat.value ?? "—"}</div>
-        </div>)}
-      </div>
-      <p className="mt-2 text-[12px] leading-5 text-tertiary">{t("activity.countNote")}</p>
-    </section>
+    {/* 主区：第一行＝整宽筛选栏，第二/三行＝左列统计 + 列表，右列详情跨满这两行。
+        筛选栏放整宽才排得下一行（放进左列实测缺 108px 会换行，白吃一行高度）；
+        详情栏因此从统计卡顶一直铺到列表底，列表也拿回筛选栏「不换行」省下的高度。 */}
+    <div className="grid min-w-0 grid-cols-1 gap-4 lg:min-h-0 lg:flex-1 lg:gap-3 lg:grid-cols-[minmax(0,1fr)_380px] lg:grid-rows-[auto_auto_minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_480px] 2xl:grid-cols-[minmax(0,1fr)_560px]">
+      {/* 统计：四项紧凑横向排列（窄屏排第一，lg 起下移到左列顶部） */}
+      <section aria-label={t("activity.summary")} className="min-w-0 lg:col-start-1 lg:row-start-2">
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border-subtle bg-border-subtle sm:grid-cols-4">
+          {stats.map(stat => <div key={stat.key} className="bg-surface px-4 py-1.5">
+            <div className="text-[12px] text-tertiary">{stat.label}</div>
+            <div className="mt-0.5 text-[20px] font-semibold tabular-nums leading-6 text-primary">{stat.value ?? "—"}</div>
+          </div>)}
+        </div>
+      </section>
 
-    {/* 筛选：常驻搜索 + 工具 / 触发方式 / 类型 / 结果，"更多筛选"承载项目与日期 */}
-    <form onSubmit={apply} className="app-panel px-4 py-3">
+      {/* 筛选：输入即筛选。文本走防抖、下拉即时生效，所以不再需要「查询」按钮 */}
+      <div className="app-panel min-w-0 px-4 py-2.5 lg:col-span-2 lg:row-start-1">
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-[200px] flex-1">
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
           <input
             value={filters.skillName}
             onChange={e => change("skillName", e.target.value)}
+            onKeyDown={e => {
+              if (e.key !== "Enter") return;
+              e.preventDefault();
+              if (debounceRef.current) clearTimeout(debounceRef.current);
+              debounceRef.current = null;
+              commit(filters);
+            }}
             className={cn(field, "w-full pl-9")}
             placeholder={t("activity.skillSearch")}
             aria-label={t("activity.skill")}
           />
         </div>
-        <select value={filters.tool} onChange={e => change("tool", e.target.value)} className={cn(field, "w-auto shrink-0")} aria-label={t("activity.tool")}>
+        <select value={filters.tool} onChange={e => change("tool", e.target.value, true)} className={cn(field, "w-auto shrink-0")} aria-label={t("activity.tool")}>
           <option value="">{t("activity.allTools")}</option>
           {api.activityTools.map(tool => <option key={tool} value={tool}>{api.toolNames[tool]}</option>)}
         </select>
-        <select value={filters.trigger} onChange={e => change("trigger", e.target.value)} className={cn(field, "w-auto shrink-0")} aria-label={t("activity.trigger")}>
+        <select value={filters.trigger} onChange={e => change("trigger", e.target.value, true)} className={cn(field, "w-auto shrink-0")} aria-label={t("activity.trigger")}>
           <option value="">{t("activity.allTriggers")}</option>
           {(["manual", "automatic", "unknown"] as const).map(trigger => <option key={trigger} value={trigger}>{t(`activity.triggers.${trigger}`)}</option>)}
         </select>
-        <select value={filters.kind} onChange={e => change("kind", e.target.value)} className={cn(field, "w-auto shrink-0")} aria-label={t("activity.kind")}>
+        <select value={filters.kind} onChange={e => change("kind", e.target.value, true)} className={cn(field, "w-auto shrink-0")} aria-label={t("activity.kind")}>
           <option value="">{t("activity.allKinds")}</option>
           {(["invocation", "document", "request"] as const).map(kind => <option key={kind} value={kind}>{t(`activity.kinds.${kind}`)}</option>)}
         </select>
-        <select value={filters.status} onChange={e => change("status", e.target.value)} className={cn(field, "w-auto shrink-0")} aria-label={t("activity.status")}>
+        <select value={filters.status} onChange={e => change("status", e.target.value, true)} className={cn(field, "w-auto shrink-0")} aria-label={t("activity.status")}>
           <option value="">{t("activity.allStatuses")}</option>
           {(["pending", "returned", "failed", "unknown"] as const).map(status => <option key={status} value={status}>{t(`activity.statuses.${status}`)}</option>)}
         </select>
@@ -275,29 +307,30 @@ export function SkillActivity() {
           <button
             type="button"
             className={cn(button, "shrink-0")}
-            onClick={() => { setFilters(initialFilters); setLoading(true); setQuery({ page: 1, pageSize }); }}
+            onClick={() => {
+              setFilters(initialFilters);
+              if (debounceRef.current) clearTimeout(debounceRef.current);
+              debounceRef.current = null;
+              commit(initialFilters);
+            }}
           >
             {t("activity.reset")}
           </button>
         )}
-        <button className="inline-flex h-[38px] shrink-0 items-center gap-2 rounded-lg border border-accent-border bg-accent-dark px-3.5 text-[13px] font-medium text-white outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-accent">
-          <Search className="h-4 w-4" />{t("activity.apply")}
-        </button>
       </div>
 
       {filtersOpen && (
         <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-3">
           <label className="grid gap-1 text-[12px] text-secondary">{t("activity.project")}<input value={filters.project} onChange={e => change("project", e.target.value)} className={field} placeholder={t("activity.projectSearch")} /></label>
-          <label className="grid gap-1 text-[12px] text-secondary">{t("activity.from")}<input type="date" value={filters.from} onChange={e => change("from", e.target.value)} className={field} /></label>
-          <label className="grid gap-1 text-[12px] text-secondary">{t("activity.to")}<input type="date" value={filters.to} onChange={e => change("to", e.target.value)} className={field} /></label>
+          <label className="grid gap-1 text-[12px] text-secondary">{t("activity.from")}<input type="date" value={filters.from} onChange={e => change("from", e.target.value, true)} className={field} /></label>
+          <label className="grid gap-1 text-[12px] text-secondary">{t("activity.to")}<input type="date" value={filters.to} onChange={e => change("to", e.target.value, true)} className={field} /></label>
         </div>
       )}
-    </form>
+    </div>
 
-    {/* 主区：左列表 + 右详情 */}
-    <div className="grid min-w-0 grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_420px] 2xl:grid-cols-[minmax(0,1fr)_480px]">
-      <section aria-label={t("activity.records")} aria-busy={loading || undefined} className="app-panel min-w-0 overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-border-subtle px-3 py-2.5">
+      {/* 左列表：占第三行，页签与分页固定，只有记录本体滚动 */}
+      <section aria-label={t("activity.records")} aria-busy={loading || undefined} className="app-panel min-w-0 overflow-hidden lg:col-start-1 lg:row-start-3 lg:flex lg:h-full lg:min-h-0 lg:flex-col">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-border-subtle px-3 py-1.5">
           <div className="flex flex-wrap items-center gap-1" role="tablist" aria-label={t("activity.kind")}>
             {kindTabs.map(tab => (
               <button
@@ -323,24 +356,27 @@ export function SkillActivity() {
 
         {/* 已有结果时再查询：旧结果留在原地，另给一行进度，避免「点了没反应」。 */}
         {loading && result && (
-          <p aria-live="polite" className="flex items-center gap-1.5 border-b border-border-subtle px-3 py-1.5 text-[12px] text-tertiary">
+          <p aria-live="polite" className="flex shrink-0 items-center gap-1.5 border-b border-border-subtle px-3 py-1.5 text-[12px] text-tertiary">
             <RefreshCw className="h-3 w-3 animate-spin" />
             {t("activity.updating")}
           </p>
         )}
 
-        <ActivityTable
-          items={result?.items ?? []}
-          selectedId={selected?.id ?? null}
-          onSelect={selectRecord}
-          onOpenSkill={openSkillDetailById}
-          loading={loading && !result}
-          error={result ? undefined : error || undefined}
-          emptyText={emptyText}
-          onRetry={refresh}
-        />
+        {/* 只有记录列表滚动：页签与分页固定在两头，长列表不会把它们顶走。 */}
+        <div className="scroll-area min-h-0 lg:flex-1 lg:overflow-y-auto">
+          <ActivityTable
+            items={result?.items ?? []}
+            selectedId={selected?.id ?? null}
+            onSelect={selectRecord}
+            onOpenSkill={openSkillDetailById}
+            loading={loading && !result}
+            error={result ? undefined : error || undefined}
+            emptyText={emptyText}
+            onRetry={refresh}
+          />
+        </div>
 
-        <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border-subtle px-3 py-2.5 text-[12px] text-tertiary">
+        <footer className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border-subtle px-3 py-1.5 text-[12px] text-tertiary">
           <span aria-live="polite">{t("activity.total", { count: result?.total ?? 0 })}</span>
           <div className="flex items-center gap-2">
             <span>{t("activity.page", { current: result?.page ?? 1, pages })}</span>
@@ -350,17 +386,19 @@ export function SkillActivity() {
         </footer>
       </section>
 
-      {/* 并排时详情栏吸顶跟随：列表长也不用把详情滚回来 */}
-      <aside ref={detailRef} className="app-panel min-w-0 self-start px-4 py-3.5 lg:sticky lg:top-4">
-        <h2 className="border-b border-border-subtle pb-2.5 text-[13px] font-semibold text-secondary">{t("activity.recordDetail")}</h2>
-        {selected
-          ? <ActivityDetailPanel
-            record={selected}
-            className="pt-3"
-            // 技能详情是全局弹层：只打开它、不换页，关掉就回到这条调用记录上
-            onOpenSkill={openSkillDetailById}
-          />
-          : <p className="py-6 text-center text-[13px] text-tertiary">{t("activity.noSelection")}</p>}
+      {/* 并排时详情栏自己滚：跨满三行拿到整列高度，标题固定在顶部，正文（证据、路径等长内容）在内部滚动 */}
+      <aside ref={detailRef} className="app-panel min-w-0 px-4 py-3.5 lg:col-start-2 lg:row-span-2 lg:row-start-2 lg:flex lg:h-full lg:min-h-0 lg:flex-col">
+        <h2 className="shrink-0 border-b border-border-subtle pb-2.5 text-[13px] font-semibold text-secondary">{t("activity.recordDetail")}</h2>
+        <div className="scroll-area min-h-0 lg:flex-1 lg:overflow-y-auto">
+          {selected
+            ? <ActivityDetailPanel
+              record={selected}
+              className="pt-3"
+              // 技能详情是全局弹层：只打开它、不换页，关掉就回到这条调用记录上
+              onOpenSkill={openSkillDetailById}
+            />
+            : <p className="py-6 text-center text-[13px] text-tertiary">{t("activity.noSelection")}</p>}
+        </div>
       </aside>
     </div>
     {sourcesOpen && createPortal(

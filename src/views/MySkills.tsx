@@ -31,7 +31,8 @@ import { openDirectory as dialogOpen } from "../lib/desktop";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { OperationResults, type OperationReport, type OperationItem } from "../components/OperationResults";
-import { getSkillDisplayNames, matchSkillSearch } from "../lib/skillSearch";
+import { getSkillDisplayNames, matchSkillSearch, matchSnippet, type SkillSearchMatch } from "../lib/skillSearch";
+import { HighlightText } from "../components/HighlightText";
 import { SkillRecovery } from "../components/SkillRecovery";
 import { readLibraryViewState, writeLibraryViewState, restoreLibraryScroll } from "../lib/libraryViewState";
 import { sortLibrarySkills, type LibrarySortMode } from "../lib/librarySort";
@@ -53,6 +54,7 @@ import * as api from "../lib/tauri";
 import { getSkillUsage, type SkillUsage } from "../lib/activity";
 import { listen } from "../lib/transport";
 import { getTagActiveColor, getTagColor, pruneStaleTagFilters, UNTAGGED_FILTER } from "../lib/skillTags";
+import { skillIconOption } from "../lib/presetIcons";
 import type {
   ManagedSkill,
   ToolInfo,
@@ -356,6 +358,19 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
   };
 
   const skillDisplayNames = useMemo(() => getSkillDisplayNames(skills), [skills]);
+
+  // 每个技能「命中了哪个字段、命中在哪一位」：结果里据此标出命中来源，
+  // 并把长描述里命中处前后的文字截出来（否则高亮常常落在被截断的后半段，看着像搜错了）。
+  const searchMatches = useMemo(() => {
+    const term = search.trim();
+    const map = new Map<string, SkillSearchMatch>();
+    if (!term) return map;
+    for (const skill of skills) {
+      const match = matchSkillSearch(skill, search, skillDisplayNames.get(skill.id) || skill.name);
+      if (match) map.set(skill.id, match);
+    }
+    return map;
+  }, [skills, skillDisplayNames, search]);
 
   const filtered = useMemo(() => {
     const result = skills.filter((skill) => {
@@ -1087,7 +1102,9 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
   };
 
   return (
-    <div className="app-page skill-library">
+    // 列表视图列多（名称/描述/作者/使用/标签/状态群/操作），沿用 1200 会把描述挤到 100px 以内；
+    // 这一档放宽到 1440，网格视图仍按 1200 排卡片。
+    <div className={cn("app-page skill-library", viewMode === "list" && "max-w-none xl:max-w-[1440px]")}>
       <SkillRecovery refresh={async () => { await Promise.all([refreshManagedSkills(), refreshPresets()]); }} />
       {operationReport && <OperationResults key={operationReport.version} report={operationReport} onClose={() => setOperationReport(null)} />}
       <div className="app-page-header pr-2 pb-1 flex items-center justify-between gap-3">
@@ -1407,6 +1424,23 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
               skill.update_status === "source_missing"
               && (skill.source_type === "local" || skill.source_type === "import");
             const displayName = skillDisplayNames.get(skill.id) || skill.name;
+            const LogoIcon = skillIconOption(skill).icon;
+            // 命中不在展示出来的名字里时，需要说明「为什么这条被搜到」；
+            // 描述类命中另把命中处前后的文字截出来，避免高亮落在被截断的后半段。
+            const term = search.trim();
+            const match: SkillSearchMatch | null = term ? searchMatches.get(skill.id) ?? null : null;
+            const matchHidden = Boolean(match?.field) && !displayName.toLowerCase().includes(term.toLowerCase());
+            const descriptionText = match && (match.field === "description" || match.field === "customDescription")
+              ? matchSnippet(match, term)
+              : skill.display_description || "—";
+            const matchChip = matchHidden && match?.field ? (
+              <span
+                className="mr-1 inline-flex shrink-0 rounded bg-accent-bg px-1 py-px align-middle text-[10.5px] font-medium text-accent-dark dark:text-accent-light"
+                title={t("mySkills.searchMatch.hint", { snippet: matchSnippet(match, term) })}
+              >
+                {t("mySkills.searchMatch.chip", { field: t(`mySkills.searchMatch.${match.field}`) })}
+              </span>
+            ) : null;
 
             if (viewMode === "grid") {
               return (
@@ -1441,7 +1475,7 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
                   <div className="flex items-center gap-2.5 px-3.5 pt-3 pb-1.5">
                     {/* Fixed-width slot: status dot / drag handle on hover / checkbox in multi-select */}
                     <div className={cn("relative flex h-4 w-4 shrink-0 items-center justify-center", !isMultiSelect && "skill-library-marker")}>
-                      {!isMultiSelect && <Layers aria-hidden="true" className={cn("h-4 w-4", canDrag && "group-hover:opacity-0")} />}
+                      {!isMultiSelect && <LogoIcon aria-hidden="true" className={cn("h-4 w-4", canDrag && "group-hover:opacity-0")} />}
                       {isMultiSelect ? (
                         selectedIds.has(skill.id)
                           ? <SquareCheck className="h-3.5 w-3.5 text-accent" />
@@ -1466,7 +1500,7 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
                       className="flex-1 truncate text-[14px] font-semibold text-primary group-hover:text-accent-light"
                       title={displayName}
                     >
-                      {displayName}
+                      <HighlightText text={displayName} query={search} />
                     </h3>
                     {showUpdatePill && (
                       <button
@@ -1529,11 +1563,12 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
                   <div className="px-3.5 pb-3">
                     {skill.alias && (
                       <p className="mb-0.5 truncate text-[11.5px] text-faint" title={`${t("mySkills.detail.aliasLabel")}: ${skill.name}`}>
-                        {t("mySkills.detail.aliasLabel")}: {skill.name}
+                        {t("mySkills.detail.aliasLabel")}: <HighlightText text={skill.name} query={search} />
                       </p>
                     )}
                     <p className="text-[13px] leading-[18px] text-muted line-clamp-2" title={skill.display_description ?? undefined}>
-                      {skill.display_description || "—"}
+                      {matchChip}
+                      <HighlightText text={descriptionText} query={search} />
                     </p>
                     <p className="mt-1 truncate text-[12px] text-faint" title={skill.display_author_source ?? undefined}>
                       {t("mySkills.author")}: {skill.display_author || t("mySkills.authorMissing")}
@@ -1713,7 +1748,7 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
               {(dragHandle) => (
               <div
                 className={cn(
-                  "app-panel group relative flex cursor-pointer items-center gap-3 rounded-xl border-transparent px-3.5 py-3 transition-all hover:border-border hover:bg-surface-hover",
+                  "app-panel group relative flex cursor-pointer items-center gap-3 rounded-xl border-transparent px-3.5 py-3 transition-all hover:border-border hover:bg-surface-hover max-[1000px]:flex-wrap",
                   isMultiSelect && selectedIds.has(skill.id) && "ring-1 ring-accent border-accent/40"
                 )}
                 onClick={() =>
@@ -1727,7 +1762,7 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
                 )}
                 {/* Same fixed slot as the grid card: status dot / drag handle / checkbox */}
                 <div className={cn("relative flex h-4 w-4 shrink-0 items-center justify-center", !isMultiSelect && "skill-library-marker")}>
-                  {!isMultiSelect && <Layers aria-hidden="true" className={cn("h-4 w-4", canDrag && "group-hover:opacity-0")} />}
+                  {!isMultiSelect && <LogoIcon aria-hidden="true" className={cn("h-4 w-4", canDrag && "group-hover:opacity-0")} />}
                   {isMultiSelect ? (
                     selectedIds.has(skill.id)
                       ? <SquareCheck className="h-3.5 w-3.5 text-accent" />
@@ -1750,21 +1785,22 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
                 </div>
 
                 <h3
-                  className="w-[150px] shrink-0 truncate text-[14px] font-semibold text-secondary group-hover:text-primary"
+                  className="w-[150px] shrink-0 truncate text-[14px] font-semibold text-secondary group-hover:text-primary 2xl:w-[190px]"
                   title={skill.alias ? `${displayName} (${skill.name})` : displayName}
                 >
-                  {displayName}
+                  <HighlightText text={displayName} query={search} />
                 </h3>
 
                 {/* 列表视图靠固定列宽对齐：除描述列用 flex-1 吸收剩余空间外，
                     其余列一律给死宽度，否则每行内容长度不同会把后面的列推歪。 */}
                 <p className="min-w-0 flex-1 truncate text-[13px] text-muted" title={skill.display_description ?? undefined}>
-                  {skill.display_description || "—"}
+                  {matchChip}
+                  <HighlightText text={descriptionText} query={search} />
                 </p>
-                <span className="w-[96px] shrink-0 truncate text-[12px] text-faint" title={skill.display_author_source ?? undefined}>
+                <span className="hidden w-[96px] shrink-0 truncate text-[12px] text-faint 2xl:block" title={skill.display_author_source ?? undefined}>
                   {skill.display_author || t("mySkills.authorMissing")}
                 </span>
-                <span className="w-[120px] shrink-0 truncate text-[12px] text-faint"
+                <span className="hidden w-[120px] shrink-0 truncate text-[12px] text-faint xl:block"
                   title={usage[skill.id]?.lastUsedAt ? new Date(usage[skill.id].lastUsedAt!).toLocaleString(i18n.language) : t("mySkills.usage.neverHint")}>
                   {usage[skill.id]
                     ? usage[skill.id].lastUsedAt !== null
@@ -1773,7 +1809,7 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
                     : t("mySkills.usage.never")}
                 </span>
 
-                <div className="flex w-[110px] shrink-0 items-center gap-1.5 overflow-hidden">
+                <div className="hidden w-[110px] shrink-0 items-center gap-1.5 overflow-hidden 2xl:flex">
                   {skill.tags.map((tag) => (
                     <span
                       key={tag}
@@ -1787,11 +1823,12 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
                   ))}
                 </div>
 
-                <div className="flex w-[130px] shrink-0 items-center justify-end gap-2.5">
+                {/* 状态、Agent 与来源不能共挤；长文本可缩略，徽章保持单行。 */}
+                <div className="flex min-h-6 w-[344px] shrink-0 items-center justify-end gap-2">
                   {conflictIds.has(skill.id) && (
                     <button
                       onClick={(e) => { e.stopPropagation(); navigate("/backup"); }}
-                      className="rounded-full bg-amber-500/12 px-2 py-0.5 text-[12px] font-medium text-amber-600 transition-colors hover:bg-amber-500/20 dark:text-amber-400"
+                      className="max-w-[96px] shrink-0 truncate rounded-full bg-amber-500/12 px-2 py-0.5 text-[12px] font-medium leading-5 text-amber-600 transition-colors hover:bg-amber-500/20 dark:text-amber-400"
                       title={t("mySkills.needsAttentionHint")}
                     >
                       {t("mySkills.needsAttention")}
@@ -1801,7 +1838,7 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
                     <button
                       onClick={(e) => { e.stopPropagation(); handleRefreshSkill(skill); }}
                       disabled={updatingSkillId === skill.id}
-                      className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-500/12 px-2 py-0.5 text-[11px] font-medium text-amber-600 outline-none transition-colors hover:bg-amber-500/20 disabled:opacity-50 dark:text-amber-400"
+                      className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-amber-500/12 px-2 py-0.5 text-[11px] font-medium leading-5 text-amber-600 outline-none transition-colors hover:bg-amber-500/20 disabled:opacity-50 dark:text-amber-400"
                       title={refreshLabel(skill)}
                     >
                       <RotateCcw className={cn("h-2.5 w-2.5", updatingSkillId === skill.id && "animate-spin")} />
@@ -1810,11 +1847,11 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
                   ) : badge && (
                     <span
                       className={cn(
-                        "rounded-full px-2 py-0.5 text-[12px] font-medium",
+                        "inline-flex max-w-[96px] shrink-0 items-center whitespace-nowrap rounded-full px-2 py-0.5 text-[12px] font-medium leading-5",
                         badge.className
                       )}
                     >
-                      {badge.label}
+                      <span className="truncate" title={badge.label}>{badge.label}</span>
                     </span>
                   )}
                   <SyncDots
@@ -1822,6 +1859,7 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
                     tools={tools}
                     limit={6}
                     size="sm"
+                    className="shrink-0"
                     onToggle={
                       isMultiSelect
                         ? undefined
@@ -1829,34 +1867,38 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
                     }
                     pendingKey={togglingTarget?.skillId === skill.id ? togglingTarget.tool : null}
                   />
-                  <span className="inline-flex items-center gap-1 text-[13px] text-muted">
+                  <span className="inline-flex min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap text-[13px] text-muted" title={sourceTypeLabel(skill)}>
                     {sourceIcon(skill.source_type)}
-                    {sourceTypeLabel(skill)}
+                    <span className="truncate">{sourceTypeLabel(skill)}</span>
                   </span>
                   {enabledInPreset && (
-                    <span className="text-[13px] font-medium text-amber-600 dark:text-amber-400/80">
+                    <span className="min-w-0 max-w-[72px] truncate text-[13px] font-medium text-amber-600 dark:text-amber-400/80" title={viewedPresetName}>
                       {viewedPresetName}
                     </span>
                   )}
                 </div>
 
                 {/* 固定宽度的槽位：即使没有缺失来源，也占住这一列，否则有/无该列的行会错位。 */}
-                <div className="flex w-[80px] shrink-0 items-center justify-end gap-1">
+                <div className="flex w-[64px] shrink-0 items-center justify-end gap-1">
                   {isMissingLocalSource && !isMultiSelect && (
-                    <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                    <div className="flex items-center gap-1 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
                     <button
                       onClick={(e) => { e.stopPropagation(); handleRelinkSource(skill); }}
                       disabled={updatingSkillId === skill.id}
-                      className="rounded px-2 py-0.5 text-[13px] font-medium text-secondary transition-colors hover:bg-surface-hover disabled:opacity-50"
+                      title={t("mySkills.updateActions.relink")}
+                      aria-label={t("mySkills.updateActions.relink")}
+                      className="inline-flex h-5 w-6 shrink-0 items-center justify-center rounded text-secondary transition-colors hover:bg-surface-hover disabled:opacity-50"
                     >
-                      {t("mySkills.updateActions.relink")}
+                      <Wrench className="h-3.5 w-3.5" />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDetachSource(skill); }}
                       disabled={updatingSkillId === skill.id}
-                      className="rounded px-2 py-0.5 text-[13px] font-medium text-muted transition-colors hover:bg-surface-hover hover:text-secondary disabled:opacity-50"
+                      title={t("mySkills.updateActions.detachSource")}
+                      aria-label={t("mySkills.updateActions.detachSource")}
+                      className="inline-flex h-5 w-6 shrink-0 items-center justify-center rounded text-muted transition-colors hover:bg-surface-hover hover:text-secondary disabled:opacity-50"
                     >
-                      {t("mySkills.updateActions.detachSource")}
+                      <HardDrive className="h-3.5 w-3.5" />
                     </button>
                   </div>
                   )}
@@ -1919,6 +1961,7 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
 
       <SkillProfileDialog
         skill={skills.find((item) => item.id === profileSkillId) ?? null}
+        allTags={allTags}
         onClose={() => setProfileSkillId(null)}
         onSaved={() => {
           void refreshManagedSkills();

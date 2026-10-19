@@ -52,8 +52,9 @@ export class Store {
       ["projects", "workspace_type", "TEXT NOT NULL DEFAULT 'project'"],
       ["projects", "linked_agent_key", "TEXT"], ["projects", "linked_agent_name", "TEXT"], ["projects", "disabled_path", "TEXT"],
       ["skill_targets", "source_hash", "TEXT"],
-      // 用户自定义展示信息：别名、自定义说明、作者覆盖；不改动技能文件本身。
+      // 用户自定义展示信息：别名、自定义说明、作者覆盖、logo；不改动技能文件本身。
       ["skills", "alias", "TEXT"], ["skills", "custom_description", "TEXT"], ["skills", "author_override", "TEXT"],
+      ["skills", "icon", "TEXT"],
     ]) {
       if (!this.all(`PRAGMA table_info(${table})`).some(column => column.name === name)) this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${definition}`);
     }
@@ -177,11 +178,11 @@ export class Store {
       preset_ids: this.all("SELECT scenario_id FROM scenario_skills WHERE skill_id=?", row.id).map(item => item.scenario_id) };
   }
   // 保存用户自定义展示信息；空字符串表示清除该项，回退到技能文件里的值。
-  setProfile(id, { alias, customDescription, authorOverride } = {}) {
+  setProfile(id, { alias, customDescription, authorOverride, icon } = {}) {
     if (!this.get("SELECT id FROM skills WHERE id=?", id)) throw new Error("技能不存在");
     const clean = value => { const text = String(value ?? "").trim(); return text ? text.slice(0, 500) : null; };
-    this.run("UPDATE skills SET alias=?, custom_description=?, author_override=? WHERE id=?",
-      clean(alias), clean(customDescription), clean(authorOverride), id);
+    this.run("UPDATE skills SET alias=?, custom_description=?, author_override=?, icon=? WHERE id=?",
+      clean(alias), clean(customDescription), clean(authorOverride), clean(icon)?.slice(0, 48) ?? null, id);
     this.saveMetadata(id);
     return this.skill(id);
   }
@@ -356,6 +357,7 @@ export class Store {
     writeJson(inside(path.join(this.skillsDirectory, ".skills-manager", "skills"), `${id}.json`), {
       schema_version: 1, skill_id: id, path: relative, path_key: relative.normalize("NFC").toLowerCase(), enabled: !!skill.enabled,
       alias: skill.alias ?? null, custom_description: skill.custom_description ?? null, author_override: skill.author_override ?? null,
+      icon: skill.icon ?? null,
       tags: this.tags(id), source: { type: skill.source_type, ref: ["local", "import"].includes(skill.source_type) ? null : skill.source_ref,
         branch: skill.source_branch, subpath: skill.source_subpath },
     });
@@ -389,10 +391,10 @@ export class Store {
       const location = inside(this.skillsDirectory, meta.path);
       if (!fs.existsSync(location)) continue;
       const info = metadata(location), now = Date.now();
-      this.run("INSERT INTO skills(id,name,description,source_type,source_ref,source_subpath,source_branch,central_path,content_hash,enabled,created_at,updated_at,alias,custom_description,author_override) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+      this.run("INSERT INTO skills(id,name,description,source_type,source_ref,source_subpath,source_branch,central_path,content_hash,enabled,created_at,updated_at,alias,custom_description,author_override,icon) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         meta.skill_id, info.name || path.basename(location), info.description, meta.source?.type || "import", meta.source?.ref,
         meta.source?.subpath, meta.source?.branch, location, hashDirectory(location), meta.enabled !== false, now, now,
-        meta.alias ?? null, meta.custom_description ?? null, meta.author_override ?? null);
+        meta.alias ?? null, meta.custom_description ?? null, meta.author_override ?? null, meta.icon ?? null);
       for (const tag of meta.tags || []) this.run("INSERT OR IGNORE INTO skill_tags(skill_id,tag) VALUES(?,?)", meta.skill_id, tag);
     }
     const scenarios = path.join(this.skillsDirectory, ".skills-manager", "scenarios");

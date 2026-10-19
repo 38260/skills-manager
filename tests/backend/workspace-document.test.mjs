@@ -3,8 +3,9 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { readSkillsRoot, workspaceCommands } from "../../backend/workspace.mjs";
+import { readSkillsRoot, withCenterState, workspaceCommands } from "../../backend/workspace.mjs";
 import { projectCommands } from "../../backend/projects.mjs";
+import { canonical } from "../../backend/files.mjs";
 
 function fixture(t) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "skill-document-test-"));
@@ -63,6 +64,26 @@ test("项目与关联工作区正文不扫描内容，启用与停用技能都�
   assert.match(commands.get_project_skill_document.call({ projectId: "linked", agent: "linked", skillRelativePath: "nested/three" }).content, /正文 three/);
   assert.ok(fs.existsSync(linked));
   assert.throws(() => commands.get_project_skill_document.call({ projectId: "normal", agent: "unknown", skillRelativePath: "one" }), /未找到/);
+});
+
+test("指向中心库的链接副本不读取内容即可判定同步", t => {
+  const { directory, write, blockPayloadReads } = fixture(t);
+  const central = write("central/one", "one");
+  const root = path.join(directory, "workspace");
+  fs.mkdirSync(root, { recursive: true });
+  fs.symlinkSync(central, path.join(root, "one"), process.platform === "win32" ? "junction" : "dir");
+  const managed = [{ id: "one-id", name: "one", central_path: central, source_ref: null, content_hash: "stale", tags: [] }];
+  const store = { skills: () => managed };
+  blockPayloadReads();
+  const skills = readSkillsRoot(root, {
+    enabled: true, agent: "codex", agentDisplayName: "Codex",
+    centerPaths: new Set([canonical(central)]),
+  });
+  assert.equal(skills[0].content_hash, null, "中心本体副本不需要按内容计算指纹");
+  assert.equal(skills[0].last_modified_at, null, "中心本体副本不需要遍历修改时间");
+  withCenterState(skills, store);
+  assert.equal(skills[0].in_center, true);
+  assert.equal(skills[0].sync_status, "in_sync");
 });
 
 test("列表默认仍计算内容指纹，外部改动后重新读取", t => {
