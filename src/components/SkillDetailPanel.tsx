@@ -21,6 +21,9 @@ import {
 } from "../lib/tauri";
 import { SkillSourceDiffViewer } from "./SkillSourceDiffViewer";
 import { SkillMarkdown } from "./SkillMarkdown";
+import { SkillTranslationReader } from "./SkillTranslationReader";
+import { useSkillTranslation } from "../hooks/useSkillTranslation";
+import { resolveDocumentLanguage, type DocumentLanguage } from "../lib/skillTranslation";
 import { extractHeadings } from "../lib/markdownOutline";
 import { getErrorMessage } from "../lib/error";
 import { skillRepoUrl, repoLabel } from "../lib/skillRepo";
@@ -194,6 +197,9 @@ function SkillDetailPanelContent({
     || skill.source_type === "skillssh"
     || ((skill.source_type === "local" || skill.source_type === "import") && !!skill.source_ref);
   const localDocVersion = `${skill.id}:${skill.updated_at}`;
+  const translationState = useSkillTranslation(skill.id, localDocVersion);
+  const [languageChoice, setLanguageChoice] = useState<DocumentLanguage | null>(null);
+  const documentLanguage = resolveDocumentLanguage(languageChoice, translationState.translation);
   const sourceDocVersion = [
     skill.id,
     skill.source_type,
@@ -437,9 +443,10 @@ function SkillDetailPanelContent({
   ].filter((item) => Boolean(item.value));
 
   // 目录：跳过与技能名重复的首个标题（页头已展示）。
+  const readingContent = documentLanguage === "zh-CN" ? translationState.translation?.content : activeDoc?.content;
   const headings = useMemo(
-    () => (activeDoc ? extractHeadings(activeDoc.content, { skipFirst: true, repeatedTitle: skill.name }) : []),
-    [activeDoc, skill.name]
+    () => (readingContent ? extractHeadings(readingContent, { skipFirst: true, repeatedTitle: skill.name }) : []),
+    [readingContent, skill.name]
   );
 
   // 滚动高亮当前小节：取视口顶部附近最后一个标题。
@@ -904,12 +911,18 @@ function SkillDetailPanelContent({
                 />
               </div>
             ) : activeDoc ? (
-              <SkillMarkdown
-                content={activeDoc.content}
+              <SkillTranslationReader
+                skillId={skill.id}
+                original={activeDoc.content}
+                translation={translationState.translation}
+                language={documentLanguage}
+                loading={translationState.loading}
+                error={translationState.error}
+                onLanguageChange={language => { setLanguageChoice(language); setActiveHeading(null); mainScrollRef.current?.scrollTo({ top: 0 }); }}
+                onReload={translationState.reload}
+                onSaved={translationState.accept}
                 headingIdPrefix={tocPrefix}
-                hideFirstHeading
                 repeatedTitle={skill.name}
-                variant="detail"
               />
             ) : (
               <div className="mt-12 text-center text-[13px] text-muted">{t("common.documentMissing")}</div>

@@ -4,6 +4,7 @@ import { getSettings } from "../lib/tauri";
 import zh from "./zh.json";
 import zhTW from "./zh-TW.json";
 import en from "./en.json";
+import skillTranslation from "./skillTranslation.json";
 
 const LANGUAGE_STORAGE_KEY = "language";
 const SUPPORTED_LANGUAGES = ["zh", "zh-TW", "en"] as const;
@@ -58,9 +59,9 @@ export const i18nReady = (async () => {
 
   await i18n.use(initReactI18next).init({
     resources: {
-      zh: { translation: zh },
-      "zh-TW": { translation: zhTW },
-      en: { translation: en },
+      zh: { translation: { ...zh, skillTranslation: skillTranslation.zh } },
+      "zh-TW": { translation: { ...zhTW, skillTranslation: skillTranslation["zh-TW"] } },
+      en: { translation: { ...en, skillTranslation: skillTranslation.en } },
     },
     lng,
     // zh-TW is a partial locale, so it still falls back to Simplified

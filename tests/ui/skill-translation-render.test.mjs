@@ -1,0 +1,56 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+import { build } from "esbuild";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { createInstance } from "i18next";
+import { I18nextProvider } from "react-i18next";
+
+test("双语文档默认有中文选中文、无中文选原文；内容、标题锚点与错误提示一致", async () => {
+  const modulePath = path.join(process.cwd(), "tests/ui", `translation-render-${process.pid}.mjs`);
+  const result = await build({ stdin: { contents: 'export { SkillTranslationReader } from "./src/components/SkillTranslationReader.tsx"; export { resolveDocumentLanguage } from "./src/lib/skillTranslation.ts";', resolveDir: process.cwd() }, bundle: true, platform: "node", format: "esm", jsx: "automatic", packages: "external", write: false });
+  fs.writeFileSync(modulePath, result.outputFiles[0].text, { flag: "wx" });
+  try {
+    const { SkillTranslationReader, resolveDocumentLanguage } = await import(pathToFileURL(modulePath).href);
+    const translations = JSON.parse(fs.readFileSync("src/i18n/skillTranslation.json", "utf8"));
+    const i18n = createInstance();
+    await i18n.init({ lng: "zh", resources: { zh: { translation: { skillTranslation: translations.zh } }, en: { translation: { skillTranslation: translations.en } } } });
+    const translation = { skill_id: "sample", content: "## 中文目录\n中文正文\n\n```js\nconst original = true;\n```", source_hash: "a".repeat(64), translated_source_hash: "a".repeat(64), revision: "v1", updated_at: 1, stale: false };
+    assert.equal(resolveDocumentLanguage(null, translation), "zh-CN");
+    assert.equal(resolveDocumentLanguage("original", translation), "original");
+    assert.equal(resolveDocumentLanguage(null, null), "original");
+    assert.equal(resolveDocumentLanguage("zh-CN", null), "original");
+    assert.equal(resolveDocumentLanguage(null, { ...translation, content: null }), "original");
+    const props = { skillId: "sample", original: "## English heading\nEnglish content", translation, language: "zh-CN", loading: false, error: "", headingIdPrefix: "sample", repeatedTitle: "sample", onLanguageChange() {}, onReload() {}, onSaved() {} };
+    const render = overrides => renderToStaticMarkup(createElement(I18nextProvider, { i18n }, createElement(SkillTranslationReader, { ...props, ...overrides })));
+    const chinese = render({});
+    assert.match(chinese, /aria-pressed="true"[^>]*>中文版<\/button>/);
+    assert.match(chinese, /id="sample-heading-0"[^>]*>中文目录<\/h2>/);
+    assert.match(chinese, /中文正文/);
+    assert.ok(!chinese.includes("English content"));
+    assert.match(chinese, /const original = true;/);
+    const english = render({ language: "original" });
+    assert.match(english, /aria-pressed="true"[^>]*>英文原文<\/button>/);
+    assert.match(english, /English content/);
+    assert.ok(!english.includes("中文正文"));
+    const absent = render({ language: "original", translation: null });
+    assert.match(absent, /disabled=""[^>]*>中文版<\/button>/);
+    assert.match(absent, /暂无中文版，当前显示原文/);
+    assert.match(absent, /添加中文版/);
+    assert.match(absent, /English content/);
+    const failed = render({ language: "original", translation: null, error: "读取被拒绝" });
+    assert.match(failed, /role="alert"[^>]*>读取被拒绝/);
+    assert.match(failed, /重新读取中文版/);
+    assert.match(failed, /English content/);
+    assert.ok(!failed.includes("暂无中文版，当前显示原文。<"));
+    assert.match(render({ translation: { ...translation, stale: true } }), /英文原文已更新/);
+    assert.ok(!render({ language: "original", translation: { ...translation, stale: true } }).includes("当前中文版需要重新核对"));
+    await i18n.changeLanguage("en");
+    assert.match(render({}), /Showing the Chinese translation/);
+    assert.deepEqual(Object.keys(translations.zh).sort(), Object.keys(translations.en).sort());
+    assert.deepEqual(Object.keys(translations.zh).sort(), Object.keys(translations["zh-TW"]).sort());
+  } finally { fs.unlinkSync(modulePath); }
+});
