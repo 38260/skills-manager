@@ -241,7 +241,7 @@ try {
   expect("详情面板可定位（shell / nav / 控件齐全）", layout?.missing !== true, layout);
   expect("页签行（nav）与控件（ctrl）在同一行", layout?.sameRow === true, layout && { nav: layout.nav, ctrl: layout.ctrl });
   expect("控件在页签右侧、贴靠行尾", layout?.ctrlRightOfTabs === true && layout.ctrlRight >= layout.navRight - 1, layout && { ctrl: layout.ctrl, nav: layout.nav });
-  expect("行内含「中文版 / 英文原文」", layout?.buttons?.some(b => b.text === "中文版") && layout.buttons.some(b => b.text === "英文原文"), layout?.buttons?.map(b => b.text));
+  expect("行内含「中文版 / English」", layout?.buttons?.some(b => b.text === "中文版") && layout.buttons.some(b => b.text === "English"), layout?.buttons?.map(b => b.text));
   expect("行内含「更新中文版」编辑入口", layout?.buttons?.some(b => b.text.includes("更新中文版")), layout?.buttons?.map(b => b.text));
   await shoot("01_nav_right_light");
 
@@ -265,7 +265,7 @@ try {
   const switched = await evaluate(`(async () => {
     const main = ${MAIN}; const ctrl = ${CTRL};
     if (!main || !ctrl) return { missing: true };
-    const btn = [...ctrl.querySelectorAll('button')].find(b => b.textContent.trim() === '英文原文');
+    const btn = [...ctrl.querySelectorAll('button')].find(b => b.textContent.trim() === 'English');
     if (!btn) return { missing: true, reason: 'no-en-button' };
     const before = main.scrollTop;
     const headingBefore = main.querySelector('h3, h2')?.textContent ?? null;
@@ -325,7 +325,7 @@ try {
     return buttons;
   })()`, true);
   record("调用记录页签时的控件", disabledOnOtherTab);
-  expect("非文档页签时编辑入口与重读按钮禁用", Array.isArray(disabledOnOtherTab) && disabledOnOtherTab.length > 0 && disabledOnOtherTab.filter(b => !b.text.includes("中文版") && !b.text.includes("英文原文")).every(b => b.disabled === true), disabledOnOtherTab);
+  expect("非文档页签时编辑入口与重读按钮禁用", Array.isArray(disabledOnOtherTab) && disabledOnOtherTab.length > 0 && disabledOnOtherTab.filter(b => !b.text.includes("中文版") && !b.text.includes("English")).every(b => b.disabled === true), disabledOnOtherTab);
 
   // ── 6. 深色 + 窄屏 ──
   await invoke("set_settings", { key: "theme", value: "dark" });

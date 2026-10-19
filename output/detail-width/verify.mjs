@@ -116,8 +116,11 @@ try {
         text: b.textContent.trim(),
         label: first && first.nodeType === 3 ? first.textContent.trim() : b.textContent.trim(),
         pressed: b.getAttribute('aria-pressed'),
+        // 感叹号角标（可见）；缺译说明现在只留在 sr-only 文本里，不带 aria-hidden 的 !
+        badge: [...b.querySelectorAll('[aria-hidden="true"]')].map(s => s.textContent.trim()).join(''),
       };
     }) : [];
+    const amberCount = shell.querySelectorAll('[class*="amber"]').length;
     const inner = shell.querySelector('.skill-detail-main')?.firstElementChild;
     const nav = shell.querySelector('nav[aria-label]');
     const tabs = nav ? [...nav.querySelectorAll('button')].map(b => ({ text: b.textContent.trim(), right: Math.round(b.getBoundingClientRect().right) })) : [];
@@ -142,6 +145,9 @@ try {
       tabs,
       tabToCtrlGap: ctrl && tabs.length ? Math.round(ctrl.getBoundingClientRect().x - tabs[tabs.length - 1].right) : null,
       buttons,
+      amberCount,
+      // 缺译说明是否还在（只可能来自 sr-only 文本，屏幕上不可见）
+      missingHintVisible: !!ctrl && /\u7f3a\u5c11\u4e2d\u6587\u7248/.test(ctrl.textContent),
       innerWidth,
       noticeRow: !!inner && /\u6682\u65e0\u4e2d\u6587\u7248/.test(inner.textContent),
     };
@@ -156,6 +162,10 @@ try {
   expect("正文实际宽度随主区变化（不再固定 860）", layout && layout.article && layout.main && layout.main.w - layout.article.w < 90, layout && { main: layout.main.w, article: layout.article && layout.article.w });
   expect("右侧只显示「中文版」与「English」", layout?.buttons && layout.buttons.some(b => b.label === "中文版") && layout.buttons.some(b => b.label === "English"), layout?.buttons);
   expect("有译本时中文版默认选中", layout?.buttons?.find(b => b.label === "中文版")?.pressed === "true", layout?.buttons);
+  // 有译本：界面上既不该有角标，也不该有任何缺译说明
+  expect("有译本时界面无角标、无缺译说明",
+    layout?.buttons?.every(b => b.badge === "") === true && layout?.missingHintVisible === false && layout?.amberCount === 0,
+    { badges: layout?.buttons?.map(b => b.badge), missingHintVisible: layout?.missingHintVisible, amberCount: layout?.amberCount });
   // 目录必须与正文同源：默认中文版且已有译本时，目录应是中文且能在正文标题里逐条找到
   expect("目录非空且与正文标题一致（有中文译本）",
     layout?.tocCount > 0 && layout?.tocInBody === true,
@@ -214,8 +224,10 @@ try {
     record("中文原文技能布局", cn);
     expect("中文原文技能：目录非空且与正文标题一致", cn?.tocCount > 0 && cn?.tocInBody === true,
       cn && { tocCount: cn.tocCount, tocSample: cn.tocSample, tocMissing: cn.tocMissing, bodyHeadingCount: cn.bodyHeadingCount });
-    expect("中文原文技能：中文版仍默认选中（带缺译角标）", cn?.buttons?.find(b => b.label === "中文版")?.pressed === "true", cn?.buttons);
-    expect("中文原文技能：中文版旁有缺译角标", cn?.buttons?.some(b => b.label === "中文版" && b.text.includes("缺少中文版")) === true, cn?.buttons?.map(b => b.text));
+    expect("中文原文技能：中文版仍默认选中", cn?.buttons?.find(b => b.label === "中文版")?.pressed === "true", cn?.buttons);
+    // 中文原文技能：文档本来就是中文，不需要「中文版」，界面上连 sr-only 的缺译说明都不该有
+    expect("中文原文技能：没有任何角标（感叹号）", cn?.buttons?.every(b => b.badge === "") === true, cn?.buttons);
+    expect("中文原文技能：没有缺译说明", cn?.missingHintVisible === false, { missingHintVisible: cn?.missingHintVisible, texts: cn?.buttons?.map(b => b.text) });
     expect("中文原文技能：不再出现整行提示", cn?.noticeRow === false, { noticeRow: cn?.noticeRow });
     await shoot("04_chinese_original_1280");
   }

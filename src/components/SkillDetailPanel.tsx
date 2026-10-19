@@ -866,6 +866,7 @@ function SkillDetailPanelContent({
           {activeDoc && (
             <SkillTranslationControls
               skillId={skill.id}
+              original={activeDoc.content}
               state={translationState as SkillTranslationState}
               language={documentLanguage}
               disabled={contentTab !== "doc"}

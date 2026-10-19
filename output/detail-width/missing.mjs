@@ -98,13 +98,14 @@ try {
   await evaluate(`localStorage.setItem('theme','light'); localStorage.setItem('language','zh')`);
   await goto(`http://127.0.0.1:${port}/my-skills`);
 
-  const opened = await evaluate(`(async () => {
+  const openSkill = name => evaluate(`(async () => {
     const waitFor = async (t, n) => { for (let i = 0; i < n; i++) { const v = t(); if (v) return v; await new Promise(r => setTimeout(r, 200)); } return null; };
-    const card = await waitFor(() => [...document.querySelectorAll('.app-panel')].find(el => el.textContent.includes('en-missing-alpha') && el.getBoundingClientRect().width > 0), 60);
+    const card = await waitFor(() => [...document.querySelectorAll('.app-panel')].find(el => el.textContent.includes(${JSON.stringify(name)}) && el.getBoundingClientRect().width > 0), 60);
     if (!card) return false;
     card.scrollIntoView({ block: 'center' }); await new Promise(r => setTimeout(r, 200)); card.click();
     return !!(await waitFor(() => document.querySelector('.skill-detail-shell'), 50));
   })()`, true);
+  const opened = await openSkill("en-missing-alpha");
   expect("打开缺译本技能 en-missing-alpha", opened === true, opened);
   await sleep(1500);
 
@@ -151,7 +152,9 @@ try {
   expect("缺译本时目录非空且与正文标题一致",
     state?.tocCount > 0 && state?.tocInBody === true,
     { tocCount: state?.tocCount, tocSample: state?.tocSample, tocMissing: state?.tocMissing, bodyHeadingSample: state?.bodyHeadingSample });
-  expect("「中文版」上有缺译角标", state?.badgeVisible === true, state?.srText);
+  // 缺译不再占用视觉：没有感叹号角标，说明只留在 sr-only 文本里给辅助技术
+  expect("缺译本时界面上没有感叹号角标", state?.badgeVisible === false, { badgeVisible: state?.badgeVisible, spans: state?.srText });
+  expect("缺译说明仍保留给辅助技术", /缺少中文版/.test(state?.srText ?? "") === true, state?.srText);
   expect("编辑入口仍可用（文案为添加中文版）", Array.isArray(state?.editButtons) && state.editButtons.some(b => b.text.includes("添加中文版") && b.disabled === false), state?.editButtons);
   await shoot("01_missing_badge");
 
@@ -186,6 +189,21 @@ try {
   })()`, true);
   record("编辑器", editor);
   expect("缺译本时点编辑入口能打开空编辑器", editor?.open === true, editor);
+
+  // 中文原文技能：文档本来就是中文，不需要「中文版」，界面上不该有任何缺译表达
+  await goto(`http://127.0.0.1:${port}/my-skills`);
+  const zhOpened = await openSkill("zh-native");
+  expect("打开中文原文技能 zh-native", zhOpened === true, zhOpened);
+  if (zhOpened) {
+    await sleep(1400);
+    const zh = await evaluate(STATE);
+    record("中文原文技能状态", { zhText: zh?.zhText, badgeVisible: zh?.badgeVisible, srText: zh?.srText, tocCount: zh?.tocCount, tocSample: zh?.tocSample, editButtons: zh?.editButtons });
+    expect("中文原文技能：无角标、无缺译说明", zh?.badgeVisible === false && !/缺少中文版/.test(zh?.srText ?? ""),
+      { badgeVisible: zh?.badgeVisible, srText: zh?.srText, zhText: zh?.zhText });
+    expect("中文原文技能：目录仍与正文同源", zh?.tocCount > 0 && zh?.tocInBody === true,
+      { tocCount: zh?.tocCount, tocSample: zh?.tocSample, tocMissing: zh?.tocMissing });
+    await shoot("03_chinese_original");
+  }
 } finally {
   try { ws?.close(); } catch { /* ignore */ }
   if (chrome) { try { chrome.kill(); } catch { /* ignore */ } }

@@ -23,7 +23,7 @@
             "disabled": false
           },
           {
-            "text": "英文原文",
+            "text": "English",
             "disabled": false
           },
           {
@@ -35,7 +35,18 @@
             "disabled": false
           }
         ],
-        "firstBlockIsContent": true
+        "firstBlockIsContent": true,
+        "tocCount": 2,
+        "tocSample": [
+          "When to use",
+          "Steps"
+        ],
+        "tocMissing": [],
+        "bodyHeadingSample": [
+          "When to use",
+          "Steps"
+        ],
+        "tocInBody": true
       }
     },
     {
@@ -55,6 +66,21 @@
       "value": true
     },
     {
+      "name": "缺译本时目录非空且与正文标题一致",
+      "value": {
+        "tocCount": 2,
+        "tocSample": [
+          "When to use",
+          "Steps"
+        ],
+        "tocMissing": [],
+        "bodyHeadingSample": [
+          "When to use",
+          "Steps"
+        ]
+      }
+    },
+    {
       "name": "「中文版」上有缺译角标",
       "value": "!缺少中文版|!|缺少中文版"
     },
@@ -66,7 +92,7 @@
           "disabled": false
         },
         {
-          "text": "英文原文",
+          "text": "English",
           "disabled": false
         },
         {
@@ -78,6 +104,36 @@
           "disabled": false
         }
       ]
+    },
+    {
+      "name": "切到 English",
+      "value": true
+    },
+    {
+      "name": "English 状态",
+      "value": {
+        "tocCount": 2,
+        "tocSample": [
+          "When to use",
+          "Steps"
+        ],
+        "tocMissing": [],
+        "bodyHeadingSample": [
+          "When to use",
+          "Steps"
+        ]
+      }
+    },
+    {
+      "name": "切到 English：目录非空且与正文标题一致",
+      "value": {
+        "tocCount": 2,
+        "tocSample": [
+          "When to use",
+          "Steps"
+        ],
+        "tocMissing": []
+      }
     },
     {
       "name": "编辑器",

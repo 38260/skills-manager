@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Pencil, RefreshCw } from "lucide-react";
 import { cn } from "../utils";
 import { SkillMarkdown } from "./SkillMarkdown";
-import { saveSkillTranslation, type DocumentLanguage, type SkillTranslation } from "../lib/skillTranslation";
+import { documentSourceLanguage, saveSkillTranslation, type DocumentLanguage, type SkillTranslation } from "../lib/skillTranslation";
 import { getErrorMessage } from "../lib/error";
 
 export interface SkillTranslationState {
@@ -23,11 +23,14 @@ export const TRANSLATION_EDITOR_EVENT = "skills-manager:open-translation-editor"
  * 文档语言切换 + 编辑入口。原先和正文一起放在文档顶部，现在挂到页签行最右侧，
  * 与「文档 / 来源与差异 / 调用记录」同一行，正文区只留内容本身。
  *
- * 没有中文版时仍然默认选中「中文版」——正文本来就只有一份原文，直接展示它；
- * 「还没有译本」这件事用小角标 + 编辑按钮文案表达，不占一整行提示。
+ * 没有中文版时仍然默认选中「中文版」——正文本来就只有一份原文，直接展示它。
+ * 「还没有译本」不再占用任何视觉位置：界面上不显示角标，说明只进 `title` 与 `sr-only`；
+ * 而且只有正文本身是英文的技能才算缺译，中文原文的技能不需要中文版，连提示都不该有。
  */
-export function SkillTranslationControls({ skillId, state, language, disabled, onLanguageChange }: {
+export function SkillTranslationControls({ skillId, original, state, language, disabled, onLanguageChange }: {
   skillId: string;
+  /** 正文原文；用来判断这个技能是否真的需要中文译本。 */
+  original: string;
   state: SkillTranslationState;
   language: DocumentLanguage;
   /** 非文档页签时禁用编辑入口，避免在来源/记录页误开编辑器。 */
@@ -36,7 +39,8 @@ export function SkillTranslationControls({ skillId, state, language, disabled, o
 }) {
   const { t } = useTranslation();
   const { translation, loading, error } = state;
-  const missing = !loading && !error && !translation?.content;
+  const hasTranslation = !!translation?.content;
+  const missing = !loading && !error && !hasTranslation && documentSourceLanguage(original) === "en";
   return (
     <div className="flex shrink-0 items-center gap-1">
       <div role="group" aria-label={t("skillTranslation.language")} className="inline-flex rounded-lg bg-surface-hover p-0.5">
@@ -52,13 +56,7 @@ export function SkillTranslationControls({ skillId, state, language, disabled, o
         >{t(value === "zh-CN" ? "skillTranslation.chinese" : "skillTranslation.original")}
           {/* 缺译角标：不撑宽按钮太多，靠 title / sr-only 给出完整说明 */}
           {value === "zh-CN" && missing && (
-            <span
-              id={`${skillId}-translation-missing`}
-              className="ml-1 inline-flex h-[15px] min-w-[15px] items-center justify-center rounded-full bg-amber-100 px-1 text-[10px] font-semibold leading-none text-amber-700 ring-1 ring-inset ring-amber-500/30 dark:bg-amber-500/15 dark:text-amber-300 dark:ring-amber-400/30"
-            >
-              <span aria-hidden="true">!</span>
-              <span className="sr-only">{t("skillTranslation.missingShort")}</span>
-            </span>
+            <span id={`${skillId}-translation-missing`} className="sr-only">{t("skillTranslation.missingShort")}</span>
           )}
         </button>)}
       </div>
@@ -68,13 +66,13 @@ export function SkillTranslationControls({ skillId, state, language, disabled, o
       {/* 编辑入口只负责开合：编辑器仍渲染在正文顶部，按钮留在页签行。 */}
       <button
         type="button"
-        disabled={loading || disabled || !!error || (missing && !translation)}
+        disabled={loading || disabled || !!error || !translation}
         onClick={() => document.dispatchEvent(new CustomEvent(TRANSLATION_EDITOR_EVENT, { detail: { skillId } }))}
         className={cn(CONTROL, "border border-border-subtle py-1 text-secondary hover:bg-surface-hover")}
-        title={missing ? t("skillTranslation.add") : undefined}
+        title={hasTranslation ? undefined : t("skillTranslation.add")}
       ><Pencil className="h-3.5 w-3.5" />
-        {/* 缺译时只留图标 + 角标，避免按钮过长把页签行挤满；有译本时显示完整文案 */}
-        {missing ? <span className="sr-only">{t("skillTranslation.add")}</span> : t("skillTranslation.edit")}
+        {/* 有无译本决定文案（添加 / 更新），与是否提示缺译是两件事 */}
+        {t(hasTranslation ? "skillTranslation.edit" : "skillTranslation.add")}
       </button>
     </div>
   );

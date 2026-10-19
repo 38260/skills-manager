@@ -11,15 +11,15 @@ import { I18nextProvider } from "react-i18next";
 
 test("双语文档默认有中文选中文、无中文选原文；内容、标题锚点与错误提示一致", async () => {
   const modulePath = path.join(process.cwd(), "tests/ui", `translation-render-${process.pid}.mjs`);
-  const result = await build({ stdin: { contents: 'export { SkillTranslationReader, SkillTranslationControls } from "./src/components/SkillTranslationReader.tsx"; export { resolveDocumentLanguage } from "./src/lib/skillTranslation.ts";', resolveDir: process.cwd() }, bundle: true, platform: "node", format: "esm", jsx: "automatic", packages: "external", write: false });
+  const result = await build({ stdin: { contents: 'export { SkillTranslationReader, SkillTranslationControls } from "./src/components/SkillTranslationReader.tsx"; export { resolveDocumentLanguage, documentSourceLanguage } from "./src/lib/skillTranslation.ts";', resolveDir: process.cwd() }, bundle: true, platform: "node", format: "esm", jsx: "automatic", packages: "external", write: false });
   fs.writeFileSync(modulePath, result.outputFiles[0].text, { flag: "wx" });
   try {
-    const { SkillTranslationReader, SkillTranslationControls, resolveDocumentLanguage } = await import(pathToFileURL(modulePath).href);
+    const { SkillTranslationReader, SkillTranslationControls, resolveDocumentLanguage, documentSourceLanguage } = await import(pathToFileURL(modulePath).href);
     const translations = JSON.parse(fs.readFileSync("src/i18n/skillTranslation.json", "utf8"));
     const i18n = createInstance();
     await i18n.init({ lng: "zh", resources: { zh: { translation: { skillTranslation: translations.zh } }, en: { translation: { skillTranslation: translations.en } } } });
     const translation = { skill_id: "sample", content: "## 中文目录\n中文正文\n\n```js\nconst original = true;\n```", source_hash: "a".repeat(64), translated_source_hash: "a".repeat(64), revision: "v1", updated_at: 1, stale: false };
-    // 默认选中「中文版」不再取决于译文是否存在：缺译本时正文回落到原文，由角标提示。
+    // 默认选中「中文版」不再取决于译文是否存在：缺译本时正文回落到原文，界面上不再显示角标。
     assert.equal(resolveDocumentLanguage(null), "zh-CN");
     assert.equal(resolveDocumentLanguage("zh-CN"), "zh-CN");
     assert.equal(resolveDocumentLanguage("original"), "original");
@@ -27,7 +27,11 @@ test("双语文档默认有中文选中文、无中文选原文；内容、标�
     const props = { skillId: "sample", original: "## English heading\nEnglish content", ...state, language: "zh-CN", draftOpen: false, onDraftClose() {}, headingIdPrefix: "sample", repeatedTitle: "sample", onLanguageChange() {}, onSaved() {} };
     const render = overrides => renderToStaticMarkup(createElement(I18nextProvider, { i18n }, createElement(SkillTranslationReader, { ...props, ...overrides })));
     // 语言切换入口已移到页签行（控件组件），正文区只留内容本身。
-    const controls = overrides => renderToStaticMarkup(createElement(I18nextProvider, { i18n }, createElement(SkillTranslationControls, { skillId: "sample", state: { ...state, ...overrides.state }, language: overrides.language ?? "zh-CN", onLanguageChange() {} })));
+    // original 决定这个技能是否真的需要中文译本（英文原文才算缺译）。
+    const controls = overrides => renderToStaticMarkup(createElement(I18nextProvider, { i18n }, createElement(SkillTranslationControls, {
+      skillId: "sample", original: overrides.original ?? props.original, state: { ...state, ...overrides.state },
+      language: overrides.language ?? "zh-CN", onLanguageChange() {},
+    })));
 
     const chinese = render({});
     assert.match(chinese, /id="sample-heading-0"[^>]*>中文目录<\/h2>/);
@@ -49,17 +53,35 @@ test("双语文档默认有中文选中文、无中文选原文；内容、标�
     assert.match(controls({ language: "original" }), /aria-pressed="true"[^>]*>English<\/button>/);
 
     // 没有中文版：正文直接展示原文，不再出现整行「暂无中文版」提示；
-    // 缺译用页签行「中文版」上的角标表达，且「中文版」保持可选中（默认就是它）。
+    // 界面上也不再有缺译角标（感叹号），说明只保留在 title 与 sr-only 里，「中文版」保持可选中。
     const absent = render({ language: "zh-CN", translation: null });
     assert.ok(!absent.includes("暂无中文版"), "缺译本时正文不应再出现整行提示");
     assert.match(absent, /English content/);
     const absentControls = controls({ language: "zh-CN", state: { translation: null } });
     assert.match(absentControls, /aria-pressed="true"[^>]*>中文版/);
     assert.ok(!/disabled=""[^>]*>中文版/.test(absentControls), "缺译本时中文版仍可选中");
-    assert.match(absentControls, /缺少中文版/);
+    assert.ok(!/>!<\/span>/.test(absentControls), "界面上不应再出现感叹号角标");
+    assert.ok(!absentControls.includes("bg-amber"), "界面上不应再出现琥珀色角标");
+    assert.match(absentControls, /缺少中文版/, "缺译说明仍应保留给辅助技术");
     assert.match(absentControls, /添加中文版/);
-    // 有中文版时不显示缺译角标
-    assert.ok(!controls({}).includes("缺少中文版"), "有译本时不应出现缺译角标");
+
+    // 正文本来就是中文的技能不需要「中文版」，连缺译说明都不该出现。
+    const chineseOriginal = "## 何时使用\n这是一份中文原文的技能文档。\n";
+    const chineseControls = controls({ original: chineseOriginal, state: { translation: null } });
+    assert.ok(!chineseControls.includes("缺少中文版"), "中文原文技能不应提示缺译");
+    assert.ok(!/>!<\/span>/.test(chineseControls), "中文原文技能不应出现感叹号角标");
+    assert.match(chineseControls, /aria-pressed="true"[^>]*>中文版/);
+
+    // 有中文版时不显示任何缺译表达
+    assert.ok(!controls({}).includes("缺少中文版"), "有译本时不应出现缺译提示");
+
+    // 前端判定必须与后端覆盖率统计同口径，否则「哪些技能缺译」两边会对不上
+    const { documentLanguage } = await import("../../backend/skill-translations.mjs");
+    assert.equal(documentSourceLanguage("## When to use\nEnglish body"), "en");
+    assert.equal(documentSourceLanguage("## 何时使用\n中文正文"), "zh");
+    for (const content of [props.original, translation.content, chineseOriginal, "# 标题\n\n```\ncode only\n```\n", ""]) {
+      assert.equal(documentSourceLanguage(content), documentLanguage(content).language, `口径不一致：${JSON.stringify(content)}`);
+    }
 
     const failed = render({ language: "original", translation: null, error: "读取被拒绝" });
     assert.match(failed, /role="alert"[^>]*>读取被拒绝/);

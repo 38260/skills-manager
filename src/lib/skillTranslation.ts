@@ -18,8 +18,32 @@ export const getSkillTranslation = (skillId: string) =>
 export const saveSkillTranslation = (skillId: string, content: string, sourceHash: string, expectedRevision: string | null) =>
   invoke<SkillTranslation>("set_skill_translation", { skillId, content, sourceHash, expectedRevision });
 
-// 默认选中「中文版」：有译文就展示译文，没有译文时正文回落到原文（缺译用角标提示）。
-// 只有用户主动点了「英文原文」才切到原文视图，所以这里只看用户的选择，不看译文是否存在。
+// 默认选中「中文版」：有译文就展示译文，没有译文时正文回落到原文。
+// 只有用户主动点了「English」才切到原文视图，所以这里只看用户的选择，不看译文是否存在。
 export function resolveDocumentLanguage(choice: DocumentLanguage | null): DocumentLanguage {
   return choice === "original" ? "original" : "zh-CN";
+}
+
+// 正文语言判定：与 backend/skill-translations.mjs 的 documentLanguage 完全同口径
+// （去掉 frontmatter、围栏代码与行内代码后比较中文字符与拉丁字母，阈值 0.2；
+// 两个实现由 tests/ui/skill-translation-render.test.mjs 交叉校验，避免漂移）。
+// 前端用它区分「英文原文还没有中文版」与「正文本来就是中文」——后者不需要译本，不该提示缺译。
+const FRONTMATTER = /^\uFEFF?---\r?\n[\s\S]*?\r?\n---/;
+const CODE_FENCE = /(^|\n)\s*(```|~~~)[\s\S]*?(\n\s*\2|$)/g;
+const INLINE_CODE = /`[^`\n]*`/g;
+const CJK = /[\u3400-\u4dbf\u4e00-\u9fff]/g;
+const LATIN = /[A-Za-z]/g;
+const CHINESE_RATIO = 0.2;
+
+export type DocumentSourceLanguage = "en" | "zh" | "unknown";
+
+export function documentSourceLanguage(content: string): DocumentSourceLanguage {
+  const text = String(content ?? "")
+    .replace(FRONTMATTER, "")
+    .replace(CODE_FENCE, "\n")
+    .replace(INLINE_CODE, " ");
+  const cjk = (text.match(CJK) ?? []).length;
+  const latin = (text.match(LATIN) ?? []).length;
+  if (cjk + latin === 0) return "unknown";
+  return cjk / (cjk + latin) < CHINESE_RATIO ? "en" : "zh";
 }
