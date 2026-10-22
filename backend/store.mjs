@@ -52,6 +52,8 @@ export class Store {
       ["projects", "workspace_type", "TEXT NOT NULL DEFAULT 'project'"],
       ["projects", "linked_agent_key", "TEXT"], ["projects", "linked_agent_name", "TEXT"], ["projects", "disabled_path", "TEXT"],
       ["skill_targets", "source_hash", "TEXT"],
+      // 扫描缓存：来源标识用于部分失败时保留上一轮结果；stat_signature 用于避免每次重读全部文件内容。
+      ["discovered_skills", "source_key", "TEXT"], ["discovered_skills", "stat_signature", "TEXT"],
       // 用户自定义展示信息：别名、自定义说明、作者覆盖、logo；不改动技能文件本身。
       ["skills", "alias", "TEXT"], ["skills", "custom_description", "TEXT"], ["skills", "author_override", "TEXT"],
       ["skills", "icon", "TEXT"],

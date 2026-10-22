@@ -43,7 +43,9 @@ CREATE TABLE IF NOT EXISTS discovered_skills (
             name_guess TEXT,
             fingerprint TEXT,
             found_at INTEGER NOT NULL,
-            imported_skill_id TEXT REFERENCES skills(id) ON DELETE SET NULL
+            imported_skill_id TEXT REFERENCES skills(id) ON DELETE SET NULL,
+            source_key TEXT,
+            stat_signature TEXT
         );
 
 CREATE TABLE IF NOT EXISTS settings (
