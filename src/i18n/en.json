@@ -782,7 +782,9 @@
         "missing": "Missing",
         "unreadable": "Unreadable",
         "notDirectory": "Not a folder"
-      }
+      },
+      "notify": "Found {{count}} local skills",
+      "view": "View"
     }
   },
   "settings": {

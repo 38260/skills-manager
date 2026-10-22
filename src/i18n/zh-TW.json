@@ -733,7 +733,9 @@
         "missing": "不存在",
         "unreadable": "無法讀取",
         "notDirectory": "不是目錄"
-      }
+      },
+      "notify": "發現 {{count}} 個本機 Skill",
+      "view": "查看"
     }
   },
   "settings": {

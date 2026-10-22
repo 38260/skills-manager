@@ -18,6 +18,7 @@ import {
   LocalDiscoveryCoordinator,
   type DiscoveryTrigger,
 } from "../lib/localDiscovery";
+import { useLocalDiscoveryNotifications } from "../hooks/useLocalDiscoveryNotifications";
 import { useApp } from "./AppContext";
 
 const STARTUP_SCAN_DELAY_MS = 1000;
@@ -48,6 +49,7 @@ function summarizeIssue(result: ScanResult): string | null {
 
 export function LocalDiscoveryProvider({ children }: { children: ReactNode }) {
   const { loading } = useApp();
+  const announceCandidates = useLocalDiscoveryNotifications();
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [scanning, setScanning] = useState(false);
   const [scanStatus, setScanStatus] = useState<ScanResult["status"] | "idle">("idle");
@@ -60,6 +62,10 @@ export function LocalDiscoveryProvider({ children }: { children: ReactNode }) {
       setScanResult(result);
       setScanStatus(result.status);
       setScanIssue(summarizeIssue(result));
+      if (result.status !== "failed") {
+        try { await announceCandidates(result); }
+        catch (error) { console.warn("更新本地发现通知状态失败:", error); }
+      }
       return result;
     } catch (error: unknown) {
       setScanStatus("failed");
@@ -68,7 +74,7 @@ export function LocalDiscoveryProvider({ children }: { children: ReactNode }) {
     } finally {
       setScanning(false);
     }
-  }, []);
+  }, [announceCandidates]);
 
   const coordinator = useMemo(
     () => new LocalDiscoveryCoordinator({ run: () => performScan() }),

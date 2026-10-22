@@ -782,7 +782,9 @@
         "missing": "不存在",
         "unreadable": "不可读",
         "notDirectory": "不是目录"
-      }
+      },
+      "notify": "发现 {{count}} 个本地 Skill",
+      "view": "查看"
     }
   },
   "settings": {
