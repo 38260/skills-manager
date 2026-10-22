@@ -132,18 +132,55 @@ export interface Preset {
   updated_at: number;
 }
 
+export interface DiscoveredLocation {
+  id: string;
+  key: string;
+  tool: string;
+  found_path: string;
+}
+
 export interface DiscoveredGroup {
   name: string;
+  key: string;
   fingerprint: string | null;
-  locations: { id: string; tool: string; found_path: string }[];
+  locations: DiscoveredLocation[];
   imported: boolean;
   found_at: number;
 }
 
+export interface ScanSourceStatus {
+  key: string;
+  kind: "tool" | "discovery";
+  label: string;
+  path: string;
+  status: "ok" | "partial" | "error";
+  error: string | null;
+  found: number;
+}
+
+export interface ScanError {
+  source_key: string;
+  source_path: string | null;
+  path: string | null;
+  message: string;
+}
+
 export interface ScanResult {
+  status: "ok" | "partial" | "failed";
+  scanned_at: number;
   tools_scanned: number;
+  discovery_dirs_scanned: number;
   skills_found: number;
   groups: DiscoveredGroup[];
+  sources: ScanSourceStatus[];
+  errors: ScanError[];
+}
+
+export interface DiscoveryDirStatus {
+  path: string;
+  exists: boolean;
+  readable: boolean;
+  is_dir: boolean;
 }
 
 export interface SkillsShSkill {
@@ -498,6 +535,15 @@ export const setSkillToolToggle = (
 // ── Scan ──
 
 export const scanLocalSkills = () => invoke<ScanResult>("scan_local_skills");
+
+export const getLocalDiscoveryDirs = () =>
+  invoke<DiscoveryDirStatus[]>("get_local_discovery_dirs");
+
+export const addLocalDiscoveryDir = (path: string) =>
+  invoke<{ added: boolean; dirs: DiscoveryDirStatus[] }>("add_local_discovery_dir", { path });
+
+export const removeLocalDiscoveryDir = (path: string) =>
+  invoke<{ removed: boolean; dirs: DiscoveryDirStatus[] }>("remove_local_discovery_dir", { path });
 
 export const importExistingSkill = (sourcePath: string, name?: string) =>
   invoke<void>("import_existing_skill", { sourcePath, name: name || null });

@@ -702,6 +702,31 @@
         "pending": "待匯入",
         "imported": "已匯入"
       }
+    },
+    "discovery": {
+      "title": "發現目錄",
+      "description": "把你自行維護的 Skill 或包含多個 Skill 的上層目錄加入這裡，掃描時會自動發現其中的新 Skill。",
+      "count": "{{count}} 個目錄",
+      "inputLabel": "發現目錄路徑",
+      "placeholder": "輸入或選擇目錄的絕對路徑",
+      "browse": "選擇目錄",
+      "add": "新增目錄",
+      "loading": "正在讀取發現目錄...",
+      "empty": "還沒有自訂發現目錄。新增後會立即掃描一次。",
+      "listLabel": "已設定的發現目錄",
+      "removeAria": "移除發現目錄 {{path}}",
+      "remove": "移除",
+      "duplicate": "該目錄已在發現清單中",
+      "added": "已新增發現目錄，正在掃描",
+      "removed": "已移除發現目錄，原始檔案與已匯入技能不受影響",
+      "browseUnavailable": "目前環境不支援目錄選擇，請手動輸入絕對路徑",
+      "hint": "可以選擇一個 Skill 自身的目錄，也可以選擇包含多個 Skill 的上層目錄。移除只會縮小後續掃描範圍，不會刪除原始檔案或已匯入的技能。",
+      "status": {
+        "available": "可用",
+        "missing": "不存在",
+        "unreadable": "無法讀取",
+        "notDirectory": "不是目錄"
+      }
     }
   },
   "settings": {

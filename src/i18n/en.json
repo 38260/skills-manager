@@ -751,6 +751,31 @@
         "pending": "Pending",
         "imported": "Imported"
       }
+    },
+    "discovery": {
+      "title": "Discovery folders",
+      "description": "Add skills you maintain yourself, or a parent folder containing several skills. New skills in these folders are discovered automatically.",
+      "count": "{{count}} folders",
+      "inputLabel": "Discovery folder path",
+      "placeholder": "Enter or choose an absolute folder path",
+      "browse": "Choose folder",
+      "add": "Add folder",
+      "loading": "Loading discovery folders...",
+      "empty": "No custom discovery folders yet. Adding one scans immediately.",
+      "listLabel": "Configured discovery folders",
+      "removeAria": "Remove discovery folder {{path}}",
+      "remove": "Remove",
+      "duplicate": "This folder is already in the discovery list",
+      "added": "Discovery folder added; scanning",
+      "removed": "Discovery folder removed. Source files and imported skills are unaffected",
+      "browseUnavailable": "Folder selection is not available here. Enter an absolute path manually",
+      "hint": "Choose a single skill folder or a parent folder containing several skills. Removing a folder only narrows future scans; it never deletes source files or imported skills.",
+      "status": {
+        "available": "Available",
+        "missing": "Missing",
+        "unreadable": "Unreadable",
+        "notDirectory": "Not a folder"
+      }
     }
   },
   "settings": {

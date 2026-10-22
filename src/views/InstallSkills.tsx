@@ -29,11 +29,12 @@ import { cn } from "../utils";
 import { useApp } from "../context/AppContext";
 import { useInstallTask } from "../context/InstallTaskContext";
 import * as api from "../lib/tauri";
-import type { ScanResult, SkillsShSkill, BatchImportResult } from "../lib/tauri";
+import type { ScanResult, SkillsShSkill, BatchImportResult, DiscoveryDirStatus } from "../lib/tauri";
 import { openDirectory as open, openSkillFile, openExternal as openUrl } from "../lib/desktop";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { listen } from "../lib/transport";
 import { StatusBanner } from "../components/StatusBanner";
+import { DiscoveryDirsPanel } from "../components/DiscoveryDirsPanel";
 import { getErrorMessage, getErrorKind } from "../lib/error";
 import { marketRepoUrl } from "../lib/skillRepo";
 
@@ -76,6 +77,9 @@ export function InstallSkills() {
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [scanLoading, setScanLoading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [discoveryDirs, setDiscoveryDirs] = useState<DiscoveryDirStatus[]>([]);
+  const [discoveryLoading, setDiscoveryLoading] = useState(false);
+  const [discoveryBusy, setDiscoveryBusy] = useState(false);
   const [importingPaths, setImportingPaths] = useState<Set<string>>(new Set());
   const [importingAll, setImportingAll] = useState(false);
   const [renameEditing, setRenameEditing] = useState<Record<string, string>>({});
@@ -224,6 +228,65 @@ export function InstallSkills() {
       console.warn("silent scan failed:", error);
     }
   }, []);
+
+  const loadDiscoveryDirs = useCallback(async () => {
+    setDiscoveryLoading(true);
+    try {
+      setDiscoveryDirs(await api.getLocalDiscoveryDirs());
+    } catch (error) {
+      console.warn("加载发现目录失败:", error);
+    } finally {
+      setDiscoveryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "local") void loadDiscoveryDirs();
+  }, [activeTab, loadDiscoveryDirs]);
+
+  const handleAddDiscoveryDir = async (path: string) => {
+    setDiscoveryBusy(true);
+    try {
+      const result = await api.addLocalDiscoveryDir(path);
+      setDiscoveryDirs(result.dirs);
+      if (!result.added) {
+        toast.info(t("install.discovery.duplicate"));
+        return false;
+      }
+      toast.success(t("install.discovery.added"));
+      await runScan();
+      return true;
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, t("common.error")));
+      return false;
+    } finally {
+      setDiscoveryBusy(false);
+    }
+  };
+
+  const handleRemoveDiscoveryDir = async (path: string) => {
+    setDiscoveryBusy(true);
+    try {
+      const result = await api.removeLocalDiscoveryDir(path);
+      setDiscoveryDirs(result.dirs);
+      toast.success(t("install.discovery.removed"));
+      await runScan();
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, t("common.error")));
+    } finally {
+      setDiscoveryBusy(false);
+    }
+  };
+
+  const handleBrowseDiscoveryDir = async () => {
+    try {
+      const selected = await open({ directory: true, multiple: false });
+      return typeof selected === "string" ? selected : null;
+    } catch {
+      toast.info(t("install.discovery.browseUnavailable"));
+      return null;
+    }
+  };
 
   const warnRejected = (results: PromiseSettledResult<unknown>[], label: string) => {
     for (const r of results) {
@@ -1188,6 +1251,15 @@ export function InstallSkills() {
             </div>
 
           </section>
+
+          <DiscoveryDirsPanel
+            dirs={discoveryDirs}
+            loading={discoveryLoading}
+            busy={discoveryBusy}
+            onAdd={handleAddDiscoveryDir}
+            onRemove={handleRemoveDiscoveryDir}
+            onBrowse={handleBrowseDiscoveryDir}
+          />
 
           {localError ? (
             <StatusBanner
