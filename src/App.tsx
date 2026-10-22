@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AppProvider } from "./context/AppContext";
 import { InstallTaskProvider } from "./context/InstallTaskContext";
+import { LocalDiscoveryProvider } from "./context/LocalDiscoveryContext";
 import { ThemeProvider, useThemeContext } from "./context/ThemeContext";
 import { HelpDialog } from "./components/HelpDialog";
 import { CloseActionGuard } from "./components/CloseActionGuard";
@@ -40,24 +41,26 @@ function App() {
       <AppProvider>
         <InstallTaskProvider>
           <BrowserRouter>
-            <Routes>
-              <Route element={<Layout />}>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/my-skills" element={<MySkills />} />
-                <Route path="/skill-activity" element={<SkillActivity />} />
-                <Route path="/global-workspace" element={<WorkspaceView config={CODING_WORKSPACE_CONFIG} />} />
-                <Route path="/global-workspace/:agentKey" element={<WorkspaceView config={CODING_WORKSPACE_CONFIG} />} />
-                <Route path="/lobster-workspace" element={<WorkspaceView config={LOBSTER_WORKSPACE_CONFIG} />} />
-                <Route path="/lobster-workspace/:agentKey" element={<WorkspaceView config={LOBSTER_WORKSPACE_CONFIG} />} />
-                <Route path="/install" element={<InstallSkills />} />
-                <Route path="/backup" element={<Backup />} />
-                <Route path="/project/:id" element={<ProjectDetail />} />
-                <Route path="/settings" element={<Settings />} />
-              </Route>
-            </Routes>
-            <HelpDialog />
-            <CloseActionGuard />
-            <FirstRunRestoreDialog />
+            <LocalDiscoveryProvider>
+              <Routes>
+                <Route element={<Layout />}>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/my-skills" element={<MySkills />} />
+                  <Route path="/skill-activity" element={<SkillActivity />} />
+                  <Route path="/global-workspace" element={<WorkspaceView config={CODING_WORKSPACE_CONFIG} />} />
+                  <Route path="/global-workspace/:agentKey" element={<WorkspaceView config={CODING_WORKSPACE_CONFIG} />} />
+                  <Route path="/lobster-workspace" element={<WorkspaceView config={LOBSTER_WORKSPACE_CONFIG} />} />
+                  <Route path="/lobster-workspace/:agentKey" element={<WorkspaceView config={LOBSTER_WORKSPACE_CONFIG} />} />
+                  <Route path="/install" element={<InstallSkills />} />
+                  <Route path="/backup" element={<Backup />} />
+                  <Route path="/project/:id" element={<ProjectDetail />} />
+                  <Route path="/settings" element={<Settings />} />
+                </Route>
+              </Routes>
+              <HelpDialog />
+              <CloseActionGuard />
+              <FirstRunRestoreDialog />
+            </LocalDiscoveryProvider>
           </BrowserRouter>
           <ThemedToaster />
         </InstallTaskProvider>

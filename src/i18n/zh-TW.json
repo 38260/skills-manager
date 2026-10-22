@@ -701,7 +701,14 @@
         "detected": "已發現",
         "pending": "待匯入",
         "imported": "已匯入"
-      }
+      },
+      "summarySources": "已掃描 {{tools}} 個工具目錄、{{dirs}} 個發現目錄，發現 {{skills}} 個可匯入 Skills。",
+      "scanningShort": "正在重新整理掃描結果...",
+      "partialTitle": "部分目錄無法掃描",
+      "failedTitle": "本機掃描失敗",
+      "partialToast": "掃描部分失敗：{{count}} 個目錄無法使用",
+      "failedEmpty": "掃描失敗，暫無可用的本機結果。可稍後重試。",
+      "customSource": "自訂發現目錄"
     },
     "discovery": {
       "title": "發現目錄",

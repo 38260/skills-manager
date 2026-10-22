@@ -750,7 +750,14 @@
         "detected": "Detected",
         "pending": "Pending",
         "imported": "Imported"
-      }
+      },
+      "summarySources": "Scanned {{tools}} tool folders and {{dirs}} discovery folders; found {{skills}} importable skills.",
+      "scanningShort": "Refreshing scan results...",
+      "partialTitle": "Some folders could not be scanned",
+      "failedTitle": "Local scan failed",
+      "partialToast": "Scan completed partially: {{count}} folders unavailable",
+      "failedEmpty": "Scan failed. No usable local results right now; try again later.",
+      "customSource": "Custom discovery folder"
     },
     "discovery": {
       "title": "Discovery folders",

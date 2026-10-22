@@ -750,7 +750,14 @@
         "detected": "已发现",
         "pending": "待导入",
         "imported": "已导入"
-      }
+      },
+      "summarySources": "已扫描 {{tools}} 个工具目录、{{dirs}} 个发现目录，发现 {{skills}} 个可导入 Skills。",
+      "scanningShort": "正在刷新扫描结果...",
+      "partialTitle": "部分目录未能扫描",
+      "failedTitle": "本地扫描失败",
+      "partialToast": "扫描部分失败：{{count}} 个目录不可用",
+      "failedEmpty": "扫描失败，暂无可用的本地结果。可稍后重试。",
+      "customSource": "自定义发现目录"
     },
     "discovery": {
       "title": "发现目录",

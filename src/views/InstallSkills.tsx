@@ -28,8 +28,9 @@ import { toast } from "sonner";
 import { cn } from "../utils";
 import { useApp } from "../context/AppContext";
 import { useInstallTask } from "../context/InstallTaskContext";
+import { useLocalDiscovery } from "../context/LocalDiscoveryContext";
 import * as api from "../lib/tauri";
-import type { ScanResult, SkillsShSkill, BatchImportResult, DiscoveryDirStatus } from "../lib/tauri";
+import type { SkillsShSkill, BatchImportResult, DiscoveryDirStatus } from "../lib/tauri";
 import { openDirectory as open, openSkillFile, openExternal as openUrl } from "../lib/desktop";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { listen } from "../lib/transport";
@@ -53,6 +54,7 @@ const formatCount = (value: number) =>
 export function InstallSkills() {
   const { t } = useTranslation();
   const { refreshPresets, refreshManagedSkills, managedSkills, openSkillDetailById } = useApp();
+  const { scanResult, scanning, scanStatus, scanIssue, scan } = useLocalDiscovery();
   // git 安装会话（进度 / 预览 / 勾选）由 InstallTaskContext 持有，
   // 这样离开安装页后进度条继续更新、切回来预览列表也还在。
   const {
@@ -74,8 +76,6 @@ export function InstallSkills() {
   const [marketError, setMarketError] = useState<string | null>(null);
   const [marketReloadKey, setMarketReloadKey] = useState(0);
   const [installing, setInstalling] = useState<string | null>(null);
-  const [scanResult, setScanResult] = useState<ScanResult | null>(null);
-  const [scanLoading, setScanLoading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [discoveryDirs, setDiscoveryDirs] = useState<DiscoveryDirStatus[]>([]);
   const [discoveryLoading, setDiscoveryLoading] = useState(false);
@@ -199,35 +199,22 @@ export function InstallSkills() {
     setSearchParams({ tab });
   };
 
-  const runScan = useCallback(async () => {
-    setScanLoading(true);
-    setLocalError(null);
-    try {
-      const result = await api.scanLocalSkills();
-      setScanResult(result);
-    } catch (error: unknown) {
-      console.error(error);
-      const message = getErrorMessage(error, t("common.error"));
-      setLocalError(message);
-      toast.error(message);
-    } finally {
-      setScanLoading(false);
-    }
-  }, [t]);
+  const initialScanRequestedRef = useRef(false);
 
-  // Silent variant used after install/import. Never surfaces a toast or
-  // new error state — failure here must not mask the install success.
-  // Clears any stale localError on success so successful operations don't
-  // leave previous error banners behind.
-  const runScanSilent = useCallback(async () => {
+  const handleManualScan = useCallback(async () => {
     try {
-      const result = await api.scanLocalSkills();
-      setScanResult(result);
-      setLocalError(null);
+      const result = await scan();
+      if (result?.status === "failed") {
+        toast.error(result.errors[0]?.message ?? t("install.scan.failedEmpty"));
+      } else if (result?.status === "partial") {
+        toast.warning(t("install.scan.partialToast", { count: result.errors.length }));
+      }
+      return result;
     } catch (error: unknown) {
-      console.warn("silent scan failed:", error);
+      toast.error(getErrorMessage(error, t("common.error")));
+      return null;
     }
-  }, []);
+  }, [scan, t]);
 
   const loadDiscoveryDirs = useCallback(async () => {
     setDiscoveryLoading(true);
@@ -244,6 +231,10 @@ export function InstallSkills() {
     if (activeTab === "local") void loadDiscoveryDirs();
   }, [activeTab, loadDiscoveryDirs]);
 
+  useEffect(() => {
+    if (activeTab === "local" && scanResult?.scanned_at) void loadDiscoveryDirs();
+  }, [activeTab, loadDiscoveryDirs, scanResult?.scanned_at]);
+
   const handleAddDiscoveryDir = async (path: string) => {
     setDiscoveryBusy(true);
     try {
@@ -254,7 +245,7 @@ export function InstallSkills() {
         return false;
       }
       toast.success(t("install.discovery.added"));
-      await runScan();
+      await handleManualScan();
       return true;
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, t("common.error")));
@@ -270,7 +261,7 @@ export function InstallSkills() {
       const result = await api.removeLocalDiscoveryDir(path);
       setDiscoveryDirs(result.dirs);
       toast.success(t("install.discovery.removed"));
-      await runScan();
+      await handleManualScan();
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, t("common.error")));
     } finally {
@@ -358,10 +349,10 @@ export function InstallSkills() {
   }, [activeTab, debouncedMarketQuery, marketReloadKey, marketSearchLimit, marketTab, pruneMarketSearchCache, t]);
 
   useEffect(() => {
-    if (activeTab === "local" && !scanResult && !scanLoading) {
-      runScan();
-    }
-  }, [activeTab, scanLoading, scanResult, runScan]);
+    if (activeTab !== "local" || scanResult || scanning || initialScanRequestedRef.current) return;
+    initialScanRequestedRef.current = true;
+    void handleManualScan();
+  }, [activeTab, handleManualScan, scanResult, scanning]);
 
   const installLocalSource = async (sourcePath: string) => {
     const name = sourcePath.split("/").pop() || sourcePath;
@@ -379,7 +370,7 @@ export function InstallSkills() {
     const results = await Promise.allSettled([
       refreshPresets(),
       refreshManagedSkills(),
-      runScanSilent(),
+      scan({ fresh: true }),
     ]);
     warnRejected(results, "post-install refresh");
     toast.success(t("install.toast.success", { name }), {
@@ -468,7 +459,7 @@ export function InstallSkills() {
       }
 
       await Promise.all([refreshPresets(), refreshManagedSkills()]);
-      runScan();
+      await scan({ fresh: true });
     } catch (error: unknown) {
       const message = getErrorMessage(error, t("common.error"));
       setLocalError(message);
@@ -549,7 +540,7 @@ export function InstallSkills() {
       const results = await Promise.allSettled([
         refreshPresets(),
         refreshManagedSkills(),
-        runScanSilent(),
+        scan({ fresh: true }),
       ]);
       warnRejected(results, "post-import refresh");
     } finally {
@@ -574,7 +565,7 @@ export function InstallSkills() {
       const results = await Promise.allSettled([
         refreshPresets(),
         refreshManagedSkills(),
-        runScanSilent(),
+        scan({ fresh: true }),
       ]);
       warnRejected(results, "post-import refresh");
     } finally {
@@ -1261,14 +1252,21 @@ export function InstallSkills() {
             onBrowse={handleBrowseDiscoveryDir}
           />
 
-          {localError ? (
+          {localError || scanIssue ? (
             <StatusBanner
               compact
-              title={t("common.requestFailed")}
-              description={localError}
+              title={
+                scanIssue
+                  ? t(scanStatus === "failed" ? "install.scan.failedTitle" : "install.scan.partialTitle")
+                  : t("common.requestFailed")
+              }
+              description={scanIssue ?? localError ?? ""}
               actionLabel={t("common.retry")}
-              onAction={runScan}
-              tone="danger"
+              onAction={() => {
+                setLocalError(null);
+                void handleManualScan();
+              }}
+              tone={scanIssue && scanStatus !== "failed" ? "warning" : "danger"}
             />
           ) : null}
 
@@ -1277,27 +1275,30 @@ export function InstallSkills() {
               <div>
                 <h2 className="text-[13px] font-semibold text-secondary">{t("install.scan.title")}</h2>
                 <p className="mt-0.5 text-[13px] text-muted">
-                  {scanResult
-                    ? t("install.scan.summary", {
-                        tools: scanResult.tools_scanned,
-                        skills: scanResult.skills_found,
-                      })
-                    : t("install.scan.initial")}
+                  {scanning
+                    ? t("install.scan.scanningShort")
+                    : scanResult
+                      ? t("install.scan.summarySources", {
+                          tools: scanResult.tools_scanned,
+                          dirs: scanResult.discovery_dirs_scanned,
+                          skills: scanResult.skills_found,
+                        })
+                      : t("install.scan.initial")}
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
                 <button
-                  onClick={runScan}
-                  disabled={scanLoading}
+                  onClick={() => void handleManualScan()}
+                  disabled={scanning}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-hover px-3 py-2 text-[13px] font-medium text-secondary transition-colors hover:bg-surface-active disabled:opacity-50"
                 >
-                  <RefreshCw className={cn("h-3.5 w-3.5", scanLoading && "animate-spin")} />
+                  <RefreshCw className={cn("h-3.5 w-3.5", scanning && "animate-spin")} />
                   {t("install.scan.rescan")}
                 </button>
                 <button
                   onClick={handleImportAllDiscovered}
-                  disabled={scanLoading || importingAll || pendingGroups.length === 0}
+                  disabled={scanning || importingAll || pendingGroups.length === 0}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-accent-border bg-accent-dark px-3 py-2 text-[13px] font-medium text-white transition-colors hover:bg-accent disabled:opacity-50"
                 >
                   {importingAll ? (
@@ -1311,20 +1312,34 @@ export function InstallSkills() {
             </div>
 
             <div className="space-y-4 p-4">
-              {scanLoading ? (
+              {scanning && !scanResult ? (
                 <div className="flex items-center justify-center gap-2.5 py-12 text-muted">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   <span className="text-[13px]">{t("install.scan.scanning")}</span>
                 </div>
-              ) : scanResult && scanGroups.length === 0 ? (
+              ) : !scanResult && (scanStatus === "failed" || scanIssue) ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-surface-hover">
                     <FolderSearch className="h-5 w-5 text-muted" />
                   </div>
                   <h3 className="mb-1 text-[13px] font-semibold text-tertiary">
-                    {t("install.scan.noResults")}
+                    {t("install.scan.failedTitle")}
                   </h3>
-                  <p className="text-[13px] text-muted">{t("install.scan.noResultsHint")}</p>
+                  <p className="text-[13px] text-muted">{scanIssue ?? t("install.scan.failedEmpty")}</p>
+                </div>
+              ) : !scanResult ? (
+                <p className="py-8 text-center text-[13px] text-muted">{t("install.scan.initial")}</p>
+              ) : scanGroups.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-surface-hover">
+                    <FolderSearch className="h-5 w-5 text-muted" />
+                  </div>
+                  <h3 className="mb-1 text-[13px] font-semibold text-tertiary">
+                    {scanStatus === "failed" ? t("install.scan.failedTitle") : t("install.scan.noResults")}
+                  </h3>
+                  <p className="text-[13px] text-muted">
+                    {scanStatus === "failed" ? (scanIssue ?? t("install.scan.failedEmpty")) : t("install.scan.noResultsHint")}
+                  </p>
                 </div>
               ) : (
                 <>
@@ -1335,6 +1350,8 @@ export function InstallSkills() {
                       const isImporting = !!primaryPath && importingPaths.has(primaryPath);
                       const isRenaming = group.name in renameEditing;
                       const importName = renameEditing[group.name] ?? group.name;
+                      const toolLabel = (tool: string) =>
+                        tool === "custom_discovery" ? t("install.scan.customSource") : tool;
                       const foundDate = new Date(group.found_at).toLocaleDateString(undefined, {
                         year: "numeric",
                         month: "short",
@@ -1342,7 +1359,7 @@ export function InstallSkills() {
                       });
 
                       return (
-                        <article key={group.name} className="border-b border-border-subtle last:border-b-0">
+                        <article key={group.key} className="border-b border-border-subtle last:border-b-0">
                           <div className="flex items-start justify-between gap-3 px-3 py-2">
                             <div className="min-w-0 flex-1 space-y-1.5">
                               <div className="flex min-w-0 items-center gap-2">
@@ -1409,7 +1426,7 @@ export function InstallSkills() {
                               {primaryLocation ? (
                                 <div className="flex min-w-0 items-center gap-2">
                                   <span className="inline-flex shrink-0 rounded-[4px] border border-border-subtle bg-surface px-1.5 py-px text-[13px] font-medium text-tertiary">
-                                    {primaryLocation.tool}
+                                    {toolLabel(primaryLocation.tool)}
                                   </span>
                                   <code className="block min-w-0 truncate text-[13px] text-tertiary">
                                     {primaryLocation.found_path}
@@ -1442,7 +1459,7 @@ export function InstallSkills() {
                                 {otherLocations.map((location) => (
                                   <div key={location.id} className="flex min-w-0 items-center gap-2">
                                     <span className="inline-flex shrink-0 rounded-[4px] border border-border-subtle bg-surface px-1.5 py-px text-[13px] font-medium text-tertiary">
-                                      {location.tool}
+                                      {toolLabel(location.tool)}
                                     </span>
                                     <code className="block min-w-0 truncate text-[13px] text-muted">
                                       {location.found_path}
