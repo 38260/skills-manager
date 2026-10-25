@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, History, Loader2, RotateCcw, Trash2 } from "luc
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { Select } from "./Select";
 import { useApp } from "../context/AppContext";
 import { invoke } from "../lib/transport";
 import { getErrorMessage } from "../lib/error";
@@ -180,17 +181,28 @@ export function SkillRecovery({ refresh }: { refresh: () => Promise<void> }) {
             count: usage.total_count, skills: usage.skill_count, size: formatBytes(usage.total_bytes),
           })}</span>
           <span className="flex-1" />
-          <select aria-label={t("mySkills.recovery.filter", { defaultValue: "按技能筛选快照" })}
-            value={skillFilter} onChange={event => setSkillFilter(event.target.value)}
-            className="max-w-[180px] rounded border border-border-subtle bg-surface px-2 py-1 text-[12px] text-secondary outline-none focus-visible:ring-2 focus-visible:ring-accent">
-            <option value="">{t("mySkills.recovery.allSkills", { defaultValue: "全部技能" })}</option>
-            {usage.by_skill.map(item => <option key={item.skill_id} value={item.skill_id}>{item.name}（{item.count}）</option>)}
-          </select>
-          <select aria-label={t("mySkills.recovery.keepLatest", { defaultValue: "每个技能保留的恢复点数量" })}
-            value={keepLatest} onChange={event => setKeepLatest(Number(event.target.value))}
-            className="rounded border border-border-subtle bg-surface px-2 py-1 text-[12px] text-secondary outline-none focus-visible:ring-2 focus-visible:ring-accent">
-            {KEEP_OPTIONS.map(count => <option key={count} value={count}>{t("mySkills.recovery.keepOption", { defaultValue: "保留最近 {{count}} 个", count })}</option>)}
-          </select>
+          <Select
+            ariaLabel={t("mySkills.recovery.filter", { defaultValue: "按技能筛选快照" })}
+            value={skillFilter}
+            onChange={setSkillFilter}
+            options={[
+              { value: "", label: t("mySkills.recovery.allSkills", { defaultValue: "全部技能" }) },
+              ...usage.by_skill.map(item => ({ value: item.skill_id, label: `${item.name}（${item.count}）` })),
+            ]}
+            className="h-7 max-w-[180px] px-2 text-[12px]"
+            menuMinWidth={180}
+          />
+          <Select
+            ariaLabel={t("mySkills.recovery.keepLatest", { defaultValue: "每个技能保留的恢复点数量" })}
+            value={String(keepLatest)}
+            onChange={value => setKeepLatest(Number(value))}
+            options={KEEP_OPTIONS.map(count => ({
+              value: String(count),
+              label: t("mySkills.recovery.keepOption", { defaultValue: "保留最近 {{count}} 个", count }),
+            }))}
+            className="h-7 px-2 text-[12px]"
+            menuMinWidth={140}
+          />
           <button type="button" onClick={() => void previewCleanup()}
             className="flex items-center gap-1 rounded px-2 py-1 text-[12px] text-secondary outline-none hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-accent">
             <Trash2 className="h-3.5 w-3.5" />{t("mySkills.recovery.cleanup", { defaultValue: "清理旧快照" })}

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Layers, Plus, Download, AlertTriangle, ArrowRight, ChevronRight, Zap, RefreshCw } from "lucide-react";
+import { Layers, Plus, Download, AlertTriangle, ArrowRight, ChevronRight, RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useApp } from "../context/AppContext";
 import { AgentControlSetupCard } from "../components/AgentControlSetupCard";
@@ -8,7 +8,7 @@ import { AgentIcon } from "../components/AgentIcon";
 import { PendingDeployList } from "../components/PendingDeployList";
 import { TranslationCoverageCard } from "../components/TranslationCoverage";
 import { getTranslationCoverage, type TranslationCoverage } from "../lib/skillTranslation";
-import { getActivity, toolNames, type ActivityEvent } from "../lib/activity";
+import { getActivity, toolIconKeys, toolNames, type ActivityEvent } from "../lib/activity";
 import { TRIGGER_TONE } from "../lib/activityTone";
 import { cn } from "../utils";
 import type { ManagedSkill } from "../lib/tauri";
@@ -277,17 +277,17 @@ export function Dashboard() {
                     }}
                     className="flex cursor-pointer items-center gap-3 px-3.5 py-2.5 transition-colors hover:bg-surface-hover"
                   >
-                    <span
-                      aria-hidden="true"
-                      className={cn(
-                        "flex h-6 w-6 shrink-0 items-center justify-center rounded border",
-                        entry.type === "activity"
-                          ? "border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300"
-                          : "border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-300"
-                      )}
-                    >
-                      {entry.type === "activity" ? <Zap className="h-3.5 w-3.5" /> : <RefreshCw className="h-3.5 w-3.5" />}
-                    </span>
+                    {entry.type === "activity" ? (
+                      <AgentIcon
+                        agentKey={toolIconKeys[entry.record.tool] ?? entry.record.tool}
+                        displayName={toolNames[entry.record.tool]}
+                        className="h-6 w-6 shrink-0"
+                      />
+                    ) : (
+                      <span aria-hidden="true" className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-300">
+                        <RefreshCw className="h-3.5 w-3.5" />
+                      </span>
+                    )}
                     <div className="min-w-0 flex-1">
                       <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                         <button

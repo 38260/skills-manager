@@ -9,6 +9,7 @@ import { cn } from "../utils";
 import * as api from "../lib/activity";
 import { ActivityTable } from "../components/ActivityTable";
 import { ActivityDetailPanel } from "../components/ActivityDetailPanel";
+import { Select } from "../components/Select";
 import { useDialogFocus } from "../hooks/useDialogFocus";
 
 const field = "min-w-0 rounded-lg border border-border-subtle bg-surface px-3 py-2 text-[13px] text-primary outline-none focus:border-accent focus:ring-1 focus:ring-accent";
@@ -273,22 +274,47 @@ export function SkillActivity() {
             aria-label={t("activity.skill")}
           />
         </div>
-        <select value={filters.tool} onChange={e => change("tool", e.target.value, true)} className={cn(field, "w-auto shrink-0")} aria-label={t("activity.tool")}>
-          <option value="">{t("activity.allTools")}</option>
-          {api.activityTools.map(tool => <option key={tool} value={tool}>{api.toolNames[tool]}</option>)}
-        </select>
-        <select value={filters.trigger} onChange={e => change("trigger", e.target.value, true)} className={cn(field, "w-auto shrink-0")} aria-label={t("activity.trigger")}>
-          <option value="">{t("activity.allTriggers")}</option>
-          {(["manual", "automatic", "unknown"] as const).map(trigger => <option key={trigger} value={trigger}>{t(`activity.triggers.${trigger}`)}</option>)}
-        </select>
-        <select value={filters.kind} onChange={e => change("kind", e.target.value, true)} className={cn(field, "w-auto shrink-0")} aria-label={t("activity.kind")}>
-          <option value="">{t("activity.allKinds")}</option>
-          {(["invocation", "document", "request"] as const).map(kind => <option key={kind} value={kind}>{t(`activity.kinds.${kind}`)}</option>)}
-        </select>
-        <select value={filters.status} onChange={e => change("status", e.target.value, true)} className={cn(field, "w-auto shrink-0")} aria-label={t("activity.status")}>
-          <option value="">{t("activity.allStatuses")}</option>
-          {(["pending", "returned", "failed", "unknown"] as const).map(status => <option key={status} value={status}>{t(`activity.statuses.${status}`)}</option>)}
-        </select>
+        <Select
+          ariaLabel={t("activity.tool")}
+          value={filters.tool}
+          onChange={value => change("tool", value, true)}
+          options={[
+            { value: "", label: t("activity.allTools") },
+            ...api.activityTools.map(tool => ({ value: tool, label: api.toolNames[tool] })),
+          ]}
+          className={cn(field, "h-auto w-auto shrink-0")}
+          menuMinWidth={220}
+        />
+        <Select
+          ariaLabel={t("activity.trigger")}
+          value={filters.trigger}
+          onChange={value => change("trigger", value, true)}
+          options={[
+            { value: "", label: t("activity.allTriggers") },
+            ...(["manual", "automatic", "unknown"] as const).map(trigger => ({ value: trigger, label: t(`activity.triggers.${trigger}`) })),
+          ]}
+          className={cn(field, "h-auto w-auto shrink-0")}
+        />
+        <Select
+          ariaLabel={t("activity.kind")}
+          value={filters.kind}
+          onChange={value => change("kind", value, true)}
+          options={[
+            { value: "", label: t("activity.allKinds") },
+            ...(["invocation", "document", "request"] as const).map(kind => ({ value: kind, label: t(`activity.kinds.${kind}`) })),
+          ]}
+          className={cn(field, "h-auto w-auto shrink-0")}
+        />
+        <Select
+          ariaLabel={t("activity.status")}
+          value={filters.status}
+          onChange={value => change("status", value, true)}
+          options={[
+            { value: "", label: t("activity.allStatuses") },
+            ...(["pending", "returned", "failed", "unknown"] as const).map(status => ({ value: status, label: t(`activity.statuses.${status}`) })),
+          ]}
+          className={cn(field, "h-auto w-auto shrink-0")}
+        />
         <button
           type="button"
           onClick={() => setFiltersOpen(value => !value)}

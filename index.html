@@ -91,21 +91,22 @@
       }
     </style>
     <script>
-      // 与 useTheme() 的取值保持一致：非法/缺失 → dark；system → 跟随系统。
+      // 与 useTheme() 的取值保持一致：非法/缺失 → system；只有显式选项才覆盖系统。
       (function () {
+        var t = "system";
         try {
-          var t = localStorage.getItem("theme");
-          if (t !== "light" && t !== "dark" && t !== "system") t = "dark";
-          var resolved =
-            t === "system"
-              ? window.matchMedia("(prefers-color-scheme: dark)").matches
-                ? "dark"
-                : "light"
-              : t;
-          if (resolved === "light") document.documentElement.classList.add("boot-light");
+          var stored = localStorage.getItem("theme");
+          if (stored === "light" || stored === "dark" || stored === "system") t = stored;
         } catch (error) {
-          /* localStorage 不可用时按深色渲染 */
+          /* localStorage 不可用时仍按系统主题渲染 */
         }
+        var resolved =
+          t === "system"
+            ? window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light"
+            : t;
+        if (resolved === "light") document.documentElement.classList.add("boot-light");
       })();
     </script>
   </head>

@@ -34,6 +34,7 @@ import { OperationResults, type OperationReport, type OperationItem } from "../c
 import { getSkillDisplayNames, matchSkillSearch, matchSnippet, type SkillSearchMatch } from "../lib/skillSearch";
 import { HighlightText } from "../components/HighlightText";
 import { SkillRecovery } from "../components/SkillRecovery";
+import { Select } from "../components/Select";
 import { readLibraryViewState, writeLibraryViewState, restoreLibraryScroll } from "../lib/libraryViewState";
 import { sortLibrarySkills, type LibrarySortMode } from "../lib/librarySort";
 import { toast } from "sonner";
@@ -1148,16 +1149,17 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
             ))}
           </div>
 
-          <select
-            aria-label={t("mySkills.sort.label")}
+          <Select
+            ariaLabel={t("mySkills.sort.label")}
             value={sortMode}
-            onChange={(event) => setSortMode(event.target.value as LibrarySortMode)}
-            className="app-input w-auto shrink-0"
-          >
-            <option value="default">{t("mySkills.sort.default")}</option>
-            <option value="usage-desc">{t("mySkills.sort.usageDesc")}</option>
-            <option value="usage-asc">{t("mySkills.sort.usageAsc")}</option>
-          </select>
+            onChange={(next) => setSortMode(next as LibrarySortMode)}
+            options={[
+              { value: "default", label: t("mySkills.sort.default") },
+              { value: "usage-desc", label: t("mySkills.sort.usageDesc") },
+              { value: "usage-asc", label: t("mySkills.sort.usageAsc") },
+            ]}
+            className="w-auto shrink-0"
+          />
 
           {/* 新建 Preset：入口从侧边栏搬到这里（侧边栏只在 ≥2 个 Preset 时显示该段） */}
           <button

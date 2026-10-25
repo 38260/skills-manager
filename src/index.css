@@ -261,6 +261,44 @@
     @apply h-10 rounded-lg border border-border-subtle bg-surface px-3 text-[13px] text-secondary outline-none transition-colors placeholder:text-faint focus:border-border;
   }
 
+  .app-select-menu {
+    transform-origin: top left;
+    animation: app-select-in 120ms ease-out;
+  }
+
+  .app-select-menu-up {
+    transform-origin: bottom left;
+    animation-name: app-select-in-up;
+  }
+
+  @keyframes app-select-in {
+    from {
+      opacity: 0;
+      transform: translateY(-3px) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes app-select-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(3px) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .app-select-menu {
+      animation: none;
+    }
+  }
+
   .app-segmented {
     @apply flex rounded-lg border border-border-subtle bg-surface p-0.5;
   }
