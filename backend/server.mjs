@@ -94,6 +94,7 @@ const commands = {
   set_skill_profile: { call: args => store.setProfile(String(args.skillId ?? ""), {
     alias: args.alias, customDescription: args.customDescription, authorOverride: args.authorOverride, icon: args.icon,
   }), mutating: true },
+  set_skill_favorite: { call: args => store.setSkillFavorite(String(args.skillId ?? ""), args.favorited === true), mutating: true },
   create_skill_category: { call: args => store.createCategory(args.name), mutating: true },
   set_skill_tags: { call: args => store.setTags(args.skillId, Array.isArray(args.tags) ? args.tags : []), mutating: true },
   rename_tag: { call: args => store.renameCategory(args.oldName, args.newName), mutating: true },

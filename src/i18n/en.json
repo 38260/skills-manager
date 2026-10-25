@@ -492,7 +492,13 @@
     "filters": {
       "all": "All",
       "enabled": "Enabled",
-      "available": "Available"
+      "available": "Available",
+      "favorites": "Favorites"
+    },
+    "favorite": {
+      "add": "Favorite",
+      "remove": "Unfavorite",
+      "badge": "Favorited"
     },
     "sourceFilter": {
       "all": "All Sources",

@@ -26,6 +26,8 @@ import {
   Share2,
   Tag,
   Trash2,
+  Star,
+  StarOff,
 } from "lucide-react";
 import { openDirectory as dialogOpen } from "../lib/desktop";
 import { useNavigate } from "react-router-dom";
@@ -195,7 +197,7 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
   const [viewMode, setViewMode] = useState<"grid" | "list">(initialView.viewMode);
   const [sortMode, setSortMode] = useState<LibrarySortMode>(initialView.sortMode);
   const [showCreatePreset, setShowCreatePreset] = useState(false);
-  const [filterMode, setFilterMode] = useState<"all" | "enabled" | "available">(initialView.filterMode);
+  const [filterMode, setFilterMode] = useState<"all" | "enabled" | "available" | "favorites">(initialView.filterMode);
   const [sourceFilters, setSourceFilters] = useState<Set<string>>(() => new Set(initialView.sourceFilters));
   const [tagFilters, setTagFilters] = useState<Set<string>>(() => new Set(initialView.tagFilters));
   const [profileSkillId, setProfileSkillId] = useState<string | null>(null);
@@ -235,6 +237,7 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
   const [batchToggling, setBatchToggling] = useState(false);
   const [checkingAll, setCheckingAll] = useState(false);
   const [checkingSkillId, setCheckingSkillId] = useState<string | null>(null);
+  const [favoriteBusyId, setFavoriteBusyId] = useState<string | null>(null);
   const [updatingSkillId, setUpdatingSkillId] = useState<string | null>(null);
   const [batchUpdating, setBatchUpdating] = useState(false);
   const [toolToggles, setToolToggles] = useState<SkillToolToggle[] | null>(null);
@@ -386,6 +389,9 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
         const matchTag = skill.tags.some((t) => tagFilters.has(t));
         if (!matchUntagged && !matchTag) return false;
       }
+
+      // 收藏与 Preset 无关：收藏标签页在「全部技能」与 Preset 视图下都按收藏状态过滤。
+      if (filterMode === "favorites") return skill.favorited_at != null;
 
       if (!viewedPreset) return true;
 
@@ -766,6 +772,18 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
     }
   };
 
+  const handleToggleFavorite = async (skill: ManagedSkill) => {
+    setFavoriteBusyId(skill.id);
+    try {
+      await api.setSkillFavorite(skill.id, skill.favorited_at == null);
+      await refreshManagedSkills();
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, t("common.error")));
+    } finally {
+      setFavoriteBusyId(null);
+    }
+  };
+
   function showDeployments(skill: ManagedSkill, deployments?: api.DeploymentResult[]) {
     if (!deployments?.length) return;
     const rows = (results: api.DeploymentResult[]): OperationItem[] => results.map(result => ({
@@ -1135,7 +1153,7 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
           </div>
 
           <div className="app-segmented app-toolbar-segmented shrink-0">
-            {(["all", "enabled", "available"] as const).map((mode) => (
+            {(["all", "enabled", "available", "favorites"] as const).map((mode) => (
               <button
                 key={mode}
                 onClick={() => setFilterMode(mode)}
@@ -1504,6 +1522,9 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
                     >
                       <HighlightText text={displayName} query={search} />
                     </h3>
+                    {skill.favorited_at != null && (
+                      <Star aria-label={t("mySkills.favorite.badge")} className="h-3 w-3 shrink-0 fill-amber-400 text-amber-400" />
+                    )}
                     {showUpdatePill && (
                       <button
                         onClick={(e) => { e.stopPropagation(); handleRefreshSkill(skill); }}
@@ -1548,6 +1569,15 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
                               label: t("mySkills.profile.action"),
                               icon: <Pencil className="h-3.5 w-3.5" />,
                               onSelect: () => setProfileSkillId(skill.id),
+                            },
+                            {
+                              key: "favorite",
+                              label: t(skill.favorited_at != null ? "mySkills.favorite.remove" : "mySkills.favorite.add"),
+                              icon: skill.favorited_at != null
+                                ? <StarOff className={cn("h-3.5 w-3.5", favoriteBusyId === skill.id && "animate-pulse")} />
+                                : <Star className={cn("h-3.5 w-3.5", favoriteBusyId === skill.id && "animate-pulse")} />,
+                              disabled: favoriteBusyId === skill.id,
+                              onSelect: () => handleToggleFavorite(skill),
                             },
                             {
                               key: "delete",
@@ -1792,6 +1822,12 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
                 >
                   <HighlightText text={displayName} query={search} />
                 </h3>
+                {/* 列表视图各列宽度固定：收藏星标始终占位，避免只有收藏行发生列位移。 */}
+                <span className="flex w-3 shrink-0 items-center justify-start">
+                  {skill.favorited_at != null && (
+                    <Star aria-label={t("mySkills.favorite.badge")} className="h-3 w-3 fill-amber-400 text-amber-400" />
+                  )}
+                </span>
 
                 {/* 列表视图靠固定列宽对齐：除描述列用 flex-1 吸收剩余空间外，
                     其余列一律给死宽度，否则每行内容长度不同会把后面的列推歪。 */}
@@ -1939,6 +1975,15 @@ function MySkillsContent({ libraryPath, presetId }: { libraryPath: string; prese
                           label: t("mySkills.profile.action"),
                           icon: <Pencil className="h-3.5 w-3.5" />,
                           onSelect: () => setProfileSkillId(skill.id),
+                        },
+                        {
+                          key: "favorite",
+                          label: t(skill.favorited_at != null ? "mySkills.favorite.remove" : "mySkills.favorite.add"),
+                          icon: skill.favorited_at != null
+                            ? <StarOff className={cn("h-3.5 w-3.5", favoriteBusyId === skill.id && "animate-pulse")} />
+                            : <Star className={cn("h-3.5 w-3.5", favoriteBusyId === skill.id && "animate-pulse")} />,
+                          disabled: favoriteBusyId === skill.id,
+                          onSelect: () => handleToggleFavorite(skill),
                         },
                         {
                           key: "delete",

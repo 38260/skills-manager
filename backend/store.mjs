@@ -57,6 +57,8 @@ export class Store {
       // 用户自定义展示信息：别名、自定义说明、作者覆盖、logo；不改动技能文件本身。
       ["skills", "alias", "TEXT"], ["skills", "custom_description", "TEXT"], ["skills", "author_override", "TEXT"],
       ["skills", "icon", "TEXT"],
+      // 收藏：null 未收藏；收藏时记录时间戳供排序。
+      ["skills", "favorited_at", "INTEGER"],
     ]) {
       if (!this.all(`PRAGMA table_info(${table})`).some(column => column.name === name)) this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${definition}`);
     }
@@ -186,6 +188,12 @@ export class Store {
     this.run("UPDATE skills SET alias=?, custom_description=?, author_override=?, icon=? WHERE id=?",
       clean(alias), clean(customDescription), clean(authorOverride), clean(icon)?.slice(0, 48) ?? null, id);
     this.saveMetadata(id);
+    return this.skill(id);
+  }
+  // 收藏切换：favorited_at 为空表示未收藏，收藏时记录时间戳。
+  setSkillFavorite(id, favorited) {
+    if (!this.get("SELECT id FROM skills WHERE id=?", id)) throw new Error("技能不存在");
+    this.run("UPDATE skills SET favorited_at=? WHERE id=?", favorited ? Date.now() : null, id);
     return this.skill(id);
   }
   skills() {

@@ -50,6 +50,8 @@ export interface ManagedSkill {
   enabled: boolean;
   created_at: number;
   updated_at: number;
+  /** 收藏时间戳；null 表示未收藏。 */
+  favorited_at: number | null;
   status: string;
   targets: SkillTarget[];
   preset_ids: string[];
@@ -314,6 +316,9 @@ export const getSkillsForPreset = (presetId: string) =>
 /** 保存技能的自定义展示信息；传空字符串表示清除该项，回退到技能文件里的值。 */
 export const setSkillProfile = (skillId: string, profile: { alias?: string; customDescription?: string; authorOverride?: string; icon?: string }) =>
   invoke<ManagedSkill>("set_skill_profile", { skillId, ...profile });
+
+export const setSkillFavorite = (skillId: string, favorited: boolean) =>
+  invoke<ManagedSkill>("set_skill_favorite", { skillId, favorited });
 
 export interface SkillFileEntry {
   /** 相对技能目录的路径，使用 "/" 分隔。 */

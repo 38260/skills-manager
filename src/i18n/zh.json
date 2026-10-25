@@ -492,7 +492,13 @@
     "filters": {
       "all": "全部",
       "enabled": "当前 Preset 已启用",
-      "available": "当前 Preset 未启用"
+      "available": "当前 Preset 未启用",
+      "favorites": "收藏"
+    },
+    "favorite": {
+      "add": "收藏",
+      "remove": "取消收藏",
+      "badge": "已收藏"
     },
     "sourceFilter": {
       "all": "全部来源",

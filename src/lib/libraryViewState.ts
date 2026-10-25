@@ -3,7 +3,7 @@ import type { LibrarySortMode } from "./librarySort";
 export interface LibraryViewState {
   viewMode: "grid" | "list";
   sortMode: LibrarySortMode;
-  filterMode: "all" | "enabled" | "available";
+  filterMode: "all" | "enabled" | "available" | "favorites";
   search: string;
   sourceFilters: string[];
   tagFilters: string[];
@@ -70,7 +70,7 @@ export function readLibraryViewState(
   return {
     viewMode,
     sortMode,
-    filterMode: saved.filterMode === "enabled" || saved.filterMode === "available" ? saved.filterMode : "all",
+    filterMode: saved.filterMode === "enabled" || saved.filterMode === "available" || saved.filterMode === "favorites" ? saved.filterMode : "all",
     search: typeof saved.search === "string" ? saved.search : "",
     // 保持现有来源与分类筛选互斥的交互语义。
     sourceFilters: tagFilters.length ? [] : filterValues(saved.sourceFilters),
