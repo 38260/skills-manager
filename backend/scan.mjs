@@ -3,6 +3,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { metadata, hashDirectory, canonical, files } from "./files.mjs";
 import { fetchLeaderboard, searchSkills } from "./skillssh.mjs";
+import { digest, documentLanguage, readTranslationRecord, writeTranslationRecord } from "./skill-translations.mjs";
 
 // 本地技能扫描与认领导入：扫描各工具全局技能目录和用户配置的发现目录，
 // 跳过已纳管路径与指向技能库的符号链接，结果按内容指纹分组写入 discovered_skills 表。
@@ -256,6 +257,48 @@ function removedSkillError(message) {
   return { source_key: "scan", source_path: null, path: null, message };
 }
 
+// ── 发现技能的详情与译文 ──
+// 路径必须命中 discovered_skills 表：扫描结果来自本机扫描而非渲染进程参数，
+// 以此挡住借详情/译文接口读取任意目录的调用。译文按发现路径哈希落盘，导入纳管后仍由纳管技能的译文体系接管。
+
+const MAX_DOCUMENT_BYTES = 4 * 1024 * 1024;
+
+function discoveredRecord(store, rawPath) {
+  const resolved = path.resolve(String(rawPath ?? ""));
+  if (!isSkillDir(resolved)) throw new Error("该目录没有 SKILL.md，可能已被移动或删除，请重新扫描");
+  const key = canonical(resolved);
+  const row = store.all("SELECT * FROM discovered_skills").find(record => canonical(record.found_path) === key);
+  if (!row) throw new Error("该路径不在发现结果中，请先重新扫描本地技能");
+  return { resolved, row };
+}
+
+function discoveredDocument(store, rawPath) {
+  const { resolved, row } = discoveredRecord(store, rawPath);
+  const file = ["SKILL.md", "skill.md"].map(name => path.join(resolved, name)).find(name => fs.existsSync(name));
+  let content;
+  try { content = fs.readFileSync(file, "utf8"); }
+  catch (error) { throw new Error(`无法读取 SKILL.md（${errorText(error)}）`); }
+  if (Buffer.byteLength(content, "utf8") > MAX_DOCUMENT_BYTES) throw new Error("SKILL.md 超过 4 MiB 读取上限");
+  const meta = metadata(resolved);
+  const { language, ratio } = documentLanguage(content);
+  return {
+    name: meta.name || row.name_guess || path.basename(resolved),
+    description: meta.description,
+    content,
+    language,
+    ratio,
+    source_hash: digest(content),
+    fingerprint: row.fingerprint,
+    found_path: row.found_path,
+    tool: row.tool,
+  };
+}
+
+function discoveredTranslationFilename(store, foundPath) {
+  const key = crypto.createHash("sha256").update(canonical(foundPath)).digest("hex");
+  return path.join(store.skillsDirectory, ".skills-manager", "translations", "discovered", `${key}.zh-CN.json`);
+}
+
 export function scanCommands(store, library) {
   let inFlight = null;
 
@@ -403,6 +446,22 @@ export function scanCommands(store, library) {
     get_local_discovery_dirs: { call: () => listDiscoveryDirectories(store) },
     add_local_discovery_dir: { call: args => addDiscoveryDirectory(store, args.path) },
     remove_local_discovery_dir: { call: args => removeDiscoveryDirectory(store, args.path) },
+    get_discovered_skill_document: { call: args => discoveredDocument(store, args.path) },
+    get_discovered_skill_translation: { call: args => {
+      const document = discoveredDocument(store, args.path);
+      return {
+        // 发现技能的标识就是其路径：响应结构与纳管技能译文一致，前端可复用同一类型与组件。
+        skill_id: document.found_path, source_hash: document.source_hash,
+        ...readTranslationRecord(discoveredTranslationFilename(store, document.found_path), document.source_hash),
+      };
+    } },
+    set_discovered_skill_translation: { call: args => {
+      const document = discoveredDocument(store, args.path);
+      const filename = discoveredTranslationFilename(store, document.found_path);
+      const current = { source_hash: document.source_hash, ...readTranslationRecord(filename, document.source_hash) };
+      const next = writeTranslationRecord(filename, current, { content: args.content, sourceHash: args.sourceHash, expectedRevision: args.expectedRevision });
+      return { skill_id: document.found_path, source_hash: document.source_hash, ...next };
+    }, mutating: true },
     import_existing_skill: { call: args => { importExisting(args.sourcePath, args.name ?? null); }, mutating: true },
     import_all_discovered: { call: () => {
       const groups = groupDiscovered(store.all("SELECT * FROM discovered_skills"));

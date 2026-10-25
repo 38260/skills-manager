@@ -757,7 +757,12 @@
       "failedTitle": "本地扫描失败",
       "partialToast": "扫描部分失败：{{count}} 个目录不可用",
       "failedEmpty": "扫描失败，暂无可用的本地结果。可稍后重试。",
-      "customSource": "自定义发现目录"
+      "customSource": "自定义发现目录",
+      "viewDetail": "查看详情",
+      "revealPath": "在文件夹中显示",
+      "detail": {
+        "loadFailed": "技能详情读取失败"
+      }
     },
     "discovery": {
       "title": "发现目录",

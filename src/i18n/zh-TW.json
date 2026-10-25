@@ -708,7 +708,12 @@
       "failedTitle": "本機掃描失敗",
       "partialToast": "掃描部分失敗：{{count}} 個目錄無法使用",
       "failedEmpty": "掃描失敗，暫無可用的本機結果。可稍後重試。",
-      "customSource": "自訂發現目錄"
+      "customSource": "自訂發現目錄",
+      "viewDetail": "檢視詳情",
+      "revealPath": "在資料夾中顯示",
+      "detail": {
+        "loadFailed": "技能詳情讀取失敗"
+      }
     },
     "discovery": {
       "title": "發現目錄",

@@ -39,6 +39,29 @@ export const getTranslationCoverage = () =>
 export const saveSkillTranslation = (skillId: string, content: string, sourceHash: string, expectedRevision: string | null) =>
   invoke<SkillTranslation>("set_skill_translation", { skillId, content, sourceHash, expectedRevision });
 
+/** 本地发现（尚未纳管）技能的 SKILL.md 详情；路径必须是扫描结果中的发现目录。 */
+export interface DiscoveredSkillDocument {
+  name: string;
+  description: string | null;
+  content: string;
+  language: "en" | "zh" | "unknown";
+  ratio: number;
+  source_hash: string;
+  fingerprint: string | null;
+  found_path: string;
+  tool: string;
+}
+
+export const getDiscoveredSkillDocument = (path: string) =>
+  invoke<DiscoveredSkillDocument>("get_discovered_skill_document", { path });
+
+/** 发现技能的译文与纳管技能同构：skill_id 携带发现路径，键不同但结构一致，前端类型与组件全部复用。 */
+export const getDiscoveredSkillTranslation = (path: string) =>
+  invoke<SkillTranslation>("get_discovered_skill_translation", { path });
+
+export const saveDiscoveredSkillTranslation = (path: string, content: string, sourceHash: string, expectedRevision: string | null) =>
+  invoke<SkillTranslation>("set_discovered_skill_translation", { path, content, sourceHash, expectedRevision });
+
 // 默认选中「中文版」：有译文就展示译文，没有译文时正文回落到原文。
 // 只有用户主动点了「English」才切到原文视图，所以这里只看用户的选择，不看译文是否存在。
 export function resolveDocumentLanguage(choice: DocumentLanguage | null): DocumentLanguage {

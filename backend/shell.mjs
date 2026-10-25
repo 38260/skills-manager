@@ -111,7 +111,8 @@ export function shellCommands(store, { packageVersion, exit, restart, extraRoots
     } catch { return "unknown"; }
   }
 
-  // 打开路径的允许范围：技能库目录、已纳管技能的中心库与本地来源目录，以及调用记录来源目录。
+  // 打开路径的允许范围：技能库目录、已纳管技能的中心库与本地来源目录、调用记录来源目录，
+  // 以及本地扫描发现结果的技能目录（同样是本机扫描产物，不是渲染进程可伪造的任意路径）。
   function allowedRoots() {
     const roots = [store.directory];
     for (const skill of store.skills()) {
@@ -119,6 +120,11 @@ export function shellCommands(store, { packageVersion, exit, restart, extraRoots
       const source = skill.source_ref_resolved || skill.source_ref;
       if (source && !/^[a-z][a-z0-9+.-]*:\/\//i.test(source)) roots.push(source);
     }
+    try {
+      for (const row of store.all("SELECT DISTINCT found_path FROM discovered_skills")) {
+        if (typeof row.found_path === "string" && row.found_path) roots.push(row.found_path);
+      }
+    } catch { /* discovered_skills 表尚不存在时跳过（旧数据目录） */ }
     roots.push(...(extraRoots() ?? []));
     return roots.filter(root => typeof root === "string" && root && fs.existsSync(root));
   }

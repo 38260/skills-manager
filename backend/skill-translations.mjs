@@ -4,7 +4,7 @@ import crypto from "node:crypto";
 import { inside, readJson, writeJson } from "./files.mjs";
 
 const MAX_CONTENT_BYTES = 4 * 1024 * 1024;
-const digest = content => crypto.createHash("sha256").update(content).digest("hex");
+export const digest = content => crypto.createHash("sha256").update(content).digest("hex");
 
 // 语言判定：去掉 frontmatter、代码块与行内代码后，比较中文字符与拉丁字母的数量。
 // 代码块几乎全是英文，不剔除会让「中文文档 + 大段代码」被误判成英文原文。
@@ -37,6 +37,32 @@ function validSaved(saved) {
     && typeof saved.revision === "string" && !!saved.revision && Number.isFinite(saved.updated_at);
 }
 
+/** 读取一份译文文件并与当前原文哈希对比；纳管技能与发现技能共用同一套口径。 */
+export function readTranslationRecord(filename, sourceHash) {
+  const exists = fs.existsSync(filename);
+  if (exists && fs.statSync(filename).size > MAX_CONTENT_BYTES * 2) throw new Error("译文文件超过读取上限");
+  const saved = readJson(filename);
+  if (exists && !validSaved(saved)) throw new Error("译文文件格式无效，请保留文件并检查内容");
+  return {
+    content: saved?.content ?? null, translated_source_hash: saved?.source_hash ?? null,
+    revision: saved?.revision ?? null, updated_at: saved?.updated_at ?? null,
+    stale: saved !== null && saved.source_hash !== sourceHash,
+  };
+}
+
+/** 保存一份译文文件；冲突校验与纳管技能完全一致（原文哈希 + 修订号）。 */
+export function writeTranslationRecord(filename, current, { content, sourceHash, expectedRevision }) {
+  if (typeof content !== "string" || !content.trim()) throw new Error("中文版不能为空");
+  if (Buffer.byteLength(content, "utf8") > MAX_CONTENT_BYTES) throw new Error("中文版超过 4 MiB 上限");
+  if (sourceHash !== current.source_hash) throw new Error("英文原文已变化，请重新读取原文并核对译文后保存");
+  if (expectedRevision !== current.revision) throw new Error("中文版已被其他窗口修改，请重新读取后合并内容");
+  const saved = { version: 1, content, source_hash: sourceHash, revision: crypto.randomUUID(), updated_at: Date.now() };
+  writeJson(filename, saved);
+  return {
+    content, translated_source_hash: sourceHash, revision: saved.revision,
+    updated_at: saved.updated_at, stale: false,
+  };
+}
 
 // 译文属于管理器元数据，不写入技能目录，也不会作为技能部署给 Agent。
 export class SkillTranslations {
@@ -50,15 +76,9 @@ export class SkillTranslations {
     if (typeof skillId !== "string" || !skillId) throw new Error("缺少技能标识");
     const document = this.library.skillDocument(skillId);
     const filename = this.filename(skillId);
-    const exists = fs.existsSync(filename);
-    if (exists && fs.statSync(filename).size > MAX_CONTENT_BYTES * 2) throw new Error("译文文件超过读取上限");
-    const saved = readJson(filename);
-    if (exists && !validSaved(saved)) throw new Error("译文文件格式无效，请保留文件并检查内容");
     const sourceHash = digest(document.content);
     return {
-      skill_id: skillId, content: saved?.content ?? null, source_hash: sourceHash,
-      translated_source_hash: saved?.source_hash ?? null, revision: saved?.revision ?? null,
-      updated_at: saved?.updated_at ?? null, stale: saved !== null && saved.source_hash !== sourceHash,
+      skill_id: skillId, source_hash: sourceHash, ...readTranslationRecord(filename, sourceHash),
     };
   }
 
@@ -90,14 +110,10 @@ export class SkillTranslations {
   }
 
   save({ skillId, content, sourceHash, expectedRevision }) {
-    if (typeof content !== "string" || !content.trim()) throw new Error("中文版不能为空");
-    if (Buffer.byteLength(content, "utf8") > MAX_CONTENT_BYTES) throw new Error("中文版超过 4 MiB 上限");
+    if (typeof skillId !== "string" || !skillId) throw new Error("缺少技能标识");
     const current = this.get(skillId);
-    if (sourceHash !== current.source_hash) throw new Error("英文原文已变化，请重新读取原文并核对译文后保存");
-    if (expectedRevision !== current.revision) throw new Error("中文版已被其他窗口修改，请重新读取后合并内容");
-    const saved = { version: 1, content, source_hash: sourceHash, revision: crypto.randomUUID(), updated_at: Date.now() };
-    writeJson(this.filename(skillId), saved);
-    return { ...current, content, translated_source_hash: sourceHash, revision: saved.revision, updated_at: saved.updated_at, stale: false };
+    const next = writeTranslationRecord(this.filename(skillId), current, { content, sourceHash, expectedRevision });
+    return { skill_id: skillId, source_hash: current.source_hash, ...next };
   }
 }
 

@@ -757,7 +757,12 @@
       "failedTitle": "Local scan failed",
       "partialToast": "Scan completed partially: {{count}} folders unavailable",
       "failedEmpty": "Scan failed. No usable local results right now; try again later.",
-      "customSource": "Custom discovery folder"
+      "customSource": "Custom discovery folder",
+      "viewDetail": "View details",
+      "revealPath": "Show in folder",
+      "detail": {
+        "loadFailed": "Failed to load skill details"
+      }
     },
     "discovery": {
       "title": "Discovery folders",

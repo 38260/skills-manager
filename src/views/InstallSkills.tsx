@@ -30,12 +30,13 @@ import { useApp } from "../context/AppContext";
 import { useInstallTask } from "../context/InstallTaskContext";
 import { useLocalDiscovery } from "../context/LocalDiscoveryContext";
 import * as api from "../lib/tauri";
-import type { SkillsShSkill, BatchImportResult, DiscoveryDirStatus } from "../lib/tauri";
+import type { SkillsShSkill, BatchImportResult, DiscoveryDirStatus, DiscoveredGroup } from "../lib/tauri";
 import { openDirectory as open, openSkillFile, openExternal as openUrl } from "../lib/desktop";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { listen } from "../lib/transport";
 import { StatusBanner } from "../components/StatusBanner";
 import { DiscoveryDirsPanel } from "../components/DiscoveryDirsPanel";
+import { DiscoveredSkillSheet } from "../components/DiscoveredSkillSheet";
 import { getErrorMessage, getErrorKind } from "../lib/error";
 import { marketRepoUrl } from "../lib/skillRepo";
 
@@ -83,6 +84,8 @@ export function InstallSkills() {
   const [importingPaths, setImportingPaths] = useState<Set<string>>(new Set());
   const [importingAll, setImportingAll] = useState(false);
   const [renameEditing, setRenameEditing] = useState<Record<string, string>>({});
+  // 发现技能详情面板：展示 SKILL.md 原文与中文译文，路径可点击定位。
+  const [detailGroup, setDetailGroup] = useState<DiscoveredGroup | null>(null);
   const marketListRef = useRef<HTMLDivElement | null>(null);
   const [sourceOverflowOpen, setSourceOverflowOpen] = useState(false);
   const [sourceOverflowSide, setSourceOverflowSide] = useState<"left" | "right">("left");
@@ -1393,9 +1396,14 @@ export function InstallSkills() {
                                     className="min-w-0 max-w-[220px] rounded border border-accent-border bg-surface px-1.5 py-0.5 text-[13px] font-semibold text-secondary outline-none focus:ring-1 focus:ring-accent"
                                   />
                                 ) : (
-                                  <h3 className="truncate text-[13px] font-semibold text-secondary">
+                                  <button
+                                    type="button"
+                                    onClick={() => setDetailGroup(group)}
+                                    title={t("install.scan.viewDetail")}
+                                    className="min-w-0 truncate text-left text-[13px] font-semibold text-secondary transition-colors hover:text-accent"
+                                  >
                                     {group.name}
-                                  </h3>
+                                  </button>
                                 )}
                                 {!group.imported && !isRenaming ? (
                                   <button
@@ -1428,8 +1436,15 @@ export function InstallSkills() {
                                   <span className="inline-flex shrink-0 rounded-[4px] border border-border-subtle bg-surface px-1.5 py-px text-[13px] font-medium text-tertiary">
                                     {toolLabel(primaryLocation.tool)}
                                   </span>
-                                  <code className="block min-w-0 truncate text-[13px] text-tertiary">
-                                    {primaryLocation.found_path}
+                                  <code className="block min-w-0 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => void api.openPath(primaryLocation.found_path, true).catch(() => {})}
+                                      title={t("install.scan.revealPath")}
+                                      className="block min-w-0 max-w-full truncate font-mono text-[13px] text-tertiary underline decoration-border-subtle underline-offset-2 transition-colors hover:text-accent hover:decoration-accent"
+                                    >
+                                      {primaryLocation.found_path}
+                                    </button>
                                   </code>
                                 </div>
                               ) : null}
@@ -1461,8 +1476,15 @@ export function InstallSkills() {
                                     <span className="inline-flex shrink-0 rounded-[4px] border border-border-subtle bg-surface px-1.5 py-px text-[13px] font-medium text-tertiary">
                                       {toolLabel(location.tool)}
                                     </span>
-                                    <code className="block min-w-0 truncate text-[13px] text-muted">
-                                      {location.found_path}
+                                    <code className="block min-w-0 shrink-0">
+                                      <button
+                                        type="button"
+                                        onClick={() => void api.openPath(location.found_path, true).catch(() => {})}
+                                        title={t("install.scan.revealPath")}
+                                        className="block min-w-0 max-w-full truncate font-mono text-[13px] text-muted underline decoration-border-subtle underline-offset-2 transition-colors hover:text-accent hover:decoration-accent"
+                                      >
+                                        {location.found_path}
+                                      </button>
                                     </code>
                                   </div>
                                 ))}
@@ -1651,6 +1673,10 @@ export function InstallSkills() {
           </div>
         </div>
       )}
+
+      {detailGroup ? (
+        <DiscoveredSkillSheet group={detailGroup} onClose={() => setDetailGroup(null)} />
+      ) : null}
     </div>
   );
 }

@@ -89,9 +89,11 @@ interface Props extends SkillTranslationState {
   repeatedTitle: string;
   onLanguageChange: (language: DocumentLanguage) => void;
   onSaved: (translation: SkillTranslation) => void;
+  /** 保存实现可替换：纳管技能走 set_skill_translation，发现技能由调用方注入按路径保存的版本。 */
+  saveTranslation?: (key: string, content: string, sourceHash: string, expectedRevision: string | null) => Promise<SkillTranslation>;
 }
 
-export function SkillTranslationReader({ skillId, original, translation, loading, error, language, draftOpen, onDraftClose, headingIdPrefix, repeatedTitle, onLanguageChange, onSaved }: Props) {
+export function SkillTranslationReader({ skillId, original, translation, loading, error, language, draftOpen, onDraftClose, headingIdPrefix, repeatedTitle, onLanguageChange, onSaved, saveTranslation = saveSkillTranslation }: Props) {
   const { t } = useTranslation();
   const editorId = useId();
   const [draftContent, setDraftContent] = useState<{ content: string; sourceHash: string; revision: string | null } | null>(null);
@@ -114,7 +116,7 @@ export function SkillTranslationReader({ skillId, original, translation, loading
     if (!draft || saving) return;
     setSaving(true); setSaveError("");
     try {
-      const next = await saveSkillTranslation(skillId, draft.content, draft.sourceHash, draft.revision);
+      const next = await saveTranslation(skillId, draft.content, draft.sourceHash, draft.revision);
       onSaved(next);
       onLanguageChange("zh-CN");
       setDraftContent(null); setSaved(true); onDraftClose();
