@@ -25,7 +25,10 @@ test("实际 Markdown 组件保留正文，详情代码提供语言／行号／�
     assert.match(detail, /TypeScript/);
     assert.match(detail, /纯文本/);
     assert.match(detail, /aria-label="复制"/);
-    assert.match(detail, /aria-hidden="true"[^>]*>2<\/span>/);
+    assert.ok(detail.includes("<code>const value = 1;\nsecond();</code>"));
+    const detailStyles = fs.readFileSync("src/index.css", "utf8");
+    assert.match(detailStyles, /counter-reset: detail-code-line/);
+    assert.match(detailStyles, /\.skill-detail-code-body code \{[^}]*display: grid/s);
     assert.match(detail, /&lt;section&gt;safe&lt;\/section&gt;/);
     assert.ok(!detail.includes("<section>safe</section>"), "代码内容不能作为 HTML 执行");
     const bodyTitle = render({ content: "# 适用场景\n正文", hideFirstHeading: true, repeatedTitle: "ui-design", variant: "detail" });

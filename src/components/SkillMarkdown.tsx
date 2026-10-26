@@ -179,10 +179,7 @@ function DetailCodeBlock({ children }: { children: ReactNode }) {
       </button>
     </div>
     <pre className="skill-detail-code-body m-0 overflow-x-auto bg-background py-2.5 text-[13px] leading-6">
-      <code>{text.split("\n").map((line, index) => <span key={index} className="flex min-h-6">
-        <span aria-hidden="true" className="w-10 shrink-0 select-none border-r border-border-faint pr-2 text-right text-faint">{index + 1}</span>
-        <span className="block flex-1 px-3 text-secondary">{line || " "}</span>
-      </span>)}</code>
+      <code>{text}</code>
     </pre>
   </div>;
 }

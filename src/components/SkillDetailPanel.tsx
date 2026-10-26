@@ -250,16 +250,6 @@ function SkillDetailPanelContent({
     return () => observer.disconnect();
   }, []);
 
-  // 页头紧凑化：正文滚动超过一屏的起始偏移后收起图标、描述并缩小字号与内边距。
-  useEffect(() => {
-    const container = mainScrollRef.current;
-    if (!container) return;
-    const onScroll = () => setScrolled(container.scrollTop > 24);
-    container.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => container.removeEventListener("scroll", onScroll);
-  }, [contentTab]);
-
   useEffect(() => {
     if (!drawerOpen || !compact) return;
     const drawer = drawerRef.current;
@@ -478,22 +468,33 @@ function SkillDetailPanelContent({
     [readingContent, skill.name]
   );
 
-  // 滚动高亮当前小节：取视口顶部附近最后一个标题。
+  // 页头紧凑化与目录高亮共用一帧一次的回调，避免每个滚动事件触发两次整面板渲染。
   useEffect(() => {
     const container = mainScrollRef.current;
-    if (!container || contentTab !== "doc" || headings.length === 0) return;
+    if (!container) return;
+    let frame: number | null = null;
     const onScroll = () => {
-      const top = container.getBoundingClientRect().top + 80;
-      let current: string | null = null;
-      for (const heading of headings) {
-        const element = document.getElementById(`${tocPrefix}-heading-${heading.line}`);
-        if (element && element.getBoundingClientRect().top <= top) current = `${tocPrefix}-heading-${heading.line}`;
-      }
-      setActiveHeading(current);
+      if (frame !== null) return;
+      frame = requestAnimationFrame(() => {
+        frame = null;
+        const collapsed = container.scrollTop > 24;
+        setScrolled(current => current === collapsed ? current : collapsed);
+        if (contentTab !== "doc" || headings.length === 0) return;
+        const top = container.getBoundingClientRect().top + 80;
+        let current: string | null = null;
+        for (const heading of headings) {
+          const element = document.getElementById(`${tocPrefix}-heading-${heading.line}`);
+          if (element && element.getBoundingClientRect().top <= top) current = `${tocPrefix}-heading-${heading.line}`;
+        }
+        setActiveHeading(previous => previous === current ? previous : current);
+      });
     };
     container.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
-    return () => container.removeEventListener("scroll", onScroll);
+    return () => {
+      container.removeEventListener("scroll", onScroll);
+      if (frame !== null) cancelAnimationFrame(frame);
+    };
   }, [headings, contentTab, tocPrefix]);
 
   function jumpToHeading(line: number) {
@@ -712,7 +713,7 @@ function SkillDetailPanelContent({
   return createPortal(
     <div className="fixed top-[28px] right-0 bottom-0 left-[220px] z-40 isolate">
       <div
-        className="absolute inset-0 z-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 z-0 bg-black/60"
         onClick={onClose}
       />
       <div ref={shellRef} role="dialog" aria-modal="true" aria-label={skill.display_name || skill.name} tabIndex={-1} className="skill-detail-shell absolute inset-0 z-10 flex min-h-0 flex-col overflow-hidden border-l border-border-subtle bg-surface outline-none">

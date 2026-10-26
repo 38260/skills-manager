@@ -166,9 +166,6 @@
   .skill-detail-markdown tr > :last-child { border-right: 0; }
   .skill-detail-markdown tbody tr:last-child td { border-bottom: 0; }
   .skill-detail-markdown .skill-detail-code { margin-bottom: 16px; }
-  .skill-detail-code-body { font-family: "Cascadia Code", "Cascadia Mono", Consolas, "SF Mono", Menlo, Monaco, ui-monospace, monospace; tab-size: 2; }
-  .skill-detail-code-body code { font: inherit; }
-
   .skill-detail-shell .skill-detail-agent-icon {
     border: 0;
     border-radius: 0;
@@ -324,4 +321,19 @@
   .app-badge {
     @apply inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-hover px-2.5 py-1 text-[12px] font-medium text-tertiary;
   }
+}
+
+/* 详情代码块的行号由 CSS 生成，避免每个代码行创建额外的 DOM 节点。 */
+.skill-detail-code-body {
+  counter-reset: detail-code-line;
+  font-family: "Cascadia Code", "Cascadia Mono", Consolas, "SF Mono", Menlo, Monaco, ui-monospace, monospace;
+  tab-size: 2;
+  white-space: pre;
+}
+.skill-detail-code-body code {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  column-gap: 0;
+  font: inherit;
+  white-space: pre;
 }
