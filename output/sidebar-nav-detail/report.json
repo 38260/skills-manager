@@ -1,0 +1,143 @@
+{
+  "tag": "final",
+  "runId": "run-final-1793020797714",
+  "failures": [],
+  "results": [
+    {
+      "name": "打开隔离技能详情",
+      "value": true
+    },
+    {
+      "name": "当前页技能库点击",
+      "value": {
+        "clicked": true,
+        "dialog": false,
+        "path": "/my-skills",
+        "breadcrumb": false
+      }
+    },
+    {
+      "name": "详情打开时点击技能库会关闭浮层",
+      "value": {
+        "clicked": true,
+        "dialog": false,
+        "path": "/my-skills",
+        "breadcrumb": false
+      }
+    },
+    {
+      "name": "点击技能库后仍停留在技能库路由",
+      "value": {
+        "initialUrl": "/my-skills",
+        "after": "/my-skills"
+      }
+    },
+    {
+      "name": "详情关闭后顶部详情面包屑消失",
+      "value": {
+        "clicked": true,
+        "dialog": false,
+        "path": "/my-skills",
+        "breadcrumb": false
+      }
+    },
+    {
+      "name": "打开详情后点「调用记录」前的详情存在",
+      "value": true
+    },
+    {
+      "name": "详情打开时点击「调用记录」",
+      "value": {
+        "clicked": true,
+        "dialog": false,
+        "path": "/skill-activity"
+      }
+    },
+    {
+      "name": "点「调用记录」会关闭技能详情",
+      "value": {
+        "clicked": true,
+        "dialog": false,
+        "path": "/skill-activity"
+      }
+    },
+    {
+      "name": "点「调用记录」进入目标路由",
+      "value": {
+        "clicked": true,
+        "dialog": false,
+        "path": "/skill-activity"
+      }
+    },
+    {
+      "name": "打开详情后点「全部 Agents」前的详情存在",
+      "value": true
+    },
+    {
+      "name": "详情打开时点击「全部 Agents」",
+      "value": {
+        "clicked": true,
+        "dialog": false,
+        "path": "/global-workspace"
+      }
+    },
+    {
+      "name": "点「全部 Agents」会关闭技能详情",
+      "value": {
+        "clicked": true,
+        "dialog": false,
+        "path": "/global-workspace"
+      }
+    },
+    {
+      "name": "点「全部 Agents」进入目标路由",
+      "value": {
+        "clicked": true,
+        "dialog": false,
+        "path": "/global-workspace"
+      }
+    },
+    {
+      "name": "打开详情后点「设置」前的详情存在",
+      "value": true
+    },
+    {
+      "name": "详情打开时点击「设置」",
+      "value": {
+        "clicked": true,
+        "dialog": false,
+        "path": "/settings"
+      }
+    },
+    {
+      "name": "点「设置」会关闭技能详情",
+      "value": {
+        "clicked": true,
+        "dialog": false,
+        "path": "/settings"
+      }
+    },
+    {
+      "name": "点「设置」进入目标路由",
+      "value": {
+        "clicked": true,
+        "dialog": false,
+        "path": "/settings"
+      }
+    },
+    {
+      "name": "从设置返回技能库",
+      "value": {
+        "dialog": false,
+        "path": "/my-skills"
+      }
+    },
+    {
+      "name": "无详情时侧边栏跳转仍正常",
+      "value": {
+        "dialog": false,
+        "path": "/my-skills"
+      }
+    }
+  ]
+}
