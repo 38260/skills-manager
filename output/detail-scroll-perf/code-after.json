@@ -1,0 +1,23 @@
+{
+  "tag": "code-after",
+  "profile": "code",
+  "runId": "run-code-after-1793021288746",
+  "dom": {
+    "headingCount": 36,
+    "elementCount": 4968,
+    "scrollHeight": 44716,
+    "clientHeight": 742
+  },
+  "metrics": {
+    "elapsedMs": 4310.9,
+    "frames": 121,
+    "fps": 27.8,
+    "averageFrameMs": 27.8,
+    "p95FrameMs": 50,
+    "maxFrameMs": 66.6,
+    "slowFrames": 116,
+    "longTasks": 0,
+    "longTaskMs": 0,
+    "reactRenders": 0
+  }
+}

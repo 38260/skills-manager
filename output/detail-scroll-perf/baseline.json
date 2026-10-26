@@ -1,0 +1,22 @@
+{
+  "tag": "baseline",
+  "runId": "run-baseline-1793021176548",
+  "dom": {
+    "headingCount": 36,
+    "elementCount": 1404,
+    "scrollHeight": 16204,
+    "clientHeight": 742
+  },
+  "metrics": {
+    "elapsedMs": 6686.2,
+    "frames": 241,
+    "fps": 35.9,
+    "averageFrameMs": 35.9,
+    "p95FrameMs": 33.4,
+    "maxFrameMs": 33.4,
+    "slowFrames": 161,
+    "longTasks": 0,
+    "longTaskMs": 0,
+    "reactRenders": 0
+  }
+}

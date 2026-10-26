@@ -1,0 +1,30 @@
+{
+  "tag": "report-final",
+  "profile": "code",
+  "surface": "detail",
+  "runId": "run-report-final-1793021832953",
+  "dom": {
+    "headingCount": 36,
+    "elementCount": 1080,
+    "scrollHeight": 44716,
+    "clientHeight": 742,
+    "codeLines": 36,
+    "codeLineHeight": 24,
+    "codeCounterReset": "detail-code-line 0",
+    "codeDisplay": "grid"
+  },
+  "metrics": {
+    "elapsedMs": 1987.3,
+    "frames": 121,
+    "fps": 60.4,
+    "averageFrameMs": 60.4,
+    "p95FrameMs": 16.7,
+    "maxFrameMs": 16.8,
+    "slowFrames": 0,
+    "longTasks": 0,
+    "longTaskMs": 0,
+    "reactRenders": 0,
+    "target": "detail",
+    "scrollHeight": 44716
+  }
+}
