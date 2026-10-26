@@ -171,6 +171,12 @@ export function Sidebar() {
     { name: t("sidebar.backup"), path: "/backup", icon: CloudUpload },
   ];
 
+  // 技能详情是全局浮层，侧边栏仍可见；点击任一导航入口都应先退出详情。
+  const navigateFromSidebar = (path: string) => {
+    closeSkillDetail();
+    if (location.pathname !== path) navigate(path);
+  };
+
   const handleSwitchPreset = (id: string) => {
     closeSkillDetail();
     setViewedPresetId(id);
@@ -267,6 +273,7 @@ export function Sidebar() {
               return (
                 <Link
                   to={group.basePath}
+                  onClick={() => navigateFromSidebar(group.basePath)}
                   className={cn(
                     "mb-0.5 flex items-center gap-2 px-2.5 py-[7px] rounded-md text-sm transition-colors outline-none",
                     isActive
@@ -312,7 +319,7 @@ export function Sidebar() {
                                 )}
                               >
                                 <button
-                                  onClick={() => navigate(`${group.basePath}/${tool.key}`)}
+                                  onClick={() => navigateFromSidebar(`${group.basePath}/${tool.key}`)}
                                   className={cn(
                                     "flex min-w-0 flex-1 items-center gap-2 px-2.5 py-[7px] text-left text-sm leading-5 outline-none",
                                     isActive ? "font-medium text-primary" : "text-tertiary group-hover:text-secondary"
@@ -392,6 +399,7 @@ export function Sidebar() {
               <Link
                 key={item.path}
                 to={item.path}
+                onClick={() => navigateFromSidebar(item.path)}
                 className={cn(
                   "flex items-center gap-2.5 px-2.5 py-[7px] rounded-md text-sm font-medium transition-colors outline-none",
                   isActive
@@ -608,7 +616,7 @@ export function Sidebar() {
                                 )}
                               >
                                 <button
-                                  onClick={() => navigate(`/project/${project.id}`)}
+                                  onClick={() => navigateFromSidebar(`/project/${project.id}`)}
                                   className={cn(
                                     "flex min-w-0 flex-1 items-center gap-2 px-2.5 py-[7px] text-left text-sm leading-5 outline-none",
                                     isActive ? "font-medium text-primary" : "text-tertiary group-hover:text-secondary"
@@ -701,6 +709,7 @@ export function Sidebar() {
         <div className="p-2.5 border-t border-border-subtle shrink-0">
           <Link
             to="/settings"
+            onClick={() => navigateFromSidebar("/settings")}
             className={cn(
               "flex items-center gap-2.5 px-2.5 py-[7px] rounded-md text-sm font-medium transition-colors outline-none",
               location.pathname === "/settings"
